@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "strata-memory"
+version = "0.1.0"
+description = "Tiered memory system for AI agents with lifecycle management"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Jeremy Kamber"}
+]
+requires-python = ">=3.9"
+keywords = ["ai", "memory", "agent", "llm", "strata"]
+classifiers = [
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.30.0"]
+all = ["strata-memory[openai,anthropic]"]
+
+[project.scripts]
+strata = "strata.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["strata*"]
