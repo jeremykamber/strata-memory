@@ -17,6 +17,8 @@ results = strata.query("koda oauth2")
 strata.run_maintenance()
 ```
 
+Interested more of the conceptual, "head in the clouds" stuff? [Check out the blog post.](https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents)
+
 ## Why Strata?
 
 Current memory systems treat all information the same. A conversation from five minutes ago and a decision from six months ago get identical treatment — same storage, same retrieval cost, same fidelity. That's wasteful.
@@ -325,7 +327,7 @@ No API calls needed. No SDK required. Just files.
 ---
 
 **License:** MIT
+
 **Author:** Jeremy Kamber
+
 **Version:** 0.1.0
-**GitHub:** https://github.com/jeremykamber/strata-memory
-**Blog:** https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents
