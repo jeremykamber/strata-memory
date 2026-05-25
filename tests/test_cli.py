@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import List, Optional
 from strata.cli import main
 
 
@@ -178,3 +179,85 @@ def test_cli_maintenance(tmp_base, monkeypatch):
     main(["init"])
     main(["add", "projects/maintenance_test.md", "Content"])
     main(["maintenance", "--dry-run"])
+
+
+def _fake_npx_cmd(tmp_path, monkeypatch, extra_args: Optional[List[str]] = None) -> List[str]:
+    """Run strata skill install with mocks and return the npx command that would execute."""
+    import shutil
+    import subprocess
+
+    skill_dir = tmp_path / "skills" / "strata"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text("---\nname: strata-memory\ndescription: test\n---")
+
+    from strata import cli as strata_cli
+    monkeypatch.setattr(strata_cli, "_find_skill_dir", lambda: skill_dir)
+    monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/npx")
+
+    captured_cmd: List[str] = []
+
+    def fake_run(cmd, **kwargs):
+        captured_cmd[:] = cmd
+        return subprocess.CompletedProcess(cmd, returncode=0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    args = ["skill", "install"]
+    if extra_args:
+        args.extend(extra_args)
+    main(args)
+    return captured_cmd
+
+
+def test_cli_skill_no_args(tmp_base, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_base)
+    main(["skill"])
+    captured = capsys.readouterr()
+    assert "Usage" in captured.out or "install" in captured.out
+
+
+def test_cli_skill_install_default(tmp_path, monkeypatch, capsys):
+    cmd = _fake_npx_cmd(tmp_path, monkeypatch)
+    assert "npx" in cmd
+    assert "skills@latest" in cmd
+    assert "add" in cmd
+    assert "--all" not in cmd
+    assert "-g" not in cmd
+    captured = capsys.readouterr()
+    assert "interactive" in captured.out
+
+
+def test_cli_skill_install_global(tmp_path, monkeypatch, capsys):
+    cmd = _fake_npx_cmd(tmp_path, monkeypatch, ["--global"])
+    assert "--all" in cmd
+    assert "-g" in cmd
+    assert "-y" in cmd
+    captured = capsys.readouterr()
+    assert "global" in captured.out
+
+
+def test_cli_skill_install_no_npx(tmp_base, monkeypatch, capsys):
+    import shutil
+    monkeypatch.setattr(shutil, "which", lambda _: None)
+    from strata import cli as strata_cli
+    skill_dir = tmp_base / "skills" / "strata"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text("---\nname: strata-memory\ndescription: test\n---")
+    monkeypatch.setattr(strata_cli, "_find_skill_dir", lambda: skill_dir)
+
+    try:
+        main(["skill", "install"])
+    except SystemExit:
+        pass
+    captured = capsys.readouterr()
+    assert "npx" in captured.err or "Node.js" in captured.err
+
+
+def test_cli_skill_bogus_subcommand(tmp_base, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_base)
+    try:
+        main(["skill", "bogus"])
+    except SystemExit:
+        pass
+    captured = capsys.readouterr()
+    assert "Unknown" in captured.out or "bogus" in captured.out
