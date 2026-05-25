@@ -23,12 +23,16 @@ Usage:
     strata qmd-setup               Configure QMD collections (requires Node.js)
     strata qmd-embed               Generate QMD vector embeddings
     strata qmd-status              Show QMD index status
+    strata skill install           Install Strata skill for AI coding assistants (interactive)
+    strata skill install --global  Install globally to all agents (non-interactive)
 """
 
 from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -115,6 +119,9 @@ def main(argv: Optional[list[str]] = None):
 
     elif command == "mcp":
         _cmd_mcp()
+
+    elif command == "skill":
+        _cmd_skill(args[1:])
 
     else:
         print(f"Unknown command: {command}")
@@ -441,6 +448,94 @@ def _cmd_mcp():
         server.close()
 
 
+# ── Skill Install ──────────────────────────────────────────────────────────────
+
+
+def _find_skill_dir() -> Optional[Path]:
+    """Locate the bundled strata skill directory for AI agents.
+
+    Resolution order:
+    1. Relative to this file (development install / editable mode)
+    2. Via importlib.resources (installed package)
+    """
+    # Development / editable mode: relative to this script
+    dev = Path(__file__).resolve().parent / "skills" / "strata"
+    if dev.is_dir():
+        return dev
+
+    # Installed package: use importlib.resources
+    try:
+        import importlib.resources as rsrc
+        ref = rsrc.files("strata").joinpath("skills", "strata")
+        with rsrc.as_file(ref) as path:
+            if path.is_dir():
+                return path.resolve()
+    except Exception:
+        pass
+
+    return None
+
+
+def _cmd_skill(rest: list[str]):
+    if not rest:
+        print("Usage: strata skill install")
+        print("")
+        print("  Installs the Strata agent skill for AI coding assistants")
+        print("  (OpenCode, Claude Code, PI, Cursor, Codex, etc.).")
+        print("")
+        print("  By default it runs the Vercel Labs skills CLI interactively —")
+        print("  you'll be prompted to choose scope (global/project) and agents.")
+        print("")
+        print("Flags:")
+        print("  --global   Skip interactive prompts, install globally to all agents")
+        print("")
+        print("Requires Node.js (npx). Uses 'npx skills add' from vercel-labs/skills.")
+        return
+
+    subcommand = rest[0]
+    if subcommand == "install":
+        _cmd_skill_install(rest[1:])
+    else:
+        print(f"Unknown skill subcommand: {subcommand}")
+        print("Usage: strata skill install")
+        sys.exit(1)
+
+
+def _cmd_skill_install(rest: list[str]):
+    skill_dir = _find_skill_dir()
+    if skill_dir is None:
+        print("Error: Strata skill not found. Reinstall strata-memory.", file=sys.stderr)
+        sys.exit(1)
+
+    if not shutil.which("npx"):
+        print("Error: 'npx' not found. Install Node.js from https://nodejs.org/", file=sys.stderr)
+        print("Then run: strata skill install", file=sys.stderr)
+        sys.exit(1)
+
+    global_mode = "--global" in rest
+
+    cmd = ["npx", "-y", "skills@latest", "add", str(skill_dir)]
+    if global_mode:
+        cmd.extend(["--all", "-g", "-y"])
+        print("Installing Strata skill globally for all AI agents...")
+        print(f"  Skill:    {skill_dir}")
+    else:
+        print("Launching interactive skill installer...")
+        print(f"  Skill:    {skill_dir}")
+        print("  Follow the prompts to choose scope (global/project) and agents.")
+        print()
+
+    result = subprocess.run(cmd)
+
+    if result.returncode != 0:
+        print(f"Error: Skill installation failed (exit code {result.returncode})", file=sys.stderr)
+        sys.exit(1)
+
+    print()
+    print("✓ Strata skill installed! It's now available to your AI assistants.")
+    print("  Agents should auto-detect it. Try: strata --agent-help")
+
+
 def _cmd_qmd_setup():
     """Configure QMD collections for all Strata directories."""
     config = _config()
@@ -550,6 +645,11 @@ The cascade search checks all three strata automatically.
   strata status     Show system state (files per tier, daemon status)
   strata config     Show configuration (thresholds, paths)
   strata index      Regenerate the 1st Stratum index.md
+  strata skill install
+                    Install Strata skill for AI coding assistants.
+                    Interactive by default (choose scope + agents).
+                    Use --global for non-interactive global install.
+                    Requires Node.js for 'npx skills add'.
 
 ### Daemon (Automatic Lifecycle)
 
