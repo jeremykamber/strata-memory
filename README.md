@@ -167,6 +167,8 @@ strata history             # View daemon log
 # Agent integration
 strata mcp                 # MCP protocol server
 strata --agent-help        # Agent usage guide
+strata skill install       # Install Strata skill for AI coding assistants (interactive)
+strata skill install --global  # Install globally to all agents (non-interactive)
 
 # QMD (optional hybrid search)
 strata qmd-setup           # Add collections
@@ -282,6 +284,20 @@ strata history --lines=20
 # Stop when you want
 strata stop
 ```
+
+## Skill Install — Make AI Agents Strata-Aware
+
+Strata ships with an agent skill that teaches AI coding assistants (OpenCode, Claude Code, PI, Cursor, Codex, Windsurf, etc.) how to use Strata's commands and architecture.
+
+```bash
+# Interactive — follow the prompts to choose scope + agents
+strata skill install
+
+# Non-interactive — install globally to all agents at once
+strata skill install --global
+```
+
+It delegates to [vercel-labs/skills](https://github.com/vercel-labs/skills) (`npx skills add`), which handles all 55+ agent directory formats automatically. Requires Node.js.
 
 ## QMD Integration (Optional)
 
