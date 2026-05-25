@@ -1,210 +1,243 @@
 # Strata — Tiered Memory for AI Agents
 
-**Zero-dependency memory system for AI agents.** Structured decay, asynchronous consolidation, portable to any LLM and any agent harness.
+**Zero-dependency memory system for AI agents.** Think of it like geological strata — your most recent memories sit in the top layer where you can grab them instantly. As they age, they settle into deeper layers. But unlike real rock, they can be brought back to the surface when needed.
 
 ```python
 from strata import Strata
-from strata.config import StrataConfig
 
-config = StrataConfig(base_dir="./my_memory")
-strata = Strata(config)
+strata = Strata()
 
-# Active working memory (1st Stratum)
-strata.write_active("projects/kynd/requirements.md", "# Kynd Requirements\n...")
+# Write a memory (1st Stratum — surface layer)
+strata.write_active("projects/koda/requirements.md", "# Koda needs OAuth2 + payments")
 
-# Search across all tiers
-results = strata.query("kynd requirements")
+# Search across all layers
+results = strata.query("koda oauth2")
 
-# Run lifecycle maintenance
+# Let the Janitor handle the rest automatically
 strata.run_maintenance()
 ```
 
 ## Why Strata?
 
-Current memory systems fail because they treat context as a flat plane. Vector databases burn tokens on every query, and monolithic context windows degrade reasoning at scale.
+Current memory systems treat all information the same. A conversation from five minutes ago and a decision from six months ago get identical treatment — same storage, same retrieval cost, same fidelity. That's wasteful.
 
-**Strata fixes this with three insights:**
+**Strata fixes this with a simple idea:** memories age like geological strata. Fresh memories sit on top where you can reach them fast. Old memories settle into deeper layers. But unlike rocks, they can be brought back when dug up.
 
-1. **Information decays over time** — a memory from today needs higher fidelity than one from two years ago
-2. **Separate the decision from the act** — algorithmic triggers (file age, access frequency) decide *when* to move data; LLMs only run *to compress it*
-3. **File systems beat fuzzy databases for what's important** — for active work, a markdown file in a known directory beats a vector search every time
+Three insights make this work:
 
-## Strata
+1. **Information decays** — a memory from today deserves higher fidelity than one from two years ago
+2. **Don't pay an LLM to check the time** — algorithmic triggers (file age, access count) decide *when* to move data; no AI needed for that
+3. **Files are the fastest database** — for active work, reading a markdown file from a known path beats any vector search
 
-| Stratum | Name | Backend | Latency | Retention |
-|------|------|---------|---------|-----------|
-| 1st Stratum | Active Shell | Filesystem (Markdown) | ~1ms | Configurable decay (default 14-60 days) |
-| 2nd Stratum | Medium-Term Orbit | SQLite + FTS5 | ~5ms | LRU eviction (default 90 days stale) |
-| 3rd Stratum | Cold Archive | Flat JSON + Shadow Index | ~10ms | Infinite (keyword-retrievable) |
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    STRATA ARCHITECTURE                   │
+├─────────────┬──────────────┬────────────────────────────┤
+│ 1st Stratum │ 2nd Stratum  │ 3rd Stratum               │
+│ (active/)   │ (cooled/)    │ (archive/ + shadow.db)    │
+├─────────────┼──────────────┼────────────────────────────┤
+│ Agent reads │ Query-only   │ Cold storage              │
+│ and writes  │ (Janitor     │ with keyword              │
+│ here        │  manages)    │ shadow index              │
+├─────────────┼──────────────┼────────────────────────────┤
+│ ~1ms access │ ~5ms access  │ ~10ms via re-hydration    │
+│ Filesystem  │ Filesystem   │ JSON blobs + SQLite FTS5  │
+└──────┬──────┴──────┬───────┴────────────┬───────────────┘
+       │             │                    │
+       ▼             ▼                    ▼
+  ┌─────────┐  ┌─────────┐         ┌──────────┐
+  │ Janitor │─►│ Janitor │─►       │ Shadow   │
+  │ migrate │  │ evict   │  ──►    │ Index    │
+  │ 1st→2nd │  │ 2nd→3rd │         │ (search) │
+  └─────────┘  └─────────┘         └──────────┘
+```
+
+**The Janitor** is the only thing that moves data between layers. It runs on a schedule (every 15 min by default) and uses simple rules — no LLM calls needed.
 
 ## Quick Start
 
-### Installation
+### Install
 
 ```bash
-# Core (zero dependencies)
 pip install strata-memory
-
-# With LLM compression support
-pip install strata-memory[openai]   # OpenAI
-pip install strata-memory[anthropic] # Anthropic
-pip install strata-memory[all]      # Both
 ```
 
-### Initialize
+Zero dependencies. Works anywhere Python 3.9+ runs.
+
+### Use globally (recommended)
 
 ```bash
-strata init
+strata init            # Creates ~/.strata/ — your global memory store
+strata add projects/idea.md "# My idea"
+strata search "idea"
 ```
 
-Creates `./strata_data/active/{projects, entities, gtd}/`.
+### Or per-project
 
-### Basic Usage
+```bash
+cd my-project
+strata init --local    # Creates ./strata_data/
+strata add docs/spec.md "# Project spec"
+strata search "spec"
+```
+
+### Full example
 
 ```python
 from strata import Strata
-from strata.config import StrataConfig
 
-config = StrataConfig(base_dir="./my_strata")
-strata = Strata(config)
+# Auto-detects: uses ./strata_data/ if it exists, else ~/.strata/
+strata = Strata()
 
-# ── 1st Stratum: Active Working Memory ────────────────────────
-
-# Write context the agent needs now
-strata.write_active("projects/koda/schema.md", """
-# Koda Database Schema
-- users: id, email, name, created_at
-- projects: id, name, owner_id, status
-- subscriptions: id, user_id, plan, expires_at
+# ── 1st Stratum: Working memory ──────────────────────────
+# Write markdown files. They're real files on disk.
+strata.write_active("projects/koda/spec.md", """# Koda Platform
+Stack: React + Go + PostgreSQL
+Features: OAuth2, Stripe, real-time dashboard
 """)
 
-strata.write_active("entities/joe.md", "# Joe Smith\nRole: Software Engineer\nSkills: React, Go, PostgreSQL")
+strata.write_active("entities/joe.md", "# Joe: React/Go engineer on Koda team")
 
-# Read it back exactly
-schema = strata.read_active("projects/koda/schema.md")
+# Read it back — exact, no fuzzy search
+schema = strata.read_active("projects/koda/spec.md")
 
-# List available context
-files = strata.list_active("projects/koda")
+# List what's available
+files = strata.list_active("projects")
 
-# ── Query Across All Tiers ────────────────────────────────
-
-# Searches 1st Stratum → 2nd Stratum → 3rd Stratum in cascade
-results = strata.query("koda database schema")
+# ── Search across all layers ─────────────────────────────
+results = strata.query("koda oauth2")
 for r in results:
     print(f"[{r['tier']}] {r['source']}: {r['content'][:80]}")
 
-# With entity tag filters
-results = strata.query("joe", filters={"tags": ["engineer"]})
+# ── Lifecycle ────────────────────────────────────────────
+# Preview what the Janitor would do
+strata.migrate(dry_run=True)
 
-# ── Store and Retrieve Memory Blocks ──────────────────────
-
-from strata.models import MemoryBlock
-
-block = MemoryBlock(
-    summary="Koda v2 uses PostgreSQL with pgvector for semantic search across all customer data",
-    entity_tags=["koda", "postgresql", "architecture"],
-    metadata={"decision": "pgvector chosen over elasticsearch"},
-)
-memory_id = strata.store_memory(block)
-
-retrieved = strata.get_memory(memory_id)
-
-# ── Lifecycle Maintenance ─────────────────────────────────
-
-# Migrate stale 1st Stratum files to 2nd Stratum (with LLM compression)
-report = strata.migrate(dry_run=True)       # Preview first
-report = strata.migrate(dry_run=False)      # Execute
-
-# Evict cold 2nd Stratum memories to 3rd Stratum archive
-report = strata.evict()
-
-# Full cycle in one call
-report = strata.run_maintenance()
-
-# ── Cleanup ───────────────────────────────────────────────
-
-strata.close()
-
-# Or use the context manager:
-with Strata(config) as s:
-    s.write_active("projects/test.md", "# Test")
-```
-
-### With LLM Compression
-
-```python
-from strata import Strata
-from strata.janitor import Janitor
-from strata.providers import openai_compress
-
-strata = Strata()
-strata.janitor.llm_compress = openai_compress(api_key="sk-...", model="gpt-4o-mini")
-
-# Now migration will compress files via LLM instead of raw truncation
+# Execute migration (1st → 2nd Stratum)
 strata.migrate()
+
+# Execute eviction (2nd → 3rd Stratum)
+strata.evict()
+
+# Both at once
+strata.run_maintenance()
 ```
 
-## Agent Integration (OpenAI-Compatible Tools)
+## CLI Reference
 
-Strata exposes 5 function-calling tools that work with any LLM harness:
+```bash
+# Setup
+strata init                # Create ~/.strata/ (global)
+strata init --local        # Create ./strata_data/ (project)
+strata init --global       # Force ~/.strata/
 
-```python
-# Get all tool schemas (OpenAI format)
-tools = strata.tools.all_schemas()
+strata config              # Show settings
+strata status              # Show system state
+
+# Writing (1st Stratum only — working memory)
+strata add <path> <content>
+echo "note" | strata add <path>
+strata add --text "quick note"
+
+# Reading
+strata read <path>         # Read a file
+strata list [path]         # List files
+
+# Searching (all three layers)
+strata search <query>      # Human-readable
+strata query <text>        # JSON (for scripts)
+
+# Lifecycle
+strata migrate             # Move stale files to cooled/
+strata evict               # Move cold files to archive/
+strata maintenance         # Both at once
+strata forget <path>       # Archive a specific file
+
+# Daemon (background Janitor)
+strata serve               # Start (checks every 15 min)
+strata serve --interval=300# Every 5 min
+strata stop                # Stop daemon
+strata restart             # Restart
+strata history             # View daemon log
+
+# Agent integration
+strata mcp                 # MCP protocol server
+strata --agent-help        # Agent usage guide
+
+# QMD (optional hybrid search)
+strata qmd-setup           # Add collections
+strata qmd-embed           # Generate embeddings
 ```
 
-| Tool | Description |
+## How the Strata Work
+
+### 1st Stratum — Active (surface layer)
+
+Fastest layer. Plain markdown files in `active/`. The agent reads and writes here directly. There's no database, no vector index — just files on disk.
+
+The `index.md` file is auto-generated and acts as the master map. When the agent needs context, it reads `index.md` first, then navigates to the right file by path.
+
+```bash
+strata add projects/koda/spec.md "# Koda spec"
+cat strata_data/active/index.md
+# → Lists every file with its heading as description
+```
+
+**Agent rule:** Full read/write access. This is your workspace.
+
+### 2nd Stratum — Cooled (middle layer)
+
+When a file hasn't been touched for a while (configurable: 14 days for projects, 60 for entities), the Janitor moves it from `active/` to `cooled/`. It's still a markdown file on disk. The only difference is the agent can't write to it directly.
+
+```bash
+strata migrate              # Janitor moves stale files
+strata list-stratum-2       # See what's in cooled/
+strata search "query"       # Searches cooled/ too (read-only)
+```
+
+**Agent rule:** Read-only via search. If you need to edit something, the Janitor can rehydrate it back to active.
+
+### 3rd Stratum — Archive (deep layer)
+
+When a cooled file hasn't been accessed in months (default: 90 days), the Janitor evicts it to `archive/`. The full content is saved as JSON. A lightweight Shadow Index (SQLite FTS5) keeps it searchable by keyword.
+
+```bash
+strata evict                # Janitor archives old files
+strata search "old project" # Still finds it via shadow index
+# → Shows "_needs_rehydration: true"
+```
+
+**Agent rule:** Can't write here either. Archived files can be rehydrated back to active when needed.
+
+### The Shadow Index
+
+This is what makes Strata different from mem0 or QMD. When a file is archived, the Janitor doesn't just delete it. It stores a "ghost" entry in a tiny SQLite database — just keywords, a 200-char preview, and a file path to the JSON. A million ghosts cost practically nothing.
+
+When you search and don't find anything in active or cooled, Strata hits the Shadow Index. If it finds a match, it reads the archived JSON and puts the file back in active. The memory resurfaces because it proved useful again.
+
+## Agent Integration
+
+Strata exposes 5 function-calling tools in OpenAI format:
+
+| Tool | What it does |
 |------|-------------|
-| `strata_read_active` | Read a file from active memory by path |
-| `strata_write_active` | Write a file to active memory (creates dirs) |
-| `strata_list_active` | List files/directories in active memory |
-| `strata_query` | Cascade search across all 3 tiers |
-| `strata_forget` | Explicitly archive a 2nd Stratum memory to 3rd Stratum |
-
-### Integration with OpenAI
+| `strata_read_active` | Read a file from active/ |
+| `strata_write_active` | Write a file to active/ |
+| `strata_list_active` | List files in active/ |
+| `strata_query` | Search across all 3 strata |
+| `strata_forget` | Archive a cooled file to archive/ |
 
 ```python
-from openai import OpenAI
-client = OpenAI()
-
-system = "You have access to a Strata memory system. Use the tools below."
-
-messages = [
-    {"role": "system", "content": system},
-    {"role": "user", "content": "What do we know about Koda's schema?"},
-]
-
-# Get tool schemas and call OpenAI
+# Get tool schemas
 tools = strata.tools.all_schemas()
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=messages,
-    tools=tools,
-)
 
-# Execute any tool calls the model makes
-for choice in response.choices:
-    if choice.finish_reason == "tool_calls":
-        for tc in choice.message.tool_calls:
-            result = strata.tools.execute(
-                tc.function.name,
-                json.loads(tc.function.arguments),
-            )
+# Execute a tool call
+result = strata.tools.execute("strata_query", {"query": "koda"})
 ```
 
-### Integration with Anthropic
-
-```python
-from anthropic import Anthropic
-client = Anthropic()
-
-# Convert schemas to Anthropic tool format
-tools = [
-    {"name": s["function"]["name"], "description": s["function"]["description"],
-     "input_schema": s["function"]["parameters"]}
-    for s in strata.tools.all_schemas()
-]
-```
+Works with OpenAI, Anthropic, OpenClaw, or any harness that speaks function calling.
 
 ## Configuration
 
@@ -212,191 +245,87 @@ tools = [
 from strata.config import StrataConfig
 
 config = StrataConfig(
-    base_dir=Path("./strata_data"),
-
     # How many days before a file is "stale" enough to migrate
-    # Key is first directory segment, "*" is default
+    # Key is first directory name, "*" is the default
     decay_thresholds={
-        "projects": 14,    # Active projects decay after 2 weeks
-        "entities": 60,    # Entity profiles last 2 months
-        "gtd": 7,          # Tasks decay after 1 week
-        "*": 30,           # Default for everything else
+        "projects": 14,    # Active projects: 2 weeks
+        "entities": 60,    # People/companies: 2 months
+        "gtd": 7,          # Tasks: 1 week
+        "*": 30,           # Everything else: 1 month
     },
 
-    # 2nd Stratum → 3rd Stratum LRU eviction
-    lru_days=90,             # Evict if last accessed >90 days ago
-    lru_min_access_count=1,  # And accessed ≤1 time
-
-    # LLM compression (optional)
-    llm_provider="openai",
-    llm_model="gpt-4o-mini",
-
-    # Embedding (optional)
-    embedding_model="text-embedding-3-small",
+    # Eviction from cooled → archive
+    lru_days=90,            # Evict if not accessed in 90 days
+    lru_min_access_count=1, # And accessed ≤ 1 time
 )
 ```
 
-## CLI Reference (Standalone Tool)
+## Daemon Mode
 
-Strata runs as a standalone CLI tool — like `mem0` but with structured decay.
-
-```bash
-# Initialization
-strata init                    # Create directory structure
-
-# Active Memory (1st Stratum)
-strata add <path> <content>    # Write a file
-echo "content" | strata add <path>   # Pipe content
-strata add --text "quick note" # Auto-routed to gtd/
-strata read <path>             # Read a file
-strata list [path]             # List directory
-strata list-stratum-2             # List 2nd Stratum memories
-
-# Search
-strata search <query>          # Human-readable search across all tiers
-strata query <text>            # JSON search output (for scripting)
-
-# Lifecycle Management
-strata migrate                 # Migrate stale 1st Stratum → 2nd Stratum
-strata migrate --dry-run       # Preview without changes
-strata evict                   # Evict cold 2nd Stratum → 3rd Stratum
-strata evict --dry-run         # Preview evictions
-strata maintenance             # Full lifecycle cycle
-
-# Daemon (Automatic Lifecycle)
-strata serve                   # Start background Janitor daemon
-strata serve --interval=300    # Check every 5 minutes
-strata serve --live            # Skip initial dry-run
-strata daemon                  # Alias for serve
-strata stop                    # Stop running daemon
-strata restart                 # Restart daemon
-
-# System
-strata status                  # Show state + daemon status
-strata config                  # Show current configuration
-strata history                 # Show Janitor daemon log
-strata forget <memory-id>      # Archive a specific memory
-
-# MCP Protocol (for AI agent integration)
-strata mcp                     # Start MCP server over stdio
-```
-
-### Daemon Mode (Set and Forget)
-
-The daemon is what makes Strata a "set and forget" memory system. It runs in the background and automatically handles memory lifecycle:
+The daemon automates the Janitor. It runs in the background and handles migration + eviction on a schedule:
 
 ```bash
-# Start the daemon (checks every 15 minutes by default)
 strata serve &
 
-# First cycle is always a dry-run for safety
-# After dry-run confirms actions, subsequent cycles run live
-
-# Check status while daemon is running
+# Check on it
 strata status
 # → Daemon: RUNNING (pid=12345)
 # → Cycles completed: 3
-# → 1st Stratum: 2 stale files pending
-# → 2nd Stratum: 15 memory blocks
-# → 3rd Stratum: 42 shadow entries
 
-# View the daemon log
-strata history --lines=50
-# → 2026-01-15 02:00:00 [INFO] [Cycle 1] Starting maintenance (DRY RUN)
-# → 2026-01-15 02:00:00 [INFO] [Cycle 1] Migrated: 3, Evicted: 0
-# → 2026-01-15 02:15:00 [INFO] [Cycle 2] Starting maintenance (LIVE)
-# → 2026-01-15 02:15:00 [INFO] [Cycle 2] Migrated: 3, Evicted: 0
+# See what it's been doing
+strata history --lines=20
+# → 2026-01-15 02:00:00 [Cycle 1] Migrated: 3, Evicted: 0
+# → 2026-01-15 02:15:00 [Cycle 2] Migrated: 0, Evicted: 1
+
+# Stop when you want
+strata stop
 ```
 
-The daemon:
-- Runs Janitor maintenance on a configurable interval (default: 900s/15min)
-- Logs all activity to `{base_dir}/strata.log`
-- Creates a PID file at `{base_dir}/strata.pid`
-- Responds to SIGINT/SIGTERM for graceful shutdown
-- Starts with a dry-run cycle (configurable via `--live`)
-- Handles both migration (1st Stratum → 2) and eviction (2nd Stratum → 3) automatically
+## QMD Integration (Optional)
 
-### MCP Server
-
-For AI agent integration, start the MCP protocol server:
+[QMD](https://github.com/tobi/qmd) by Tobias Lütke is a local hybrid search engine. If you have it installed, Strata can use it for BM25 + vector search — still no LLM calls:
 
 ```bash
-# Start MCP server over stdio (compatible with any MCP client)
-strata mcp
+npm install -g @tobilu/qmd
+strata qmd-setup     # Add active/ + cooled/ as collections
+strata qmd-embed     # Generate vector embeddings
+strata search "..."  # Now uses BM25 + vector fusion
 ```
 
-This exposes all 5 Strata tools via the Model Context Protocol. Any MCP-compatible agent (Claude Code, OpenClaw, custom agents) can connect and use Strata as a memory backend:
-
-```json
-// Client sends:
-{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}
-// Server responds:
-{"jsonrpc":"2.0","id":1,"result":{"tools":[
-  {"name":"strata_read_active","description":"Read...","inputSchema":{...}},
-  {"name":"strata_write_active","description":"Write...","inputSchema":{...}},
-  {"name":"strata_list_active","description":"List...","inputSchema":{...}},
-  {"name":"strata_query","description":"Search...","inputSchema":{...}},
-  {"name":"strata_forget","description":"Archive...","inputSchema":{...}}
-]}}
-```
-
-Supports stdio transport (line-delimited JSON-RPC 2.0). Zero dependencies.
-
-## Re-hydration
-
-When a query finds a result in 3rd Stratum (the cold archive), it returns `{_needs_rehydration: true}`. The agent can then rehydrate it back to 2nd Stratum:
-
-```python
-for r in results:
-    if r["tier"] == "stratum_3" and r["metadata"].get("_needs_rehydration"):
-        block = strata.janitor.rehydrate(r["metadata"])
-        if block:
-            print(f"Rehydrated: {block.summary[:80]}")
-```
+Without QMD, search falls back to built-in filesystem grep. Works either way.
 
 ## Project Structure
 
 ```
-strata_data/
-├── active/                    # 1st Stratum: Active Shell
-│   ├── projects/              # Current initiatives + sprints
-│   ├── entities/              # People, companies, tools
-│   └── gtd/                   # Immediate tasks
-├── stratum_2.db                  # 2nd Stratum: SQLite + FTS5
-├── archive/                   # 3rd Stratum: Cold JSON files
-└── shadow.db                  # 3rd Stratum: Shadow Index (SQLite)
+~/.strata/                    # Or ./strata_data/ for local
+├── active/                   # 1st Stratum — working memory
+│   ├── index.md              # Auto-generated master map
+│   ├── projects/             # Current initiatives
+│   ├── entities/             # People, companies, tools
+│   └── gtd/                  # Tasks
+├── cooled/                   # 2nd Stratum — aged-out files
+├── archive/                  # 3rd Stratum — cold JSON storage
+├── shadow.db                 # Shadow Index (SQLite FTS5)
+├── strata.log                # Daemon activity log
+└── strata.pid                # Daemon PID file
 ```
 
-## How Migration Works (No LLM Required)
+## Why Files?
 
-Without an LLM provider, migration truncates the raw file content (first 2000 chars) and infers tags from the file path:
+Every memory in Strata is a plain markdown file on disk. Not a blob in a database. Not a node in a graph. A file.
 
-```
-projects/koda-api/schema.md → tags: ["projects", "Koda-Api Schema"]
-raw_content[:2000]           → summary
-```
+This matters because:
+- **The agent can grep it.** `grep -r "OAuth2" strata_data/`
+- **The agent can edit it.** `vim strata_data/active/projects/koda/spec.md`
+- **The agent can pipe it.** `cat strata_data/active/index.md | head -20`
+- **The agent can version it.** `git add strata_data && git commit -m "update"`
 
-With an LLM provider, the full content is sent for compression:
-```
-"Compress this into a Memory Block: extract outcomes, decisions, entities..."
-```
-
-## How Eviction Works
-
-The Janitor queries 2nd Stratum for memories where `last_accessed` is older than `lru_days` AND `access_count` is ≤ `lru_min_access_count`. It writes the full memory block to a JSON file in `archive/`, creates a keyword-searchable entry in the Shadow Index (`shadow.db`), then deletes from 2nd Stratum.
-
-## The Shadow Index
-
-The Shadow Index is a lightweight SQLite database with FTS5 full-text search. It stores only:
-- Original memory UUID
-- Entity tags (keywords)
-- Archive file path
-- 200-character summary preview
-
-This keeps the cold archive searchable at near-zero storage cost.
+No API calls needed. No SDK required. Just files.
 
 ---
 
 **License:** MIT
 **Author:** Jeremy Kamber
 **Version:** 0.1.0
+**GitHub:** https://github.com/jeremykamber/strata-memory
+**Blog:** https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents

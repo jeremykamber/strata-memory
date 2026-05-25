@@ -1,132 +1,134 @@
 # The Strata Manifesto
 
-## The Flat-Context Fallacy
+## Why Memory Needs Layers
 
-LLM memory is fundamentally broken because it treats context as a flat plane.
+In geology, strata are layers of rock that build up over time. The top layer is today's sediment — fresh, accessible, still settling. Dig deeper and you find older layers — compressed, quieter, but still there if you need to drill down.
 
-You either shove everything into an ever-expanding context window (which degrades reasoning and costs a fortune), or you dump it into a vector database and pray semantic search retrieves the right thing. Both approaches ignore the single most important property of information: **it decays over time.**
+Human memory works the same way. What you had for breakfast is near the surface. What you learned in high school is deeper. But both are retrievable — they just sit at different depths.
 
-A conversation you had five minutes ago about the bug you're actively fixing deserves different treatment than a design decision from six months ago that you haven't referenced since. Current systems treat both with the same fidelity, the same storage cost, and the same retrieval latency.
+LLM memory is the opposite. It's flat.
 
-This is wasteful. It degrades agent performance as the corpus grows. And it's completely unnecessary.
+You either shove everything into one ever-expanding context window (which degrades reasoning and burns tokens), or you dump it all into a vector database and hope the embedding model figures it out. Both approaches treat a memory from five minutes ago the same as a memory from five years ago. Same retrieval cost. Same storage tier. Same fidelity.
 
-## The Fundamental Insight
+This is like storing a fossil and a fresh leaf in the same box. It works, but it's wasteful.
 
-The key innovation in Strata is separating the **decision to move** from the **act of moving**.
+## The Core Insight
 
-Industry approaches like mem0 and OpenClaw use LLM janitors that continuously monitor, re-summarize, and reorganize memory on every operation. This is a massive waste of input tokens. You're paying an LLM to check if something changed when a two-line Python function could tell you the same thing.
+The key idea behind Strata is simple: **separate the decision to move data from the act of compressing it.**
 
-**Algorithmic triggers decide *when* to move data. LLMs only run *to compress it*.**
+Current systems (mem0, OpenClaw) use LLMs to constantly monitor and reorganize memory. Every query triggers a check. Every operation runs a janitor loop. You're paying an AI to check if something is old — a job a two-line Python function handles for free.
 
-- A file's modification timestamp tells you it's old. No LLM needed.
-- A database row's `last_accessed` column tells you it's cold. No LLM needed.
-- An access counter below a threshold tells you it's irrelevant. No LLM needed.
+Strata flips this. Algorithmic triggers decide *when* to move data:
 
-The LLM is only invoked at the moment of migration — to compress, summarize, and extract entities from the raw data. That's one LLM call per stale file, not one LLM call per query. The difference in token cost is an order of magnitude.
+- **File modification time** tells you it's stale. No AI needed.
+- **Last access date** tells you it's cold. No AI needed.
+- **Access count** tells you it's irrelevant. No AI needed.
 
-## The Three Tiers
+Only once a trigger fires do we invoke anything smarter — and in the current architecture, even that step is just moving a file. No LLM, no compression, no token cost.
 
-Information exists on a continuum from "currently essential" to "might be useful someday." Strata carves this continuum into three discrete tiers, each optimized for a specific access pattern:
+**That's the difference between a system that calls you every hour to ask "is it time yet?" and one that only taps your shoulder when it's actually time.**
 
-### 1st Stratum: The Active Shell
+## The Three Strata
 
-**Storage:** Filesystem markdown files. **Cost:** Zero dependencies, OS-native reads. **Latency:** ~1ms.
+### 1st Stratum — The Active Layer
 
-The active shell is the agent's working memory. It's structured exactly like a well-organized project directory because that's what it is. When the agent is working on a feature, it doesn't need to do a fuzzy semantic search to find the active specification. It reads `projects/kynd/requirements.md`. Directly. Exactly. Every time.
+Like the topsoil on a forest floor. Fresh, alive, full of activity. This is where the agent works.
 
-The index is explicit. The `index.md` file acts as the router — the agent reads it first, then decides which specific file to open. No vector similarity, no approximate retrieval, no chance of getting the wrong file because "database" and "base" happened to have similar embeddings.
+Every memory here is a plain markdown file in a known directory. The agent reads `active/index.md` to get the map, then navigates to the right file by path. No vector search, no embedding, no approximate retrieval. The agent knows where things are because it put them there.
 
-1st Stratum is the fastest and most reliable form of memory because it sidesteps the entire retrieval problem. The agent knows where things are because it put them there.
+**Latency:** ~1ms. **Storage:** Filesystem. **Cost:** Zero.
 
-**The inefficiency solved:** Vector databases for active projects are a category error. If you ask "what did Joe say about the Koda database schema yesterday?" and a vector search returns a conversation from three weeks ago because the words "database" and "Joe" are semantically similar, your architecture is wrong. 1st Stratum solves this with a strict, readable file structure. The agent knows exactly where the current Koda specs are stored.
+The `index.md` is auto-generated and lists every file with its first heading as the description. When the agent asks "what's in my workspace?", it reads the index — not a vector database.
 
-### 2nd Stratum: The Medium-Term Orbit
+### 2nd Stratum — The Cooled Layer
 
-**Storage:** SQLite with FTS5. **Cost:** Built into Python. **Latency:** ~5ms.
+Like sediment that's settled but hasn't hardened into rock. The files are still there, still readable, but you don't interact with them daily.
 
-2nd Stratum is the semantic and relational memory. Once a project cools down, the Janitor compresses those files into Memory Blocks — condensed summaries optimized for retrieval. An LLM (optional, pluggable) transforms 3,000 words of planning document into a 200-word summary with extracted entity tags.
+The Janitor moves files here from the 1st Stratum based on age (default: 14 days for projects, 60 for entities). The agent can still search and read them via `strata search`, but it can't write to them directly. If it needs to edit something, the file gets rehydrated back to the 1st Stratum first.
 
-This solves the semantic loss problem. If we moved raw text to a database, search would be chaotic. By synthesizing it first, we create clean, dense chunks optimized for retrieval.
+**Latency:** ~5ms. **Storage:** Filesystem. **Managed by:** Janitor.
 
-2nd Stratum uses SQLite's built-in FTS5 (Full-Text Search, version 5) for searching. Not a dedicated vector database. Here's why:
+### 3rd Stratum — The Archive
 
-**FTS5 gives you keyword-aware search with ranking, snippets, and highlight functionality — all without a single external dependency.** For 90% of memory retrieval tasks, a human-readable tag like `[koda, funding]` is more useful than a vector embedding. When you need semantic similarity, you can plug in an embedding provider. But it's optional. The system works without it.
+This is the bedrock. Memories that haven't been touched in months get compressed into JSON and stored flat. A lightweight Shadow Index (SQLite with FTS5) keeps them searchable by keyword.
 
-The relational structure links memories to entities through JSON metadata, enabling queries like "find memories about the Koda funding round, linked to Joe, that happened near the iStartup Lab" — all through simple SQL with JSON extraction operators.
+When the Janitor evicts a file here, it leaves behind a "ghost" in the Shadow Index — just keywords, a 200-character preview, and a file path. No vectors, no embeddings. A million ghosts cost less than a megabyte.
 
-### 3rd Stratum: The Cold Archive + Shadow Index
+If a search finds a ghost, the file gets rehydrated back to the 1st Stratum. The memory resurfaces because it proved useful again.
 
-**Storage:** Flat JSON files + SQLite Shadow Index. **Cost:** Near-zero. **Latency:** ~10ms.
+**Latency:** ~10ms (with rehydration). **Storage:** Flat JSON + SQLite FTS5.
 
-Data cannot live in 2nd Stratum forever. SQLite with FTS5 is fast, but it still consumes storage and memory. Keeping memories from five years ago with zero retrievals in active storage is wasteful.
+**This is what sets Strata apart.** mem0 never forgets — it grows forever. Most open-source tools just delete. Strata archives with a retrievable shadow. It's the difference between throwing something away and putting it in a labeled box in the basement.
 
-But we don't just delete them. That's what every other system does — either grow forever (mem0) or prune without recovery (most open-source tools). Both approaches lose information permanently.
+## Why Files, Not Databases
 
-**The Shadow Index solves this.** When the Janitor evicts a memory to 3rd Stratum, it leaves behind a "ghost" entry in a lightweight SQLite database. No vector embeddings, no full text — just keywords, a 200-character preview, and a file path to the archived JSON. A million shadow entries cost practically nothing to store.
+Every memory in Strata is a plain file on disk. Not a row in a table. Not a node in a graph. A `.md` file.
 
-If the agent searches 1st Stratum (no results) and 2nd Stratum (no results), it runs a quick keyword query against the Shadow Index. If it finds a match, it reads the JSON file from the archive and re-hydrates the memory — pulls it back into 2nd Stratum, regenerates the embedding, resets the access counter. The memory is back in the active orbit because it proved useful again.
+This is deliberate. Files are the most agent-native format there is:
 
-## Why Zero Dependencies
+- An agent can read a file with `cat` or `strata read`
+- An agent can write a file with `echo >` or `strata add`
+- An agent can search files with `grep` or `strata search`
+- An agent can list files with `ls` or `strata list`
+- An agent can version files with `git`
+- An agent can pipe files anywhere
 
-The core of Strata has exactly zero external dependencies. Not one pip package.
+No SDK. No API. No database drivers. Just the filesystem, which every operating system has had since 1971.
 
-- 1st Stratum uses `pathlib` (stdlib).
-- 2nd Stratum uses `sqlite3` (stdlib) with FTS5 (built into SQLite since 3.9.0).
-- 3rd Stratum uses `sqlite3` and `json` (stdlib).
+## The Shadow Index
 
-The only optional dependencies are the LLM providers (`openai`, `anthropic`), and they're loaded lazily. If they're not installed, Strata degrades gracefully: migration truncates content instead of compressing it.
+This is the mechanism that makes infinite memory practical without infinite storage cost.
 
-This is a deliberate choice. Memory is the most fundamental subsystem of an AI agent. It should not depend on a fragile web of packages that break with every `pip update`. It should work in a Docker container, a serverless function, a Jupyter notebook, or embedded in a C extension — anywhere Python runs.
+When a file is archived, the Shadow Index records:
+- The original file path
+- Entity tags (inferred from the directory structure)
+- The archive file location
+- A 200-character preview
 
-## Structured Decay vs. Every-Query Polling
+That's it. The Shadow Index is a SQLite database with FTS5 full-text search — same tech that powers SQLite's built-in search. It doesn't store embeddings, vectors, or graph relationships. It stores keywords and a pointer to where the full content lives.
 
-Here is the core difference between Strata and every other memory system:
+If the agent searches and finds nothing in active or cooled, it hits the Shadow Index. A match means the file gets rehydrated — pulled from the archive back into active, where the agent can read and edit it again.
 
-| System | Trigger | Cost |
-|--------|---------|------|
-| mem0 | Every query | LLM call per query |
-| OpenClaw | Every operation | LLM call per operation |
-| LangChain | On get/put | Embedding per retrieval |
-| **Strata** | **File age / access frequency** | **Algorithmic check (nearly free)** |
+**The Shadow Index is the difference between "deleted forever" and "put away for now."**
 
-Strata only invokes the LLM when data actually needs to move — when a file exceeds its decay threshold, or when a memory qualifies for LRU eviction. The Janitor's algorithmic checks (compare timestamps, check access counters) cost microseconds. The LLM compression costs tokens only when it actually compresses.
+## What Strata Doesn't Do
 
-This is the difference between a notification system that calls you every hour to ask "is it time yet?" and one that only calls you when it's actually time.
+- **No LLM calls.** The Janitor moves files based on timestamps, not AI decisions.
+- **No vector database.** Search is filesystem grep or optional QMD (BM25 + vector).
+- **No graph database.** Relationships are implicit through directory structure.
+- **No distributed consensus.** Single filesystem, single agent.
+- **No API keys.** Zero configuration out of the box.
 
 ## The Agent Contract
 
-Strata defines a minimal, portable contract between the agent and its memory system:
+The contract between Strata and any AI agent is minimal:
 
-1. **The agent reads and writes 1st Stratum** — it creates files, reads them, lists directories. This is the only direct interaction.
-2. **The agent queries via `strata_query`** — a single tool that cascades through all three tiers and returns merged results.
-3. **The agent never manages transitions** — the Janitor handles migration and eviction asynchronously.
-4. **The agent never thinks about storage** — it writes to 1st Stratum, queries across all tiers, and trusts the environment is curated.
+1. **Read and write markdown files** in the 1st Stratum. That's the only direct interaction.
+2. **Search across all strata** via `strata search` or `strata_query`. The cascade handles the rest.
+3. **Never manage transitions.** The Janitor runs in the background. The agent trusts the environment is curated.
 
-This contract works with any LLM and any agent harness. The tool schemas are defined in OpenAI function-calling format, which has become the de facto standard. Any system that consumes function-calling JSON can integrate Strata in minutes.
+This works with any LLM, any agent framework, any programming language that can call a CLI or read a file.
 
-## The Synthesis: Strata Meets agent-db
+## Comparison
 
-Strata provides the lifecycle discipline — the Janitor, the LRU eviction, the Shadow Index. For 2nd Stratum, it uses SQLite with FTS5, which is sufficient for most use cases out of the box.
+| System | Trigger | Storage | LLM calls | Retrieval |
+|--------|---------|---------|-----------|-----------|
+| **mem0** | Every query | Graph DB | Per query + maintenance | Semantic + graph |
+| **OpenClaw** | Every operation | Markdown + LLM | Per operation + janitor | LLM re-summarized |
+| **LangChain** | On get/put | Vector DB | Per embedding | Vector similarity |
+| **QMD** | On index | SQLite (FTS5 + vec) | Per query (optional) | BM25 + vector + rerank |
+| **Strata** | File age / LRU | Filesystem + SQLite | **None** | Filesystem + FTS5 |
 
-But if you need a full relational engine with vector search and detailed autonomy records, you can swap 2nd Stratum for agent-db (or any Postgres/pgvector-backed store). The interface is clean: `store()`, `get()`, `search_fts()`, `search_by_tags()`, `get_lru_candidates()`. Any backend that implements these methods can replace SQLite.
+## The Philosophy
 
-The synthesis is this: Strata provides the lifecycle management that agent-db is missing, and agent-db provides the relational graph that Strata's summaries are too simple to capture on their own. They're complementary.
+Most memory systems are built by engineers who think about storage. Strata is built by thinking about *forgetting.*
 
-## What Strata Is Not
+Information decays. That's not a bug — it's the feature that makes memory useful. The right question isn't "how do I store everything with maximum fidelity?" It's "how do I store each piece of information at the fidelity it deserves, for as long as it proves useful?"
 
-- **Not a vector database.** 2nd Stratum uses FTS5, not vector search. Embeddings are optional and pluggable.
-- **Not a graph database.** Entities are stored as JSON tags, not nodes and edges. If you need a full knowledge graph, connect agent-db.
-- **Not a replacement for the model's context window.** 1st Stratum is for context the agent needs right now. 2nd Stratum is for recall. They serve different purposes.
-- **Not a distributed system.** Strata is designed for a single agent working from a single filesystem. Distributed consensus is a separate problem.
+Like geological strata, Strata layers memories by age. The top layer is for today's work. The middle layer is for last month's projects. The bottom layer is for everything else — compressed, indexed, but never truly gone.
 
-## The Road Ahead
-
-The industry is obsessed with throwing more compute at the memory problem. Bigger context windows. More expensive embedding models. Continuous re-summarization loops.
-
-Strata proves that **structured decay and asynchronous consolidation is the actual path forward for autonomous systems.** The right architecture isn't the one that stores everything with maximal fidelity. It's the one that stores each piece of information with the fidelity it deserves, at the storage tier it earns, for as long as it proves useful.
-
-This is how human memory works. This is how agent memory should work.
+And unlike real rock, these layers are permeable. A memory from the bottom can resurface when the agent needs it. The Shadow Index is the fault line that connects deep time to the present.
 
 ---
 
-*"The best part is no part. The best process is no process. The best memory is the one you don't need to search."* — Strata First Principle
+*"The best part is no part. The best process is not having one. The best memory is the one you don't need to search for."*
