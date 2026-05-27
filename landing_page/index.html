@@ -13,55 +13,56 @@
    RESET & BASE
    ============================================================ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:1rem;line-height:1.6;color:oklch(0.88 0.008 260);background:oklch(0.12 0.04 260);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;background:oklch(0.07 0.04 265)}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:1rem;line-height:1.7;color:oklch(0.92 0.006 260);background:oklch(0.07 0.04 265);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 img,svg{display:block;max-width:100%}
 a{color:inherit}
-:focus-visible{outline:2px solid oklch(0.60 0.10 55);outline-offset:2px}
+:focus-visible{outline:2px solid oklch(0.65 0.14 55);outline-offset:3px;border-radius:2px}
 
 /* ============================================================
    CUSTOM PROPERTIES
    ============================================================ */
 :root{
-  --c-surface:oklch(0.55 0.07 235);
-  --c-stratum-1:oklch(0.45 0.08 245);
-  --c-stratum-1-dark:oklch(0.32 0.07 248);
-  --c-stratum-2:oklch(0.22 0.06 255);
-  --c-stratum-3:oklch(0.12 0.04 260);
-  --c-fault:oklch(0.60 0.10 55);
-  --c-fault-glow:oklch(0.60 0.10 55 / 0.12);
-  --c-text:oklch(0.88 0.008 260);
-  --c-text-muted:oklch(0.65 0.02 260);
-  --c-text-inverse:oklch(0.08 0.02 260);
-  --c-text-inverse-muted:oklch(0.35 0.02 260);
-  --c-surface-text:oklch(0.10 0.03 260);
-  --c-surface-text-muted:oklch(0.35 0.03 260);
-  --c-terminal-bg:oklch(0.08 0.03 265);
+  --c-hero-bg:oklch(0.21 0.06 248);
+  --c-hero-surface:oklch(0.50 0.08 235);
+  --c-hero-gradient:linear-gradient(180deg,var(--c-hero-surface) 0%,oklch(0.40 0.07 240) 10vh,var(--c-hero-bg) 18vh);
+  --c-stratum-2:oklch(0.16 0.05 255);
+  --c-stratum-3:oklch(0.10 0.04 260);
+  --c-signup:oklch(0.07 0.04 265);
+  --c-footer:oklch(0.05 0.04 270);
+  --c-fault:oklch(0.65 0.14 55);
+  --c-fault-glow:oklch(0.65 0.14 55 / 0.18);
+  --c-text:oklch(0.93 0.005 260);
+  --c-text-muted:oklch(0.72 0.01 260);
+  --c-text-dim:oklch(0.50 0.015 260);
+  --c-terminal-bg:oklch(0.09 0.03 265);
   --c-terminal-border:oklch(0.18 0.04 260);
-  --c-prompt:oklch(0.60 0.12 145);
-  --c-input-bg:oklch(0.18 0.04 260);
-  --c-input-border:oklch(0.28 0.04 260);
-  --c-input-focus:oklch(0.60 0.10 55);
+  --c-prompt:oklch(0.60 0.14 145);
+  --c-input-bg:oklch(0.14 0.04 265);
+  --c-input-border:oklch(0.25 0.04 260);
+  --c-input-focus:oklch(0.65 0.14 55);
   --c-error:oklch(0.55 0.15 25);
-  --c-success:oklch(0.55 0.12 145);
+  --c-success:oklch(0.55 0.14 145);
+  --c-particle:oklch(0.93 0.005 260 / 0.10);
   --font-display:'Spline Sans',system-ui,sans-serif;
   --font-code:'JetBrains Mono',monospace;
   --font-body:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
-  --max-width:72ch;
+  --max-width:70ch;
   --space-xs:0.25rem;
   --space-sm:0.5rem;
   --space-md:1rem;
   --space-lg:2rem;
   --space-xl:4rem;
+  --space-2xl:6rem;
 }
 
 /* ============================================================
    TYPOGRAPHY
    ============================================================ */
-h1,h2,h3{font-family:var(--font-display);font-weight:700;line-height:1.1;font-variation-settings:'wght' 700;font-feature-settings:'ss01'on,'ss03'on,'cv01'on}
-h1{font-size:clamp(3rem,8vw,7rem);letter-spacing:-0.03em;color:var(--c-text)}
-h2{font-size:clamp(1.75rem,4vw,3.25rem);letter-spacing:-0.02em}
-h3{font-size:clamp(1.125rem,2vw,1.5rem);letter-spacing:-0.01em}
+h1,h2{font-family:var(--font-display);font-weight:700;line-height:1.05;font-feature-settings:'ss01'on,'ss03'on,'cv01'on}
+h1{font-size:clamp(3.5rem,12vw,10rem);letter-spacing:-0.04em;color:var(--c-text)}
+h2{font-size:clamp(1.75rem,4vw,3.25rem);letter-spacing:-0.02em;color:var(--c-text)}
+h3{font-family:var(--font-display);font-weight:600;font-size:clamp(1.125rem,2vw,1.5rem);letter-spacing:-0.01em}
 p{max-width:var(--max-width);color:var(--c-text-muted)}
 code,pre{font-family:var(--font-code)}
 
@@ -69,89 +70,125 @@ code,pre{font-family:var(--font-code)}
    UTILITY
    ============================================================ */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.container{max-width:72rem;margin:0 auto;padding:0 var(--space-lg);width:100%}
+.container{max-width:72rem;margin:0 auto;padding:0 2rem;width:100%}
+@media (max-width:480px){.container{padding:0 1.25rem}}
 
 /* ============================================================
-   SECTIONS — shared
+   SECTION SHARED
    ============================================================ */
 .section{min-height:100vh;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
-.section-content{position:relative;z-index:2;padding:var(--space-xl) 0;width:100%}
+.section-content{position:relative;z-index:3;padding:var(--space-2xl) 0;width:100%}
 .section-content > * + *{margin-top:var(--space-lg)}
 .section-content > :first-child{margin-top:0}
 
 /* ============================================================
-   STRATUM 1 — HERO / ACTIVE LAYER
+   HERO — STRATUM 1
    ============================================================ */
 #stratum-1{
-  background:linear-gradient(180deg,var(--c-surface) 0%,var(--c-stratum-1) 30%,var(--c-stratum-1-dark) 100%);
-  color:var(--c-surface-text);
+  background:var(--c-hero-gradient);
+  min-height:110vh;
+  justify-content:flex-start;
+  padding-top:max(8rem, 12vh);
 }
-#stratum-1 p{color:var(--c-surface-text-muted)}
-#stratum-1 .hero-heading{
-  font-family:var(--font-display);
-  font-size:clamp(3.5rem,10vw,8.5rem);
-  font-weight:700;
-  letter-spacing:-0.035em;
-  line-height:0.95;
-  font-feature-settings:'ss01'on,'ss03'on,'cv01'on;
-  color:var(--c-surface-text);
-}
-#stratum-1 .hero-desc{
-  font-size:0.9375rem;
-  color:var(--c-surface-text-muted);
-  max-width:var(--max-width);
-  font-family:var(--font-body);
-}
-#stratum-1 .hero-tagline{
-  font-size:clamp(1.1rem,2vw,1.35rem);
-  font-weight:400;
-  color:var(--c-surface-text-muted);
-  max-width:var(--max-width);
-  font-family:var(--font-display);
-  letter-spacing:0.01em;
-}
-/* Surface texture — loose sediment dots */
+/* Topsoil surface band */
 #stratum-1::before{
   content:'';
   position:absolute;inset:0;
-  background-image:radial-gradient(circle,oklch(0 0 0 / 0.06) 1px,transparent 1px);
-  background-size:24px 24px;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, oklch(0.60 0.06 230 / 0.15) 0%, transparent 100%),
+    radial-gradient(circle at 20% 0%, oklch(1 0 0 / 0.04) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 60% 5%, oklch(1 0 0 / 0.03) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 85% 2%, oklch(1 0 0 / 0.02) 0.5px, transparent 0.5px);
+  background-size:100% 100%, 18px 18px, 22px 22px, 28px 28px;
+  background-repeat:no-repeat, repeat, repeat, repeat;
   pointer-events:none;
-  z-index:1;
-}
-/* Topsoil band at the very top */
-#stratum-1 .topsoil{
-  position:absolute;top:0;left:0;right:0;height:6vh;
-  background:linear-gradient(180deg,oklch(0.62 0.06 235 / 0.4),transparent);
-  pointer-events:none;z-index:1;
+  z-index:0;
 }
 
 /* ============================================================
-   TERMINAL / CLI BLOCK
+   HERO CONTENT
+   ============================================================ */
+.hero-heading{
+  animation:hero-entrance 1.2s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes hero-entrance{
+  from{opacity:0;transform:translateY(2.5rem) scale(0.98)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.hero-tagline{
+  font-family:var(--font-display);
+  font-size:clamp(1.1rem,2.5vw,1.5rem);
+  font-weight:400;
+  letter-spacing:0.02em;
+  color:var(--c-text-muted);
+  max-width:var(--max-width);
+  margin-top:var(--space-md);
+  animation:hero-fade 1.2s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+}
+.hero-desc{
+  font-size:0.9375rem;
+  color:var(--c-text-dim);
+  max-width:var(--max-width);
+  margin-top:var(--space-sm);
+  animation:hero-fade 1.2s 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes hero-fade{
+  from{opacity:0;transform:translateY(1rem)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ============================================================
+   SEDIMENT PARTICLES
+   ============================================================ */
+.sediment-particle{
+  position:absolute;
+  border-radius:50%;
+  background:var(--c-particle);
+  pointer-events:none;
+  z-index:1;
+  will-change:transform,opacity;
+}
+@keyframes sediment-fall{
+  0%{transform:translateY(-10vh) translateX(0);opacity:0}
+  10%{opacity:0.6}
+  85%{opacity:0.4}
+  100%{transform:translateY(110vh) translateX(12px);opacity:0}
+}
+
+/* ============================================================
+   HERO CLI / TERMINAL
    ============================================================ */
 .terminal{
   background:var(--c-terminal-bg);
   border:1px solid var(--c-terminal-border);
-  border-radius:8px;
+  border-radius:10px;
   padding:1.25rem 1.5rem;
   font-family:var(--font-code);
   font-size:0.875rem;
-  line-height:1.8;
-  max-width:36rem;
+  line-height:1.9;
+  max-width:38rem;
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
+  margin-top:var(--space-lg);
+  animation:hero-fade 1.2s 0.45s cubic-bezier(0.16,1,0.3,1) both;
+  box-shadow:
+    0 2px 20px oklch(0 0 0 / 0.2),
+    inset 0 1px 0 oklch(1 0 0 / 0.04);
 }
 .terminal code{white-space:pre;display:block}
 .terminal .prompt{color:var(--c-prompt)}
-.terminal .comment{color:var(--c-text-muted);font-style:normal;opacity:0.6}
-.terminal .path{color:var(--c-text-muted);opacity:0.5}
+.terminal .comment{color:var(--c-text-dim);font-style:normal}
+.terminal .path{color:var(--c-text-dim)}
 
 /* ============================================================
    STATS ROW
    ============================================================ */
 .stats-row{
-  display:flex;flex-wrap:wrap;gap:var(--space-lg);
+  display:flex;flex-wrap:wrap;gap:var(--space-xl);
   margin-top:var(--space-lg);
+  animation:hero-fade 1.2s 0.6s cubic-bezier(0.16,1,0.3,1) both;
+  border-top:1px solid oklch(0.93 0.005 260 / 0.06);
+  padding-top:var(--space-lg);
 }
 .stats-row .stat{
   display:flex;flex-direction:column;gap:0.125rem;
@@ -161,15 +198,15 @@ code,pre{font-family:var(--font-code)}
   font-family:var(--font-display);
   font-size:1.25rem;
   font-weight:600;
-  color:var(--c-surface-text);
+  color:var(--c-text);
 }
 .stats-row .stat-label{
   font-size:0.8125rem;
-  color:var(--c-surface-text-muted);
+  color:var(--c-text-dim);
 }
 
 /* ============================================================
-   FAULT LINE SVG
+   FAULT LINES — SVG crack dividers
    ============================================================ */
 .fault-line{
   position:relative;
@@ -177,19 +214,16 @@ code,pre{font-family:var(--font-code)}
   height:60px;
   overflow:hidden;
   flex-shrink:0;
-  z-index:3;
+  z-index:4;
   margin-top:-1px;
 }
-.fault-line svg{
-  display:block;
-  width:100%;
-  height:100%;
-}
+.fault-line svg{display:block;width:100%;height:100%}
 .fault-line .crack-glow{
   stroke:var(--c-fault-glow);
-  stroke-width:14;
+  stroke-width:16;
   fill:none;
   stroke-linecap:round;
+  animation:fault-pulse 5s ease-in-out infinite;
 }
 .fault-line .crack-line{
   stroke:var(--c-fault);
@@ -197,35 +231,30 @@ code,pre{font-family:var(--font-code)}
   fill:none;
   stroke-linecap:round;
 }
-/* Hover effect on fault line */
-.fault-line:hover .crack-line{
-  stroke:oklch(0.65 0.12 55);
-  transition:stroke 0.3s ease;
+@keyframes fault-pulse{
+  0%,100%{opacity:0.3;stroke-width:16}
+  50%{opacity:1;stroke-width:20}
 }
-.fault-line:hover .crack-glow{
-  stroke:oklch(0.60 0.10 55 / 0.22);
+.fault-line:hover .crack-line{
+  stroke:oklch(0.70 0.14 55);
   transition:stroke 0.3s ease;
 }
 
 /* ============================================================
    STRATUM 2 — COOLED LAYER
    ============================================================ */
-#stratum-2{
-  background:var(--c-stratum-2);
-}
-#stratum-2 h2{color:var(--c-text)}
-/* Horizontal striations — settled sediment */
+#stratum-2{background:var(--c-stratum-2)}
 #stratum-2::before{
   content:'';
   position:absolute;inset:0;
   background-image:repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 32px,
-    oklch(1 0 0 / 0.025) 32px,
-    oklch(1 0 0 / 0.025) 33px
+    transparent 30px,
+    oklch(1 0 0 / 0.02) 30px,
+    oklch(1 0 0 / 0.02) 31px
   );
-  background-size:100% 66px;
+  background-size:100% 62px;
   pointer-events:none;z-index:1;
 }
 #stratum-2 .stat-badge{
@@ -233,34 +262,18 @@ code,pre{font-family:var(--font-code)}
   align-items:center;
   gap:0.5rem;
   padding:0.5rem 1rem;
-  border:1px solid oklch(0.88 0.008 260 / 0.1);
-  border-radius:4px;
+  border:1px solid oklch(0.93 0.005 260 / 0.08);
+  border-radius:6px;
   font-family:var(--font-code);
   font-size:0.8125rem;
   color:var(--c-text);
 }
-#stratum-2 .stat-badge span{color:var(--c-text-muted);opacity:0.7}
+#stratum-2 .stat-badge span{color:var(--c-text-dim)}
 
 /* ============================================================
    STRATUM 3 — ARCHIVE / BEDROCK
    ============================================================ */
-#stratum-3{
-  background:var(--c-stratum-3);
-}
-#stratum-3 h2{color:var(--c-text)}
-#stratum-3 .stat-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:0.5rem;
-  padding:0.5rem 1rem;
-  border:1px solid oklch(0.88 0.008 260 / 0.08);
-  border-radius:4px;
-  font-family:var(--font-code);
-  font-size:0.8125rem;
-  color:var(--c-text);
-}
-#stratum-3 .stat-badge span{color:var(--c-text-muted);opacity:0.7}
-/* Dense grain texture */
+#stratum-3{background:var(--c-stratum-3)}
 #stratum-3::before{
   content:'';
   position:absolute;inset:0;
@@ -271,25 +284,35 @@ code,pre{font-family:var(--font-code)}
   background-size:40px 40px, 60px 60px, 80px 80px;
   pointer-events:none;z-index:1;
 }
-
-/* Shadow Index Ghost Icon */
+#stratum-3 .stat-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:0.5rem;
+  padding:0.5rem 1rem;
+  border:1px solid oklch(0.93 0.005 260 / 0.08);
+  border-radius:6px;
+  font-family:var(--font-code);
+  font-size:0.8125rem;
+  color:var(--c-text);
+}
+#stratum-3 .stat-badge span{color:var(--c-text-dim)}
+/* Shadow Index ghost icon */
 .shadow-icon{
-  width:3rem;
-  height:4rem;
-  background:oklch(0.88 0.008 260 / 0.06);
-  border:1px solid oklch(0.88 0.008 260 / 0.12);
-  border-radius:2px;
+  width:3rem;height:4rem;
+  background:oklch(0.93 0.005 260 / 0.05);
+  border:1px solid oklch(0.93 0.005 260 / 0.1);
+  border-radius:3px;
   position:relative;
   flex-shrink:0;
 }
 .shadow-icon::after{
   content:'';
   position:absolute;
-  top:4px;left:4px;
+  top:5px;left:5px;
   width:100%;height:100%;
-  background:oklch(0.60 0.10 55 / 0.06);
-  border:1px solid oklch(0.60 0.10 55 / 0.15);
-  border-radius:2px;
+  background:oklch(0.65 0.14 55 / 0.05);
+  border:1px solid oklch(0.65 0.14 55 / 0.12);
+  border-radius:3px;
   z-index:-1;
 }
 .shadow-index-row{
@@ -304,12 +327,12 @@ code,pre{font-family:var(--font-code)}
    SIGNUP — SEDIMENT LAYER
    ============================================================ */
 #signup{
-  background:oklch(0.14 0.04 260);
+  background:var(--c-signup);
   min-height:60vh;
 }
 #signup h2{color:var(--c-text)}
-#signup .signup-sub{
-  color:var(--c-text-muted);
+.signup-sub{
+  color:var(--c-text-dim);
   font-size:1rem;
   max-width:var(--max-width);
 }
@@ -326,7 +349,7 @@ code,pre{font-family:var(--font-code)}
   padding:0.75rem 1rem;
   background:var(--c-input-bg);
   border:1px solid var(--c-input-border);
-  border-radius:4px;
+  border-radius:6px;
   font-family:var(--font-body);
   font-size:0.9375rem;
   color:var(--c-text);
@@ -334,15 +357,15 @@ code,pre{font-family:var(--font-code)}
   -webkit-appearance:none;
   appearance:none;
 }
-.signup-form .email-input::placeholder{color:oklch(0.88 0.008 260 / 0.3)}
+.signup-form .email-input::placeholder{color:var(--c-text-dim)}
 .signup-form .email-input:focus{
   border-color:var(--c-input-focus);
-  box-shadow:0 0 0 2px oklch(0.60 0.10 55 / 0.15);
+  box-shadow:0 0 0 3px oklch(0.65 0.14 55 / 0.12);
   outline:none;
 }
 .signup-form .email-input[aria-invalid="true"]{
   border-color:var(--c-error);
-  box-shadow:0 0 0 2px oklch(0.55 0.15 25 / 0.15);
+  box-shadow:0 0 0 3px oklch(0.55 0.15 25 / 0.12);
 }
 .signup-form .email-error{
   font-size:0.8125rem;
@@ -350,41 +373,42 @@ code,pre{font-family:var(--font-code)}
   flex-basis:100%;
   opacity:0;
   transition:opacity 0.2s;
+  min-height:1.25rem;
 }
 .signup-form .email-error.visible{opacity:1}
 .signup-form .submit-btn{
   padding:0.75rem 1.5rem;
-  background:oklch(0.60 0.10 55);
-  color:oklch(0.10 0.02 260);
+  background:var(--c-fault);
+  color:oklch(0.08 0.02 260);
   border:none;
-  border-radius:4px;
+  border-radius:6px;
   font-family:var(--font-display);
   font-weight:600;
   font-size:0.9375rem;
   letter-spacing:0.01em;
   cursor:pointer;
-  transition:background 0.2s,transform 0.15s;
+  transition:background 0.2s,transform 0.15s,opacity 0.2s;
   -webkit-appearance:none;
   appearance:none;
 }
-.signup-form .submit-btn:hover{background:oklch(0.65 0.12 55)}
+.signup-form .submit-btn:hover{background:oklch(0.70 0.14 55)}
 .signup-form .submit-btn:focus-visible{
   outline:2px solid var(--c-fault);
   outline-offset:2px;
 }
 .signup-form .submit-btn:active{transform:scale(0.97)}
 .signup-form .submit-btn:disabled{
-  opacity:0.4;
+  background:oklch(0.65 0.14 55 / 0.4);
   cursor:not-allowed;
   transform:none;
 }
 .signup-form .submit-btn.success{
   background:var(--c-success);
-  color:oklch(0.10 0.02 260);
+  color:oklch(0.08 0.02 260);
 }
 .signup-strapline{
   font-size:0.8125rem;
-  color:oklch(0.88 0.008 260 / 0.3);
+  color:var(--c-text-dim);
   max-width:var(--max-width);
   margin-top:var(--space-md);
 }
@@ -393,9 +417,9 @@ code,pre{font-family:var(--font-code)}
    FOOTER
    ============================================================ */
 .site-footer{
-  background:oklch(0.10 0.04 260);
+  background:var(--c-footer);
   padding:var(--space-lg) 0;
-  border-top:1px solid oklch(1 0 0 / 0.04);
+  border-top:1px solid oklch(1 0 0 / 0.03);
 }
 .footer-content{
   display:flex;
@@ -404,11 +428,12 @@ code,pre{font-family:var(--font-code)}
   align-items:center;
   justify-content:space-between;
   font-size:0.8125rem;
-  color:var(--c-text-muted);
+  color:var(--c-text-dim);
   max-width:72rem;
   margin:0 auto;
-  padding:0 var(--space-lg);
+  padding:0 2rem;
 }
+@media (max-width:480px){.footer-content{padding:0 1.25rem}}
 .footer-content a{
   text-decoration:none;
   border-bottom:1px solid transparent;
@@ -421,7 +446,7 @@ code,pre{font-family:var(--font-code)}
 .footer-nav{display:flex;gap:var(--space-lg)}
 
 /* ============================================================
-   DEPTH GAUGE (fixed right)
+   DEPTH GAUGE
    ============================================================ */
 .depth-gauge{
   position:fixed;
@@ -439,7 +464,7 @@ code,pre{font-family:var(--font-code)}
   top:10px;bottom:10px;
   left:50%;
   width:1px;
-  background:oklch(0.88 0.008 260 / 0.12);
+  background:oklch(0.93 0.005 260 / 0.08);
   transform:translateX(-50%);
   pointer-events:none;
 }
@@ -454,9 +479,9 @@ code,pre{font-family:var(--font-code)}
 .gauge-dot{
   width:8px;height:8px;
   border-radius:50%;
-  background:oklch(0.88 0.008 260 / 0.2);
-  border:1px solid oklch(0.88 0.008 260 / 0.15);
-  transition:all 0.4s ease;
+  background:oklch(0.93 0.005 260 / 0.15);
+  border:1px solid oklch(0.93 0.005 260 / 0.1);
+  transition:all 0.5s cubic-bezier(0.16,1,0.3,1);
   flex-shrink:0;
   position:relative;
   z-index:1;
@@ -466,30 +491,41 @@ code,pre{font-family:var(--font-code)}
   font-size:0.6875rem;
   text-transform:uppercase;
   letter-spacing:0.1em;
-  color:oklch(0.88 0.008 260 / 0.25);
-  transition:color 0.4s ease;
+  color:oklch(0.93 0.005 260 / 0.2);
+  transition:color 0.5s cubic-bezier(0.16,1,0.3,1);
   white-space:nowrap;
 }
 .gauge-marker.active .gauge-dot{
   width:12px;height:12px;
   background:var(--c-fault);
   border-color:var(--c-fault);
-  box-shadow:0 0 8px oklch(0.60 0.10 55 / 0.3);
+  box-shadow:0 0 12px oklch(0.65 0.14 55 / 0.35);
 }
 .gauge-marker.active .gauge-label{
-  color:var(--c-fault);
+  color:var(--c-text);
 }
 
 /* ============================================================
    SCROLL REVEAL
    ============================================================ */
-.reveal{opacity:0;transform:translateY(1.5rem);transition:opacity 0.7s cubic-bezier(0.25,0.1,0.25,1),transform 0.7s cubic-bezier(0.25,0.1,0.25,1)}
+.reveal{opacity:0;transform:translateY(1.5rem);transition:opacity 0.7s cubic-bezier(0.16,1,0.3,1),transform 0.7s cubic-bezier(0.16,1,0.3,1)}
 .reveal.visible{opacity:1;transform:translateY(0)}
 .reveal-delay-1{transition-delay:0.1s}
 .reveal-delay-2{transition-delay:0.2s}
-.reveal-delay-3{transition-delay:0.3s}
-.reveal-delay-4{transition-delay:0.4s}
-.reveal-delay-5{transition-delay:0.5s}
+.reveal-delay-3{transition-delay:0.35s}
+.reveal-delay-4{transition-delay:0.5s}
+
+/* ============================================================
+   SCROLL-DRIVEN PARALLAX (progressive enhancement)
+   ============================================================ */
+@supports (animation-timeline:scroll()){
+  @keyframes drift-fast{from{background-position-y:0}to{background-position-y:200px}}
+  @keyframes drift-medium{from{background-position-y:0}to{background-position-y:120px}}
+  @keyframes drift-slow{from{background-position-y:0}to{background-position-y:50px}}
+  #stratum-1::before{animation:drift-fast linear;animation-timeline:scroll(root)}
+  #stratum-2::before{animation:drift-medium linear;animation-timeline:scroll(root)}
+  #stratum-3::before{animation:drift-slow linear;animation-timeline:scroll(root)}
+}
 
 /* ============================================================
    REDUCED MOTION
@@ -502,10 +538,10 @@ code,pre{font-family:var(--font-code)}
   }
   html{scroll-behavior:auto}
   .reveal{opacity:1;transform:none}
-  .fault-line:hover .crack-line,
-  .fault-line:hover .crack-glow{
-    transition:none;
-  }
+  .hero-heading,.hero-tagline,.hero-desc,.terminal,.stats-row{animation:none;opacity:1;transform:none}
+  .sediment-particle{display:none !important}
+  .fault-line .crack-glow{animation:none}
+  #stratum-1::before,#stratum-2::before,#stratum-3::before{animation:none !important}
 }
 
 /* ============================================================
@@ -513,8 +549,8 @@ code,pre{font-family:var(--font-code)}
    ============================================================ */
 @media (max-width:768px){
   .depth-gauge{display:none}
-  .container{padding:0 var(--space-md)}
   .section{min-height:auto;padding:var(--space-xl) 0}
+  #stratum-1{padding-top:max(5rem,8vh);min-height:auto}
   .signup-form .submit-btn{flex:1 1 100%}
   .stats-row{gap:var(--space-md)}
   .footer-content{flex-direction:column;align-items:flex-start}
@@ -525,6 +561,7 @@ code,pre{font-family:var(--font-code)}
 }
 @media (max-width:480px){
   .section{padding:var(--space-lg) 0}
+  #stratum-1{padding-top:4rem}
   .stats-row .stat{min-width:100%}
 }
 </style>
@@ -554,23 +591,19 @@ code,pre{font-family:var(--font-code)}
      STRATUM 1 — ACTIVE LAYER (HERO)
      ============================================================ -->
 <section id="stratum-1" class="section" aria-label="Active stratum" data-stratum="1">
-  <div class="topsoil" aria-hidden="true"></div>
-
   <div class="section-content container">
-    <h1 class="hero-heading reveal">Strata</h1>
+    <h1 class="hero-heading">Strata</h1>
+    <p class="hero-tagline">Tiered memory for AI agents</p>
+    <p class="hero-desc">The Active Layer. Fresh, alive, full of activity. ~1ms access. Filesystem. No LLM calls. No vector search. The agent knows where things are because it put them there.</p>
 
-    <p class="hero-tagline reveal reveal-delay-1">Tiered memory for AI agents</p>
-
-    <p class="reveal reveal-delay-1 hero-desc">The Active Layer. Fresh, alive, full of activity. ~1ms access. Filesystem.</p>
-
-    <div class="terminal reveal reveal-delay-2" aria-label="CLI installation example">
+    <div class="terminal" aria-label="CLI installation example">
       <code><span class="comment"># Install Strata</span>
 <span class="prompt">$</span> <span class="path">~/workspace</span> pip install strata-memory
 <span class="prompt">$</span> <span class="path">~/workspace</span> strata init
-<span class="comment"># Ready. Three strata await.</span></code>
+<span class="comment"># Ready.</span></code>
     </div>
 
-    <div class="stats-row reveal reveal-delay-3">
+    <div class="stats-row">
       <div class="stat">
         <span class="stat-value">~1ms</span>
         <span class="stat-label">Active layer latency</span>
@@ -601,11 +634,10 @@ code,pre{font-family:var(--font-code)}
 <section id="stratum-2" class="section" aria-label="Cooled stratum" data-stratum="2">
   <div class="section-content container">
     <h2 class="reveal">The Cooled Layer</h2>
-    <p class="reveal reveal-delay-1">Like sediment that has settled but not yet hardened into rock. Files remain readable, but the Janitor manages their lifecycle. Data persists without active oversight.</p>
-    <p class="reveal reveal-delay-1">~5ms query latency. Filesystem. Managed by the Janitor.</p>
+    <p class="reveal reveal-delay-1">Like sediment that has settled but not yet hardened into rock. Files remain readable, but the Janitor manages the lifecycle. Data persists without active oversight.</p>
 
     <div class="stat-badge reveal reveal-delay-2">
-      <span>Latency</span> ~5ms query
+      <span>Latency</span> ~5ms query access
     </div>
   </div>
 
@@ -625,7 +657,6 @@ code,pre{font-family:var(--font-code)}
   <div class="section-content container">
     <h2 class="reveal">The Archive</h2>
     <p class="reveal reveal-delay-1">Bedrock. Compressed, indexed, never truly gone. The Shadow Index keeps a keyword fingerprint in SQLite FTS5. When a query matches, the file is rehydrated back to active storage automatically.</p>
-    <p class="reveal reveal-delay-1">~10ms with rehydration. Flat JSON + SQLite FTS5.</p>
 
     <div class="stat-badge reveal reveal-delay-2">
       <span>Latency</span> ~10ms with rehydration
@@ -647,7 +678,7 @@ code,pre{font-family:var(--font-code)}
 </section>
 
 <!-- ============================================================
-     SIGNUP — SEDIMENT (NEW MEMORIES)
+     SIGNUP — SEDIMENT LAYER
      ============================================================ -->
 <section id="signup" class="section" aria-label="Early access signup">
   <div class="section-content container">
@@ -691,12 +722,33 @@ code,pre{font-family:var(--font-code)}
   'use strict';
 
   /* ============================================================
-     REDUCED MOTION
+     REDUCED MOTION CHECK
      ============================================================ */
   var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ============================================================
-     SCROLL REVEAL — IntersectionObserver
+     SEDIMENT PARTICLES
+     ============================================================ */
+  function createSediment() {
+    var container = document.querySelector('#stratum-1');
+    if (!container || prefersReducedMotion) return;
+    var count = 30;
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('div');
+      p.className = 'sediment-particle';
+      p.style.left = (Math.random() * 100) + '%';
+      var size = 1.5 + Math.random() * 2;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.animation = 'sediment-fall ' + (15 + Math.random() * 25) + 's linear infinite';
+      p.style.animationDelay = (Math.random() * 20) + 's';
+      p.style.opacity = 0.2 + Math.random() * 0.4;
+      container.appendChild(p);
+    }
+  }
+
+  /* ============================================================
+     SCROLL REVEAL
      ============================================================ */
   function initReveal() {
     var reveals = document.querySelectorAll('.reveal');
@@ -704,7 +756,6 @@ code,pre{font-family:var(--font-code)}
       reveals.forEach(function(el) { el.classList.add('visible'); });
       return;
     }
-
     var observer = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (entry.isIntersecting) {
@@ -713,18 +764,16 @@ code,pre{font-family:var(--font-code)}
         }
       });
     }, { threshold: 0.15 });
-
     reveals.forEach(function(el) { observer.observe(el); });
   }
 
   /* ============================================================
-     DEPTH GAUGE — track active stratum
+     DEPTH GAUGE
      ============================================================ */
   function initDepthGauge() {
     var markers = document.querySelectorAll('.gauge-marker');
     var sections = document.querySelectorAll('[data-stratum]');
     if (!sections.length) return;
-
     var observer = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (entry.isIntersecting) {
@@ -734,11 +783,7 @@ code,pre{font-family:var(--font-code)}
           });
         }
       });
-    }, {
-      threshold: [0.3, 0.5, 0.7],
-      rootMargin: '-10% 0px -10% 0px'
-    });
-
+    }, { threshold: [0.3, 0.5, 0.7], rootMargin: '-10% 0px -10% 0px' });
     sections.forEach(function(s) { observer.observe(s); });
   }
 
@@ -748,30 +793,24 @@ code,pre{font-family:var(--font-code)}
   function initForm() {
     var form = document.querySelector('.signup-form');
     if (!form) return;
-
     var input = form.querySelector('.email-input');
     var errorEl = form.querySelector('.email-error');
     var submitBtn = form.querySelector('.submit-btn');
 
     form.addEventListener('submit', function(e) {
       e.preventDefault();
-
       var email = input.value.trim();
       var isValid = validateEmail(email);
-
       if (!isValid) {
         input.setAttribute('aria-invalid', 'true');
         errorEl.textContent = 'Please enter a valid email address.';
         errorEl.classList.add('visible');
         return;
       }
-
       input.removeAttribute('aria-invalid');
       errorEl.classList.remove('visible');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
-
-      // Simulate submission (no actual endpoint)
       setTimeout(function() {
         submitBtn.textContent = 'You are on the list';
         submitBtn.classList.add('success');
@@ -780,7 +819,6 @@ code,pre{font-family:var(--font-code)}
       }, 1200);
     });
 
-    // Clear error on input
     input.addEventListener('input', function() {
       input.removeAttribute('aria-invalid');
       errorEl.classList.remove('visible');
@@ -805,6 +843,7 @@ code,pre{font-family:var(--font-code)}
      INIT
      ============================================================ */
   document.addEventListener('DOMContentLoaded', function() {
+    createSediment();
     initReveal();
     initDepthGauge();
     initForm();
