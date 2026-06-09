@@ -173,7 +173,7 @@
                 <span class="cli-walkthrough__output-line">
                   <span class="cli-walkthrough__output-col">7</span>
                   <span class="cli-walkthrough__output-col"
-                    >API rate limit preferences</span
+                    >Rate limit preferences</span
                   >
                   <span class="cli-walkthrough__output-col">archive</span>
                   <span class="cli-walkthrough__output-col">14d</span>
@@ -251,46 +251,11 @@
                   <span class="cli-walkthrough__output-col">-</span>
                   <span class="cli-walkthrough__output-col">16.1 KB</span>
                 </span>
-                <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">
-                    <span
-                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--active"
-                      aria-hidden="true"
-                    ></span>
-                    active
-                  </span>
-                  <span class="cli-walkthrough__output-col">23h 14m</span>
-                  <span class="cli-walkthrough__output-col">4.2 KB</span>
-                </span>
-                <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">
-                    <span
-                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--cooled"
-                      aria-hidden="true"
-                    ></span>
-                    cooled
-                  </span>
-                  <span class="cli-walkthrough__output-col">8</span>
-                  <span class="cli-walkthrough__output-col">3d 2h</span>
-                  <span class="cli-walkthrough__output-col">2.8 KB</span>
-                </span>
-                <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">
-                    <span
-                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--archive"
-                      aria-hidden="true"
-                    ></span>
-                    archive
-                  </span>
-                  <span class="cli-walkthrough__output-col">47</span>
-                  <span class="cli-walkthrough__output-col">-</span>
-                  <span class="cli-walkthrough__output-col">16.1 KB</span>
-                </span>
               </samp>
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-            One command shows the full cross-section. Count, decay timer, and byte size for every stratum — full visibility into how memories are aging.
+          One command gives you full visibility into how memories are aging -- when a stratum is about to decay, and the size of the stratum.
           </p>
         </div>
       </article>
@@ -681,6 +646,60 @@
     .cli-walkthrough__annotation {
       font-size: var(--text-lg);
       margin-top: var(--space-md);
+    }
+  }
+
+  /* =================================================================
+     Mobile (< 768px) — prevent terminal text overlap
+     ================================================================= */
+
+  @media (max-width: 767px) {
+    .cli-walkthrough__command,
+    .cli-walkthrough__output {
+      font-size: calc(var(--text-sm) * 0.8);
+    }
+
+    .cli-walkthrough__output-line {
+      white-space: normal;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 var(--space-xs);
+    }
+
+    .cli-walkthrough__output-line--header {
+      border-bottom-color: transparent;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .cli-walkthrough__output-col {
+      display: inline;
+      width: auto;
+      padding-right: 0;
+      vertical-align: baseline;
+    }
+
+    .cli-walkthrough__output-col:first-child {
+      width: auto;
+    }
+
+    .cli-walkthrough__output-col:nth-child(2) {
+      width: auto;
+    }
+
+    .cli-walkthrough__output-col:last-child {
+      width: auto;
+      padding-right: 0;
+    }
+
+    .cli-walkthrough__terminal-content {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .cli-walkthrough__annotation {
+      font-size: var(--text-xs);
+      margin-top: var(--space-xs);
     }
   }
 
