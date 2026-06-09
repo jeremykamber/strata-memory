@@ -1,3 +1,22 @@
 __pycache__/
 *.egg-info/
 .pytest_cache/
+
+# Strata memory data (user memories — do not commit)
+strata_data/
+
+# Daemon runtime files
+*.db
+strata.log
+strata.pid
+
+# Agent workspace directories
+.sisyphus/
+
+# Landing page build artifacts
+landing_page/node_modules/
+landing_page/dist/
+landing_page/.astro/
+
+# OS files
+.DS_Store
