@@ -311,16 +311,23 @@ const { lines, title = 'terminal' } = Astro.props;
   }
 
   .line-content {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2xs);
     white-space: pre-wrap;
     word-break: break-word;
   }
 
+  .line-prompt .line-content {
+    display: inline;  /* natural inline flow — cursor wraps with text */
+  }
+
+  .line-output .line-content,
+  .line-highlight .line-content {
+    display: block;
+  }
+
   .prompt-symbol {
+    display: inline-block;
     color: var(--terminal-prompt);
-    flex-shrink: 0;
+    margin-right: var(--space-2xs);
     font-weight: 600;
     user-select: none;
   }
