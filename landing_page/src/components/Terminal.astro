@@ -1,0 +1,414 @@
+---
+export interface Props {
+  lines: Array<{
+    text: string;
+    type: 'prompt' | 'output' | 'highlight';
+    delay?: number;
+  }>;
+  title?: string;
+}
+
+const { lines, title = 'terminal' } = Astro.props;
+---
+
+{
+  lines.length > 0 && (
+    <div class="terminal" data-terminal role="region" aria-label="Terminal output">
+      <div class="terminal-header">
+        <span class="terminal-dots" aria-hidden="true">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </span>
+        <span class="terminal-title">{title}</span>
+        <span class="terminal-spacer" aria-hidden="true"></span>
+      </div>
+      <div class="terminal-body">
+        {
+          lines.map((line, i) => (
+            <div
+              class:list={[
+                'terminal-line',
+                `line-${line.type}`,
+                // Everything after the first line starts hidden
+                { 'line-hidden': i > 0 },
+              ]}
+              data-line-index={i}
+              // All prompts get the typing-text treatment
+              data-typing-text={line.type === 'prompt' ? line.text : undefined}
+              data-delay={line.delay ?? undefined}
+            >
+              <span class="line-content">
+                {line.type === 'prompt' && <span class="prompt-symbol" aria-hidden="true">$</span>}
+                {line.type === 'prompt' ? (
+                  <span class="typing-text" aria-label={line.text} role="text"></span>
+                ) : (
+                  <span>{line.text}</span>
+                )}
+                {line.type === 'prompt' && <span class="cursor" aria-hidden="true">▌</span>}
+              </span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  )
+}
+
+<script>
+  (() => {
+    const TERMINALS = document.querySelectorAll('[data-terminal]');
+
+    TERMINALS.forEach((terminal) => {
+      const allLines = [...terminal.querySelectorAll('[data-line-index]')];
+      if (allLines.length === 0) return;
+
+      // ── Build prompt groups ──────────────────────────────────
+      const groups = [];
+      let currentPrompt = null;
+      let currentOutputs = [];
+
+      allLines.forEach((line) => {
+        if (line.classList.contains('line-prompt')) {
+          if (currentPrompt) {
+            groups.push({ prompt: currentPrompt, outputs: currentOutputs });
+          }
+          currentPrompt = line;
+          currentOutputs = [];
+        } else if (currentPrompt) {
+          currentOutputs.push(line);
+        }
+      });
+      if (currentPrompt) {
+        groups.push({ prompt: currentPrompt, outputs: currentOutputs });
+      }
+
+      if (groups.length === 0) return;
+
+      // ── State ────────────────────────────────────────────────
+      let cancelled = false;
+      const timeouts = [];
+
+      function schedule(fn, delay) {
+        const id = setTimeout(fn, delay);
+        timeouts.push(id);
+        return id;
+      }
+
+      function clearAll() {
+        timeouts.forEach(clearTimeout);
+        timeouts.length = 0;
+      }
+
+      // ── Reset terminal to initial state ──────────────────────
+      function resetTerminal() {
+        groups.forEach((group, idx) => {
+          // Clear typed text from all prompts
+          const typingText = group.prompt.querySelector('.typing-text');
+          if (typingText) typingText.textContent = '';
+          // Reset cursors
+          const cursor = group.prompt.querySelector('.cursor');
+          if (cursor) cursor.classList.remove('cursor-done');
+          // Reset visibility
+          group.prompt.classList.remove('line-typing', 'line-visible');
+          // Hide outputs
+          group.outputs.forEach((line) => {
+            line.classList.remove('line-visible');
+            line.classList.add('line-hidden');
+          });
+          // First prompt visible, rest hidden
+          if (idx === 0) {
+            group.prompt.classList.remove('line-hidden');
+          } else {
+            group.prompt.classList.add('line-hidden');
+          }
+        });
+      }
+
+      // ── Type out a single prompt ─────────────────────────────
+      function typePrompt(group, onDone) {
+        const promptLine = group.prompt;
+        const fullText = promptLine.getAttribute('data-typing-text') || '';
+        const typingText = promptLine.querySelector('.typing-text');
+        const cursorEl = promptLine.querySelector('.cursor');
+
+        if (!typingText) {
+          schedule(onDone, 100);
+          return;
+        }
+
+        // Reveal and mark as typing
+        promptLine.classList.remove('line-hidden');
+        promptLine.classList.add('line-typing');
+
+        let charIndex = 0;
+
+        function typeNext() {
+          if (cancelled) return;
+          if (charIndex < fullText.length) {
+            typingText.textContent = fullText.slice(0, charIndex + 1);
+            charIndex++;
+            schedule(typeNext, 35 + Math.random() * 20);
+          } else {
+            // Typing complete — dim cursor
+            if (cursorEl) cursorEl.classList.add('cursor-done');
+            schedule(onDone, 400);
+          }
+        }
+
+        schedule(typeNext, 300);
+      }
+
+      // ── Reveal output lines one by one ───────────────────────
+      function revealOutputs(outputs, idx, onDone) {
+        if (cancelled) return;
+        if (idx >= outputs.length) {
+          schedule(onDone, 200);
+          return;
+        }
+
+        const line = outputs[idx];
+        const delay = parseInt(line.getAttribute('data-delay') || '0', 10) || 200;
+
+        line.classList.remove('line-hidden');
+        line.classList.add('line-visible');
+
+        schedule(() => revealOutputs(outputs, idx + 1, onDone), delay);
+      }
+
+      // ── Animate all groups sequentially, then loop ───────────
+      function animateGroup(groupIdx) {
+        if (cancelled) return;
+
+        if (groupIdx >= groups.length) {
+          // All commands done — pause, then loop
+          schedule(() => {
+            if (cancelled) return;
+            clearAll();
+            resetTerminal();
+            schedule(() => animateGroup(0), 400);
+          }, 5000);
+          return;
+        }
+
+        const group = groups[groupIdx];
+
+        // Type the command prompt
+        typePrompt(group, () => {
+          // Reveal its output lines
+          revealOutputs(group.outputs, 0, () => {
+            // Advance to next command
+            animateGroup(groupIdx + 1);
+          });
+        });
+      }
+
+      // ── Kick-off ─────────────────────────────────────────────
+      resetTerminal();
+      schedule(() => animateGroup(0), 600);
+
+      // ── Cleanup handle ───────────────────────────────────────
+      terminal._terminalTimeouts = timeouts;
+      terminal._terminalCancel = () => {
+        cancelled = true;
+        clearAll();
+      };
+    });
+  })();
+</script>
+
+<style>
+  .terminal {
+    --terminal-radius: 12px;
+
+    background: var(--terminal-bg);
+    border: 1px solid var(--terminal-border);
+    border-radius: var(--terminal-radius);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  }
+
+  /* ── Header ── */
+  .terminal-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    padding: var(--space-2xs) var(--space-sm);
+    background: oklch(0.22 0.012 50);
+    border-bottom: 1px solid var(--terminal-border);
+    user-select: none;
+  }
+
+  .terminal-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .dot:nth-child(1) {
+    background: #ff5f56;
+  }
+
+  .dot:nth-child(2) {
+    background: #ffbd2e;
+  }
+
+  .dot:nth-child(3) {
+    background: #27c93f;
+  }
+
+  .terminal-title {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    color: var(--terminal-output);
+    letter-spacing: 0.03em;
+    flex: 1;
+    text-align: center;
+    text-transform: lowercase;
+  }
+
+  .terminal-spacer {
+    width: 48px;
+  }
+
+  /* ── Body ── */
+  .terminal-body {
+    padding: var(--space-md);
+    max-height: 360px;
+    overflow-y: auto;
+  }
+
+  .terminal-lines {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+  }
+
+  /* ── Lines ── */
+  .terminal-line {
+    opacity: 1;
+    transition: opacity var(--duration-base) var(--ease-out-quart),
+                transform var(--duration-base) var(--ease-out-quart);
+  }
+
+  .line-hidden {
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+  }
+
+  .line-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .line-content {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2xs);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .prompt-symbol {
+    color: var(--terminal-prompt);
+    flex-shrink: 0;
+    font-weight: 600;
+    user-select: none;
+  }
+
+  .line-prompt .line-content {
+    color: var(--terminal-text);
+  }
+
+  .line-output .line-content {
+    color: var(--terminal-output);
+  }
+
+  .line-highlight {
+    font-weight: 500;
+  }
+
+  .line-highlight .line-content {
+    color: var(--terminal-highlight);
+  }
+
+  /* ── Typing cursor ── */
+  .cursor {
+    color: var(--terminal-cursor);
+    animation: blink 1s step-end infinite;
+    margin-left: 1px;
+  }
+
+  .cursor-done {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* ── No blink on reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    .cursor {
+      animation: none;
+      opacity: 0.6;
+    }
+
+    .line-hidden {
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
+    }
+
+    .terminal-line {
+      transition: none;
+    }
+  }
+
+  /* ── Scrollbar ── */
+  .terminal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .terminal-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .terminal-body::-webkit-scrollbar-thumb {
+    background: var(--terminal-border);
+    border-radius: 3px;
+  }
+
+  .terminal-body {
+    scrollbar-width: thin;
+    scrollbar-color: var(--terminal-border) transparent;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .terminal-body {
+      padding: var(--space-sm);
+      max-height: 280px;
+    }
+
+    .terminal {
+      font-size: var(--text-xs);
+    }
+  }
+</style>

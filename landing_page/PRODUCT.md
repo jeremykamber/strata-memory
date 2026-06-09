@@ -10,7 +10,7 @@ AI engineers, agent developers, and LLM power-users who build agent systems and 
 
 ## Product Purpose
 
-Strata is a CLI-first, zero-dependency tiered memory system for AI agents. It layers memories by age across three strata (active, cooled, archive) using algorithmic triggers instead of LLM calls. The page's job: make the geological metaphor land, communicate the zero-LLM-cost insight, and drive mailing list signups for early access.
+Strata is a CLI-first, stdlib-first tiered memory system for AI agents. It layers memories by age across three strata (active, cooled, archive) using algorithmic triggers instead of LLM calls. The page's job: make the geological metaphor land, communicate the zero-LLM-cost insight, and drive mailing list signups for early access.
 
 ## Brand Personality
 

@@ -1,0 +1,101 @@
+---
+// Footer.astro
+// Minimal museum-specimen footer. No noise, no newsletter repeat.
+// Warm earth tones, geological restraint.
+---
+
+<footer class="footer" role="contentinfo">
+  <div class="footer__container">
+    <p class="footer__brand">Strata</p>
+
+    <nav class="footer__nav" aria-label="Legal">
+      <a href="/privacy" class="footer__link">Privacy</a>
+      <span class="footer__divider" aria-hidden="true">/</span>
+      <a href="/terms" class="footer__link">Terms</a>
+    </nav>
+
+    <p class="footer__copyright">
+      &copy; {new Date().getFullYear()} Strata. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    padding: var(--space-xl) var(--space-lg);
+    border-top: 1px solid oklch(0.40 0.02 48);
+    background: transparent;
+    position: relative;
+  }
+
+  .footer__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-md);
+  }
+
+  .footer__brand {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-text-on-dark);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .footer__nav {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2xs);
+  }
+
+  .footer__link {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted-on-dark);
+    transition: color var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .footer__link:hover {
+    color: var(--color-accent);
+  }
+
+  .footer__link:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+    border-radius: 2px;
+  }
+
+  .footer__divider {
+    color: oklch(0.40 0.02 48);
+    font-size: var(--text-sm);
+    user-select: none;
+  }
+
+  .footer__copyright {
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted-on-dark);
+    margin: 0;
+    margin-left: auto;
+  }
+
+  @media (max-width: 640px) {
+    .footer {
+      padding: var(--space-lg) var(--space-md);
+    }
+
+    .footer__container {
+      flex-direction: column;
+      gap: var(--space-xs);
+      align-items: flex-start;
+    }
+
+    .footer__copyright {
+      margin-left: 0;
+    }
+  }
+</style>

@@ -1,0 +1,50 @@
+---
+import '../styles/global.css';
+import Hero from '../components/Hero.astro';
+import StrataSection from '../components/StrataSection.astro';
+import CLIWalkthrough from '../components/CLIWalkthrough.astro';
+import MailingListCTA from '../components/MailingListCTA.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Strata — Tiered Memory for AI Agents</title>
+    <meta name="description" content="CLI-first tiered memory system for AI agents. Algorithmic decay means zero LLM calls for memory management." />
+    <meta name="theme-color" content="#f0e6d8" />
+    <link rel="canonical" href="https://strata.sh/" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Strata — Tiered Memory for AI Agents" />
+    <meta property="og:description" content="Tiered memory system for AI agents. Algorithmic decay, zero LLM calls for memory management." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://strata.sh/" />
+
+    <!-- Preload critical fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" />
+  </head>
+  <body>
+    <main>
+      <div data-depth="surface" class="section-depth-surface">
+        <Hero />
+      </div>
+      <div data-depth="active" class="section-depth-active">
+        <StrataSection />
+      </div>
+      <div data-depth="cooled" class="section-depth-cooled">
+        <CLIWalkthrough />
+      </div>
+      <div data-depth="archive" class="section-depth-archive">
+        <MailingListCTA />
+      </div>
+      <div data-depth="bedrock" class="section-depth-bedrock">
+        <Footer />
+      </div>
+    </main>
+
+
+  </body>
+</html>

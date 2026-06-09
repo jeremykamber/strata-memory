@@ -1,0 +1,734 @@
+---
+// CLI Walkthrough: scroll-triggered CLI command demonstration.
+// Shows real Strata commands and their output in a terminal-themed timeline.
+---
+
+<section
+  class="cli-walkthrough"
+  id="cli-walkthrough"
+  aria-labelledby="cli-walkthrough-heading"
+>
+  <div class="cli-walkthrough__container">
+    <header class="cli-walkthrough__header">
+      <p class="cli-walkthrough__label">Workflow</p>
+      <h2 class="cli-walkthrough__heading" id="cli-walkthrough-heading">
+        See it in action
+      </h2>
+      <p class="cli-walkthrough__intro">
+        Run strata in any project directory to store and recall memories
+        directly on the filesystem, no servers or API keys required.
+      </p>
+    </header>
+
+    <div class="cli-walkthrough__timeline">
+      <div class="cli-walkthrough__track" aria-hidden="true">
+        <div class="cli-walkthrough__track-line"></div>
+        <div class="cli-walkthrough__track-progress"></div>
+      </div>
+
+      <!-- Step 1 -->
+      <article class="cli-walkthrough__step" data-step="0">
+        <div class="cli-walkthrough__step-marker">
+          <span class="cli-walkthrough__step-circle" aria-hidden="true"
+            >01</span
+          >
+        </div>
+        <div class="cli-walkthrough__step-body">
+          <div
+            class="cli-walkthrough__terminal"
+            role="region"
+            aria-label="Terminal output: strata init"
+          >
+            <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+            </div>
+            <div class="cli-walkthrough__terminal-content">
+              <code class="cli-walkthrough__command">
+                <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
+                strata init --project my-agent
+              </code>
+              <samp class="cli-walkthrough__output">
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Created .strata directory
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Initialized active stratum
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Initialized cooled stratum
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Initialized archive stratum
+                </span>
+              </samp>
+            </div>
+          </div>
+          <p class="cli-walkthrough__annotation">
+            Strata creates a .strata directory with three strata. Minimal config,
+            minimal pip dependencies.
+          </p>
+        </div>
+      </article>
+
+      <!-- Step 2 -->
+      <article class="cli-walkthrough__step" data-step="1">
+        <div class="cli-walkthrough__step-marker">
+          <span class="cli-walkthrough__step-circle" aria-hidden="true"
+            >02</span
+          >
+        </div>
+        <div class="cli-walkthrough__step-body">
+          <div
+            class="cli-walkthrough__terminal"
+            role="region"
+            aria-label="Terminal output: strata store"
+          >
+            <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+            </div>
+            <div class="cli-walkthrough__terminal-content">
+              <code class="cli-walkthrough__command">
+                <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
+                strata store &quot;User prefers dark mode&quot; --tier active
+              </code>
+              <samp class="cli-walkthrough__output">
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Stored at depth 1 (active stratum)
+                </span>
+              </samp>
+            </div>
+          </div>
+          <p class="cli-walkthrough__annotation">
+            New memories land in the active stratum. Fast to write, fast to
+            recall.
+          </p>
+        </div>
+      </article>
+
+      <!-- Step 3 -->
+      <article class="cli-walkthrough__step" data-step="2">
+        <div class="cli-walkthrough__step-marker">
+          <span class="cli-walkthrough__step-circle" aria-hidden="true"
+            >03</span
+          >
+        </div>
+        <div class="cli-walkthrough__step-body">
+          <div
+            class="cli-walkthrough__terminal"
+            role="region"
+            aria-label="Terminal output: strata recall"
+          >
+            <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+            </div>
+            <div class="cli-walkthrough__terminal-content">
+              <code class="cli-walkthrough__command">
+                <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
+                strata recall --context &quot;user preferences&quot;
+              </code>
+              <samp class="cli-walkthrough__output">
+                <span
+                  class="cli-walkthrough__output-line cli-walkthrough__output-line--header"
+                >
+                  <span class="cli-walkthrough__output-col">Depth</span>
+                  <span class="cli-walkthrough__output-col">Memory</span>
+                  <span class="cli-walkthrough__output-col">Tier</span>
+                  <span class="cli-walkthrough__output-col">Age</span>
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__output-col">1</span>
+                  <span class="cli-walkthrough__output-col"
+                    >User prefers dark mode</span
+                  >
+                  <span class="cli-walkthrough__output-col">active</span>
+                  <span class="cli-walkthrough__output-col">2h</span>
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__output-col">3</span>
+                  <span class="cli-walkthrough__output-col"
+                    >User dashboard layout</span
+                  >
+                  <span class="cli-walkthrough__output-col">cooled</span>
+                  <span class="cli-walkthrough__output-col">3d</span>
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__output-col">7</span>
+                  <span class="cli-walkthrough__output-col"
+                    >API rate limit preferences</span
+                  >
+                  <span class="cli-walkthrough__output-col">archive</span>
+                  <span class="cli-walkthrough__output-col">14d</span>
+                </span>
+              </samp>
+            </div>
+          </div>
+          <p class="cli-walkthrough__annotation">
+            Recall scans strata by recency. Active first, then cooled, then
+            archive. No LLM calls, no API costs.
+          </p>
+        </div>
+      </article>
+
+      <!-- Step 4 -->
+      <article class="cli-walkthrough__step" data-step="3">
+        <div class="cli-walkthrough__step-marker">
+          <span class="cli-walkthrough__step-circle" aria-hidden="true"
+            >04</span
+          >
+        </div>
+        <div class="cli-walkthrough__step-body">
+          <div
+            class="cli-walkthrough__terminal"
+            role="region"
+            aria-label="Terminal output: strata status"
+          >
+            <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+            </div>
+            <div class="cli-walkthrough__terminal-content">
+              <code class="cli-walkthrough__command">
+                <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
+                strata status
+              </code>
+              <samp class="cli-walkthrough__output">
+                <span
+                  class="cli-walkthrough__output-line cli-walkthrough__output-line--header"
+                >
+                  <span class="cli-walkthrough__output-col">Stratum</span>
+                  <span class="cli-walkthrough__output-col">Memories</span>
+                  <span class="cli-walkthrough__output-col">Decay Timer</span>
+                  <span class="cli-walkthrough__output-col">Size</span>
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__output-col">
+                    <span
+                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--active"
+                      aria-hidden="true"
+                    ></span>
+                    active
+                  </span>
+                  <span class="cli-walkthrough__output-col">12</span>
+                  <span class="cli-walkthrough__output-col">23h 14m</span>
+                  <span class="cli-walkthrough__output-col">4.2 KB</span>
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__output-col">
+                    <span
+                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--cooled"
+                      aria-hidden="true"
+                    ></span>
+                    cooled
+                  </span>
+                  <span class="cli-walkthrough__output-col">8</span>
+                  <span class="cli-walkthrough__output-col">3d 2h</span>
+                  <span class="cli-walkthrough__output-col">2.8 KB</span>
+                </span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__output-col">
+                    <span
+                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--archive"
+                      aria-hidden="true"
+                    ></span>
+                    archive
+                  </span>
+                  <span class="cli-walkthrough__output-col">47</span>
+                  <span class="cli-walkthrough__output-col">-</span>
+                  <span class="cli-walkthrough__output-col">16.1 KB</span>
+                </span>
+              </samp>
+            </div>
+          </div>
+          <p class="cli-walkthrough__annotation">
+            One command to see the full cross-section. Memory counts, decay
+            timers, and byte-level sizes for every stratum.
+          </p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* =================================================================
+     CLI Walkthrough: scoped styles
+     ================================================================= */
+
+  .cli-walkthrough {
+    padding: var(--space-3xl) 0;
+  }
+
+  .cli-walkthrough__container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+    position: relative;
+  }
+
+  /* ---- Header ---- */
+
+  .cli-walkthrough__label {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-2xs);
+  }
+
+  .cli-walkthrough__heading {
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+  }
+
+  .cli-walkthrough__intro {
+    font-family: var(--font-body);
+    font-size: var(--text-lg);
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    max-width: 60ch;
+    margin-bottom: 0;
+  }
+
+  /* ---- Timeline ---- */
+
+  .cli-walkthrough__timeline {
+    position: relative;
+    margin-top: var(--space-3xl);
+  }
+
+  /* Vertical connecting track */
+
+  .cli-walkthrough__track {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 19px;
+    width: 2px;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .cli-walkthrough__track-line {
+    position: absolute;
+    inset: 0;
+    background: var(--color-border);
+    border-radius: 1px;
+  }
+
+  .cli-walkthrough__track-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: var(--color-accent);
+    border-radius: 1px;
+    transition: height 0.6s var(--ease-out-quart);
+  }
+
+  /* ---- Step ---- */
+
+  .cli-walkthrough__step {
+    display: flex;
+    gap: var(--space-md);
+    position: relative;
+    z-index: 1;
+    padding-bottom: var(--space-3xl);
+    opacity: 0;
+    transform: translateY(2rem);
+    transition:
+      opacity 0.7s var(--ease-out-quart),
+      transform 0.7s var(--ease-out-quart);
+  }
+
+  .cli-walkthrough__step:last-child {
+    padding-bottom: 0;
+  }
+
+  .cli-walkthrough__step[data-revealed] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Staggered reveal for children */
+  .cli-walkthrough__step-circle {
+    transition:
+      opacity 0.5s var(--ease-out-quart),
+      transform 0.5s var(--ease-out-quart);
+    transition-delay: 0s;
+  }
+
+  .cli-walkthrough__step[data-revealed] .cli-walkthrough__step-circle {
+    transition-delay: 0s;
+  }
+
+  .cli-walkthrough__step .cli-walkthrough__terminal {
+    transition:
+      opacity 0.5s var(--ease-out-quart),
+      transform 0.5s var(--ease-out-quart);
+    transition-delay: 0.08s;
+  }
+
+  .cli-walkthrough__step[data-revealed] .cli-walkthrough__terminal {
+    transition-delay: 0.08s;
+  }
+
+  .cli-walkthrough__step .cli-walkthrough__annotation {
+    transition:
+      opacity 0.5s var(--ease-out-quart),
+      transform 0.5s var(--ease-out-quart);
+    transition-delay: 0.16s;
+  }
+
+  .cli-walkthrough__step[data-revealed] .cli-walkthrough__annotation {
+    transition-delay: 0.16s;
+  }
+
+  /* ---- Step Marker ---- */
+
+  .cli-walkthrough__step-marker {
+    flex: 0 0 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 0.25rem;
+  }
+
+  .cli-walkthrough__step-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--color-accent);
+    background: var(--color-bg);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-accent);
+    line-height: 1;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ---- Step Body ---- */
+
+  .cli-walkthrough__step-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ---- Terminal ---- */
+
+  .cli-walkthrough__terminal {
+    background: var(--terminal-bg);
+    border: 1px solid var(--terminal-border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: var(--font-mono);
+  }
+
+  .cli-walkthrough__terminal-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px 8px;
+    background: oklch(from var(--terminal-bg) calc(l + 0.05) c h);
+    border-bottom: 1px solid var(--terminal-border);
+  }
+
+  .cli-walkthrough__terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--terminal-border);
+  }
+
+  .cli-walkthrough__terminal-dot:nth-child(1) {
+    background: oklch(0.55 0.12 30);
+  }
+
+  .cli-walkthrough__terminal-dot:nth-child(2) {
+    background: oklch(0.55 0.08 80);
+  }
+
+  .cli-walkthrough__terminal-dot:nth-child(3) {
+    background: oklch(0.5 0.1 140);
+  }
+
+  .cli-walkthrough__terminal-content {
+    padding: var(--space-sm) var(--space-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cli-walkthrough__command {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--terminal-text);
+    white-space: nowrap;
+    margin-bottom: var(--space-xs);
+  }
+
+  .cli-walkthrough__prompt {
+    color: var(--terminal-prompt);
+    font-weight: 600;
+    margin-right: 0.5em;
+    user-select: none;
+  }
+
+  .cli-walkthrough__output {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--terminal-output);
+    padding-left: 1.2em;
+  }
+
+  .cli-walkthrough__output-line {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .cli-walkthrough__output-line--header {
+    color: var(--terminal-text);
+    font-weight: 600;
+    margin-bottom: var(--space-3xs);
+    border-bottom: 1px solid var(--terminal-border);
+    padding-bottom: var(--space-3xs);
+  }
+
+  .cli-walkthrough__output-col {
+    display: inline-block;
+    width: 20%;
+    padding-right: var(--space-sm);
+    vertical-align: top;
+  }
+
+  .cli-walkthrough__output-col:first-child {
+    width: 12%;
+  }
+
+  .cli-walkthrough__output-col:nth-child(2) {
+    width: 38%;
+  }
+
+  .cli-walkthrough__output-col:nth-child(3) {
+    width: 18%;
+  }
+
+  .cli-walkthrough__output-col:last-child {
+    width: 12%;
+    padding-right: 0;
+  }
+
+  .cli-walkthrough__check {
+    color: oklch(0.55 0.12 140);
+    margin-right: 0.5em;
+    font-weight: 700;
+  }
+
+  .cli-walkthrough__depth-marker {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.4em;
+    vertical-align: middle;
+  }
+
+  .cli-walkthrough__depth-marker--active {
+    background: var(--stratum-active-bg);
+  }
+
+  .cli-walkthrough__depth-marker--cooled {
+    background: var(--stratum-cooled-bg);
+  }
+
+  .cli-walkthrough__depth-marker--archive {
+    background: var(--stratum-archive-bg);
+  }
+
+  /* ---- Annotation ---- */
+
+  .cli-walkthrough__annotation {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    margin-top: var(--space-sm);
+    max-width: 55ch;
+  }
+
+  /* =================================================================
+     Reduced motion
+     ================================================================= */
+
+  @media (prefers-reduced-motion: reduce) {
+    .cli-walkthrough__step {
+      opacity: 1;
+      transform: translateY(0);
+      transition: none;
+    }
+
+    .cli-walkthrough__step .cli-walkthrough__step-circle,
+    .cli-walkthrough__step .cli-walkthrough__terminal,
+    .cli-walkthrough__step .cli-walkthrough__annotation {
+      transition: none;
+    }
+
+    .cli-walkthrough__track-progress {
+      transition: none;
+    }
+  }
+
+  /* =================================================================
+     Desktop (>= 768px)
+     ================================================================= */
+
+  @media (min-width: 768px) {
+    .cli-walkthrough__timeline {
+      margin-top: var(--space-3xl);
+    }
+
+    .cli-walkthrough__track {
+      left: 29px;
+    }
+
+    .cli-walkthrough__step {
+      gap: var(--space-xl);
+      padding-bottom: var(--space-3xl);
+    }
+
+    .cli-walkthrough__step-marker {
+      flex: 0 0 60px;
+      padding-top: 0.35rem;
+    }
+
+    .cli-walkthrough__step-circle {
+      width: 36px;
+      height: 36px;
+      font-size: var(--text-sm);
+    }
+
+    .cli-walkthrough__terminal-content {
+      padding: var(--space-md) var(--space-lg);
+    }
+
+    .cli-walkthrough__command {
+      font-size: var(--text-base);
+    }
+
+    .cli-walkthrough__output {
+      font-size: var(--text-base);
+    }
+
+    .cli-walkthrough__annotation {
+      font-size: var(--text-lg);
+      margin-top: var(--space-md);
+    }
+  }
+
+  /* =================================================================
+     Large desktop (>= 1024px)
+     ================================================================= */
+
+  @media (min-width: 1024px) {
+    .cli-walkthrough__step {
+      padding-bottom: var(--space-3xl);
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var steps = document.querySelectorAll(".cli-walkthrough__step");
+    var progressBar = document.querySelector(
+      ".cli-walkthrough__track-progress"
+    );
+    var totalSteps = steps.length;
+
+    if (!steps.length || !progressBar) return;
+
+    // Reveal steps visible on page load immediately
+    steps.forEach(function (step) {
+      var rect = step.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.85) {
+        step.dataset.revealed = "true";
+      }
+    });
+
+    // Update progress bar height based on furthest revealed step
+    function updateProgress() {
+      var revealed = document.querySelectorAll(
+        ".cli-walkthrough__step[data-revealed]"
+      );
+      var maxIdx = -1;
+      revealed.forEach(function (el) {
+        var idx = parseInt(el.dataset.step, 10);
+        if (idx > maxIdx) maxIdx = idx;
+      });
+      if (maxIdx >= 0) {
+        var pct = ((maxIdx + 1) / totalSteps) * 100;
+        progressBar.style.height = pct + "%";
+      }
+    }
+
+    // Set initial progress
+    updateProgress();
+
+    // Observe remaining steps
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.dataset.revealed = "true";
+          }
+        });
+        updateProgress();
+      },
+      {
+        threshold: 0,
+        rootMargin: "0px 0px -60px 0px",
+      }
+    );
+
+    steps.forEach(function (step) {
+      if (!step.dataset.revealed) {
+        observer.observe(step);
+      }
+    });
+  })();
+</script>

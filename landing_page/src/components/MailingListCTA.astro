@@ -1,0 +1,105 @@
+---
+// MailingListCTA.astro
+// Follow Strata development on Substack.
+---
+
+<section class="cta section-depth-archive" aria-labelledby="cta-heading">
+  <div class="cta__container">
+    <span class="cta__label">Follow along</span>
+
+    <h2 class="cta__heading" id="cta-heading">
+      Follow Strata development
+    </h2>
+
+    <p class="cta__text">
+      I write about building Strata — the architecture decisions, the tradeoffs,
+      and what I learn along the way. Follow on Substack for updates.
+    </p>
+
+    <a href="https://substack.com/@jeremykamber" class="cta__button" target="_blank" rel="noopener noreferrer">
+      Follow on Substack
+    </a>
+  </div>
+</section>
+
+<style>
+  .cta {
+    padding: var(--space-3xl) var(--space-lg);
+    border-top: 1px solid oklch(0.40 0.02 48);
+    position: relative;
+  }
+
+  .cta__label {
+    display: inline-block;
+    margin-bottom: var(--space-2xs);
+    color: var(--color-text-secondary-on-dark);
+  }
+
+  .cta__heading {
+    margin-bottom: var(--space-sm);
+    color: var(--color-text-on-dark);
+  }
+
+  .cta__text {
+    font-family: var(--font-body);
+    font-size: var(--text-lg);
+    line-height: 1.65;
+    color: var(--color-text-secondary-on-dark);
+    margin: 0 auto var(--space-lg);
+    max-width: 48ch;
+  }
+
+  .cta__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xs) var(--space-xl);
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-text-on-dark);
+    background: var(--color-accent);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition:
+      background var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .cta__button:hover {
+    background: var(--color-accent-hover);
+  }
+
+  .cta__button:active {
+    transform: scale(0.97);
+  }
+
+  .cta__button:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 768px) {
+    .cta {
+      padding: var(--space-2xl) var(--space-md);
+    }
+
+    .cta__text {
+      font-size: var(--text-base);
+    }
+
+    .cta__button {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cta__button {
+      transition: none;
+    }
+  }
+</style>

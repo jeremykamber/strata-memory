@@ -1,0 +1,912 @@
+---
+// StrataSection.astro
+// Interactive geological cross-section visualizing the three-tier memory system.
+// Creative north star: "The Core Sample" - a drill core in a natural history museum.
+---
+
+<section class="strata-section" id="strata-section" aria-label="How memory stratifies">
+  <div class="container">
+    <div class="strata-section__header">
+      <span class="label strata-section__kicker">Cross-section</span>
+      <h2 class="strata-section__heading">How memory stratifies</h2>
+    </div>
+
+    <p class="strata-section__intro">
+      Memory enters the active stratum - hot, immediate, fully hydrated. With disuse, it settles
+      into the cooled stratum: compressed but recallable. Over time, what stays untouched sinks
+      into the archive: deep storage with no decay, algorithmically indexed, retrievable at zero
+      LLM cost. Like sediment, each layer has its own character.
+    </p>
+
+    <div class="cross-section">
+      <!-- Depth ruler — alongside core sample -->
+      <div class="cross-section__core-area">
+        <div class="depth-ruler" aria-hidden="true">
+          <span class="depth-ruler__arrow depth-ruler__arrow--top">↑</span>
+          <div class="depth-ruler__segment"></div>
+          <div class="depth-ruler__marker">
+            <span class="depth-ruler__tick"></span>
+            <span class="depth-ruler__label">10cm</span>
+          </div>
+          <div class="depth-ruler__segment"></div>
+          <div class="depth-ruler__marker">
+            <span class="depth-ruler__tick"></span>
+            <span class="depth-ruler__label">30cm</span>
+          </div>
+          <div class="depth-ruler__segment"></div>
+          <div class="depth-ruler__marker">
+            <span class="depth-ruler__tick"></span>
+            <span class="depth-ruler__label">50cm</span>
+          </div>
+          <div class="depth-ruler__segment"></div>
+          <span class="depth-ruler__arrow depth-ruler__arrow--bottom">↓</span>
+        </div>
+
+        <!-- Core sample frame -->
+        <div class="core-sample" role="group" aria-label="Memory strata cross-section">
+        <!-- Active stratum -->
+        <button class="stratum stratum--active" data-stratum="active" aria-label="Active stratum: Recent memory, fast retrieval">
+          <span class="stratum__texture" aria-hidden="true"></span>
+          <span class="stratum__particles" aria-hidden="true"></span>
+          <span class="stratum__content">
+            <span class="stratum__name">Active</span>
+            <span class="stratum__desc">Recent memory. Fast retrieval, full context.</span>
+          </span>
+          <span class="stratum__annotation" aria-hidden="true">
+            <span class="stratum__annotation-line"></span>
+            <span class="stratum__annotation-text">High-frequency access. Low latency.</span>
+          </span>
+        </button>
+
+        <!-- Cooled stratum -->
+        <button class="stratum stratum--cooled" data-stratum="cooled" aria-label="Cooled stratum: Settled memory, compressed but recallable">
+          <span class="stratum__texture" aria-hidden="true"></span>
+          <span class="stratum__particles" aria-hidden="true"></span>
+          <span class="stratum__content">
+            <span class="stratum__name">Cooled</span>
+            <span class="stratum__desc">Settled memory. Compressed but recallable.</span>
+          </span>
+          <span class="stratum__annotation" aria-hidden="true">
+            <span class="stratum__annotation-line"></span>
+            <span class="stratum__annotation-text">Mid-frequency access. Moderate latency.</span>
+          </span>
+        </button>
+
+        <!-- Archive stratum -->
+        <button class="stratum stratum--archive" data-stratum="archive" aria-label="Archive stratum: Deep memory, durable storage">
+          <span class="stratum__texture" aria-hidden="true"></span>
+          <span class="stratum__particles" aria-hidden="true"></span>
+          <span class="stratum__content">
+            <span class="stratum__name">Archive</span>
+            <span class="stratum__desc">Deep memory. Durable storage, no decay.</span>
+          </span>
+          <span class="stratum__annotation" aria-hidden="true">
+            <span class="stratum__annotation-line"></span>
+            <span class="stratum__annotation-text">Low-frequency access. Zero LLM cost.</span>
+          </span>
+        </button>
+      </div>
+      </div>
+
+      <!-- Detail card -->
+      <div class="detail-card" id="detail-card" role="region" aria-label="Stratum details" hidden>
+        <button class="detail-card__close" aria-label="Close details" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="detail-card__body"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ==================================================================
+     StrataSection - Scoped styles
+     North star: "The Core Sample" - museum specimen cross-section
+     Color strategy: Restrained - warm earth neutrals, oxide accent
+     ================================================================== */
+
+  /* ---- Section layout ---- */
+  .strata-section {
+    padding: var(--space-3xl) 0;
+    position: relative;
+  }
+
+  .strata-section__header {
+    margin-bottom: var(--space-sm);
+  }
+
+  .strata-section__kicker {
+    display: inline-block;
+    margin-bottom: var(--space-2xs);
+    color: var(--color-text-secondary); /* ΔL=0.51 on depth-active bg ✓ */
+  }
+
+  .strata-section__heading {
+    margin-bottom: var(--space-md);
+  }
+
+  .strata-section__intro {
+    max-width: 65ch;
+    margin-bottom: var(--space-2xl);
+    color: var(--color-text-secondary);
+  }
+
+  /* ---- Cross-section layout ---- */
+  .cross-section {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: stretch;
+  }
+
+  /* ---- Core area: depth ruler + core sample side by side ---- */
+  .cross-section__core-area {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-sm);
+    align-items: stretch;
+  }
+
+  /* ---- Depth ruler — geological scale alongside core sample ---- */
+  .depth-ruler {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 44px;
+    flex-shrink: 0;
+    padding: var(--space-2xs) 0;
+    color: var(--color-text-muted);
+    user-select: none;
+  }
+
+  .depth-ruler__arrow {
+    font-size: var(--text-sm);
+    line-height: 1;
+    opacity: 0.35;
+    flex-shrink: 0;
+  }
+
+  .depth-ruler__segment {
+    flex: 1;
+    width: 1px;
+    background: var(--color-border);
+    min-height: 4px;
+  }
+
+  .depth-ruler__marker {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3xs);
+    flex-shrink: 0;
+    padding: 1px 0;
+    width: 100%;
+  }
+
+  .depth-ruler__tick {
+    display: block;
+    width: 8px;
+    height: 1px;
+    background: var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .depth-ruler__label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 900px) {
+    .cross-section__core-area {
+      flex-direction: column;
+    }
+
+    .depth-ruler {
+      display: none;
+    }
+  }
+
+  /* ---- Core sample frame ---- */
+  .core-sample {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 520px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    overflow: hidden;
+  }
+
+  /* ---- Strata layers ---- */
+  .stratum {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md) var(--space-sm) 4.5rem;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    width: 100%;
+    transition:
+      filter var(--duration-base) var(--ease-out-quart),
+      background var(--duration-base) var(--ease-out-quart),
+      box-shadow var(--duration-base) var(--ease-out-quart),
+      opacity 0.7s var(--ease-out-expo),
+      transform 0.7s var(--ease-out-expo);
+    outline-offset: -2px;
+    overflow: hidden;
+  }
+
+  .stratum:last-child {
+    border-bottom: none;
+  }
+
+  /* Height proportions: active 25%, cooled 35%, archive 40% */
+  .stratum--active { flex: 25; }
+  .stratum--cooled { flex: 35; }
+  .stratum--archive { flex: 40; }
+
+  /* Backgrounds */
+  .stratum--active {
+    background: var(--stratum-active-bg);
+    color: var(--stratum-active-heading);
+  }
+
+  .stratum--cooled {
+    background: var(--stratum-cooled-bg);
+    color: var(--stratum-cooled-heading);
+  }
+
+  .stratum--archive {
+    background: var(--stratum-archive-bg);
+    color: var(--stratum-archive-heading);
+  }
+
+  /* Scroll reveal: hidden by default, revealed bottom-to-top */
+  .stratum {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  .is-visible .stratum {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .is-visible .stratum--archive { transition-delay: 0ms; }
+  .is-visible .stratum--cooled { transition-delay: 150ms; }
+  .is-visible .stratum--active { transition-delay: 300ms; }
+
+  /* Hover */
+  .stratum:hover {
+    z-index: 1;
+  }
+
+  .stratum--active:hover {
+    background: color-mix(in oklch, var(--stratum-active-bg), white 8%);
+  }
+
+  .stratum--cooled:hover {
+    background: color-mix(in oklch, var(--stratum-cooled-bg), white 6%);
+  }
+
+  .stratum--archive:hover {
+    background: color-mix(in oklch, var(--stratum-archive-bg), white 5%);
+  }
+
+  /* Focus visible */
+  .stratum:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: -3px;
+  }
+
+  /* Active press */
+  .stratum:active {
+    filter: brightness(0.95);
+  }
+
+  /* Selected (detail card open) */
+  .stratum.is-selected {
+    z-index: 2;
+  }
+
+  .stratum--active.is-selected {
+    box-shadow: inset 2px 0 0 var(--color-accent);
+    background: color-mix(in oklch, var(--stratum-active-bg), white 12%);
+  }
+
+  .stratum--cooled.is-selected {
+    box-shadow: inset 2px 0 0 var(--color-accent);
+    background: color-mix(in oklch, var(--stratum-cooled-bg), white 10%);
+  }
+
+  .stratum--archive.is-selected {
+    box-shadow: inset 2px 0 0 var(--color-accent);
+    background: color-mix(in oklch, var(--stratum-archive-bg), white 6%);
+  }
+
+  /* ---- Stratum texture (geological banding) ---- */
+  .stratum__texture {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .stratum--active .stratum__texture {
+    background-image: repeating-linear-gradient(
+      78deg, transparent, transparent 4px,
+      rgba(0,0,0,0.03) 4px, rgba(0,0,0,0.03) 7px
+    );
+  }
+
+  .stratum--cooled .stratum__texture {
+    background-image: repeating-linear-gradient(
+      84deg, transparent, transparent 3px,
+      rgba(0,0,0,0.035) 3px, rgba(0,0,0,0.035) 5px
+    );
+  }
+
+  .stratum--archive .stratum__texture {
+    background-image:
+      repeating-linear-gradient(
+        80deg, transparent, transparent 2px,
+        rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px
+      ),
+      repeating-linear-gradient(
+        92deg, transparent, transparent 8px,
+        rgba(0,0,0,0.02) 8px, rgba(0,0,0,0.02) 10px
+      );
+  }
+
+  /* ---- Stratum content ---- */
+  .stratum__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4xs);
+  }
+
+  .stratum__name {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .stratum--active .stratum__name { color: var(--stratum-active-heading); }
+  .stratum--cooled .stratum__name { color: var(--stratum-cooled-heading); }
+  .stratum--archive .stratum__name { color: var(--stratum-archive-heading); }
+
+  .stratum__desc {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    max-width: 45ch;
+  }
+
+  .stratum--active .stratum__desc { color: var(--stratum-active-desc); }
+  .stratum--cooled .stratum__desc { color: var(--stratum-cooled-desc); }
+  .stratum--archive .stratum__desc { color: var(--stratum-archive-desc); }
+
+  /* ---- Annotation marks (geologist notes) ---- */
+  .stratum__annotation {
+    position: absolute;
+    right: var(--space-md);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-out-quart);
+    z-index: 1;
+  }
+
+  @media (hover: hover) {
+    .stratum:hover .stratum__annotation {
+      opacity: 1;
+    }
+  }
+
+  .stratum__annotation.is-annotated {
+    opacity: 0.7;
+  }
+
+  .stratum__annotation-line {
+    display: block;
+    width: 12px;
+    height: 1px;
+    opacity: 0.4;
+  }
+
+  .stratum--active .stratum__annotation-line { background: var(--stratum-active-annotation); }
+  .stratum--cooled .stratum__annotation-line { background: var(--stratum-cooled-annotation); }
+  .stratum--archive .stratum__annotation-line { background: var(--stratum-archive-annotation); }
+
+  .stratum__annotation-text {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  .stratum--active .stratum__annotation-text { color: var(--stratum-active-annotation); }
+  .stratum--cooled .stratum__annotation-text { color: var(--stratum-cooled-annotation); }
+  .stratum--archive .stratum__annotation-text { color: var(--stratum-archive-annotation); }
+
+  /* ---- Particle dots (geological activity) ---- */
+  .stratum__particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    background: currentColor;
+    animation: particle-drift linear infinite;
+  }
+
+  @keyframes particle-drift {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+    8% {
+      opacity: var(--particle-opacity, 0.2);
+    }
+    85% {
+      opacity: var(--particle-opacity, 0.15);
+    }
+    100% {
+      transform: translateY(-50px) translateX(6px);
+      opacity: 0;
+    }
+  }
+
+  /* ---- Detail card ---- */
+  .detail-card {
+    display: none;
+    width: 340px;
+    flex-shrink: 0;
+    position: relative;
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    padding: var(--space-md);
+    margin-top: var(--space-sm);
+    animation: detail-enter 0.35s var(--ease-out-quart) both;
+  }
+
+  .detail-card[hidden] {
+    display: none;
+  }
+
+  .detail-card:not([hidden]) {
+    display: block;
+  }
+
+  @keyframes detail-enter {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .detail-card__close {
+    position: absolute;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: color var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .detail-card__close:hover {
+    color: var(--color-text-primary);
+  }
+
+  .detail-card__close:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Detail card -- JS-injected content (unscoped, since HTML is injected) */
+  :global(.detail-card__depth) {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    letter-spacing: 0.04em;
+    margin-bottom: var(--space-2xs);
+  }
+
+  :global(.detail-card__name) {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: var(--space-2xs);
+    color: var(--color-text-primary);
+  }
+
+  :global(.detail-card__desc) {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-md);
+    max-width: none;
+  }
+
+  :global(.detail-card__specs) {
+    margin: 0 0 var(--space-md);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    list-style: none;
+  }
+
+  :global(.detail-card__spec) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  :global(.detail-card__spec-term) {
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  :global(.detail-card__spec-desc) {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+  }
+
+  :global(.detail-card__cli) {
+    margin-bottom: var(--space-sm);
+  }
+
+  :global(.detail-card__cli-label) {
+    display: block;
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2xs);
+  }
+
+  :global(.detail-card__cli-code) {
+    display: block;
+    padding: var(--space-2xs) var(--space-xs);
+    background: var(--terminal-bg);
+    color: var(--terminal-prompt);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: 1.6;
+    border-radius: 2px;
+    overflow-x: auto;
+  }
+
+  :global(.detail-card__memo) {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    font-style: italic;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 900px) {
+    .core-sample {
+      min-height: 420px;
+    }
+
+    .detail-card:not([hidden]) {
+      width: 100%;
+    }
+
+    .stratum__annotation {
+      display: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .strata-section {
+      padding: var(--space-2xl) 0;
+    }
+
+    .core-sample {
+      min-height: 360px;
+    }
+
+    .stratum {
+      padding: var(--space-xs) var(--space-sm) var(--space-xs) var(--space-md);
+    }
+
+    .stratum__name {
+      font-size: var(--text-lg);
+    }
+
+    .stratum__desc {
+      font-size: var(--text-xs);
+    }
+
+    .detail-card:not([hidden]) {
+      padding: var(--space-sm);
+    }
+  }
+
+  /* ---- Reduced motion ---- */
+  @media (prefers-reduced-motion: reduce) {
+    .stratum {
+      opacity: 1;
+      transform: translateY(0);
+      transition: none;
+    }
+
+    .stratum__annotation {
+      opacity: 0.7;
+      transition: none;
+    }
+
+    .particle {
+      display: none;
+    }
+
+    .detail-card {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    'use strict';
+
+    // ---- Strata data ----
+    var STRATA_DATA = {
+      active: {
+        name: 'Active',
+        depth: '0-10cm',
+        description: 'Recent memory. Fast retrieval, full context.',
+        trigger: 'Accessed within the last N minutes.',
+        decay: 'Moves to cooled strata when not accessed for N minutes.',
+        cli: '$ strata recall --recent',
+        memo: 'High-frequency access. Low latency.'
+      },
+      cooled: {
+        name: 'Cooled',
+        depth: '10-100cm',
+        description: 'Settled memory. Compressed but recallable.',
+        trigger: 'Memories older than the active threshold, accessed occasionally.',
+        decay: 'Moves to archive when not accessed for N hours.',
+        cli: '$ strata recall --cooled',
+        memo: 'Mid-frequency access. Moderate latency.'
+      },
+      archive: {
+        name: 'Archive',
+        depth: '100-300cm',
+        description: 'Deep memory. Durable storage, no decay.',
+        trigger: 'Oldest memories, rarely accessed.',
+        decay: 'No decay. Algorithmically indexed for retrieval.',
+        cli: '$ strata recall --archive',
+        memo: 'Low-frequency access. Higher latency but zero LLM cost.'
+      }
+    };
+
+    // ---- DOM refs ----
+    var section = document.getElementById('strata-section');
+    var strataButtons = section.querySelectorAll('.stratum');
+    var detailCard = document.getElementById('detail-card');
+    var detailBody = detailCard.querySelector('.detail-card__body');
+    var closeBtn = detailCard.querySelector('.detail-card__close');
+    var annotationEls = section.querySelectorAll('.stratum__annotation');
+
+    // ---- Reduced motion detection ----
+    var reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+    // ---- Scroll reveal via IntersectionObserver ----
+    if (!reducedMotion) {
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              section.classList.add('is-visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.15 }
+      );
+      observer.observe(section);
+    } else {
+      section.classList.add('is-visible');
+    }
+
+    // ---- Annotations fade in after reveal completes ----
+    if (!reducedMotion) {
+      setTimeout(function () {
+        annotationEls.forEach(function (el) {
+          el.classList.add('is-annotated');
+        });
+      }, 1400);
+    } else {
+      annotationEls.forEach(function (el) {
+        el.classList.add('is-annotated');
+      });
+    }
+
+    // ---- Detail card management ----
+    function openDetail(stratumKey) {
+      var data = STRATA_DATA[stratumKey];
+      if (!data) return;
+
+      detailBody.innerHTML =
+        '<span class="detail-card__depth">' + data.depth + '</span>' +
+        '<h3 class="detail-card__name">' + data.name + '</h3>' +
+        '<p class="detail-card__desc">' + data.description + '</p>' +
+        '<dl class="detail-card__specs">' +
+          '<div class="detail-card__spec">' +
+            '<dt class="detail-card__spec-term">Trigger</dt>' +
+            '<dd class="detail-card__spec-desc">' + data.trigger + '</dd>' +
+          '</div>' +
+          '<div class="detail-card__spec">' +
+            '<dt class="detail-card__spec-term">Decay</dt>' +
+            '<dd class="detail-card__spec-desc">' + data.decay + '</dd>' +
+          '</div>' +
+        '</dl>' +
+        '<div class="detail-card__cli">' +
+          '<span class="detail-card__cli-label">CLI</span>' +
+          '<code class="detail-card__cli-code">' + data.cli + '</code>' +
+        '</div>' +
+        '<span class="detail-card__memo">' + data.memo + '</span>';
+
+      // Show card
+      detailCard.removeAttribute('hidden');
+
+      // Update selected states
+      strataButtons.forEach(function (s) {
+        var isTarget = s.dataset.stratum === stratumKey;
+        s.classList.toggle('is-selected', isTarget);
+      });
+
+      // Focus close button
+      closeBtn.focus();
+    }
+
+    function closeDetail() {
+      detailCard.setAttribute('hidden', '');
+      strataButtons.forEach(function (s) {
+        s.classList.remove('is-selected');
+      });
+    }
+
+    // ---- Stratum click handlers ----
+    strataButtons.forEach(function (stratum) {
+      stratum.addEventListener('click', function () {
+        var key = stratum.dataset.stratum;
+        var isOpen = !detailCard.hasAttribute('hidden');
+        var isSameStratum = stratum.classList.contains('is-selected');
+
+        if (isOpen && isSameStratum) {
+          closeDetail();
+        } else {
+          openDetail(key);
+        }
+      });
+    });
+
+    // ---- Close button ----
+    closeBtn.addEventListener('click', closeDetail);
+
+    // ---- Escape key ----
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !detailCard.hasAttribute('hidden')) {
+        closeDetail();
+        var selected = section.querySelector('.stratum.is-selected');
+        if (selected) selected.focus();
+      }
+    });
+
+    // ---- Click outside to close ----
+    document.addEventListener('click', function (e) {
+      if (detailCard.hasAttribute('hidden')) return;
+      var target = e.target;
+      var inStrata = target.closest('.stratum');
+      var inDetail = target.closest('.detail-card');
+      var inLabel = target.closest('.cross-section__label');
+
+      if (!inStrata && !inDetail && !inLabel) {
+        closeDetail();
+      }
+    });
+
+    // ---- Particle generation ----
+    var particleConfig = {
+      active:  { count: 12, speed: 5 },
+      cooled:  { count: 8,  speed: 10 },
+      archive: { count: 5,  speed: 18 }
+    };
+
+    function createParticles(container, stratumKey) {
+      if (reducedMotion) return;
+      var config = particleConfig[stratumKey];
+      if (!config) return;
+
+      for (var i = 0; i < config.count; i++) {
+        var particle = document.createElement('span');
+        particle.className = 'particle';
+        var size = 1.5 + Math.random() * 1.5;
+        var left = Math.random() * 90 + 5;
+        var bottom = Math.random() * 70;
+        var delay = Math.random() * config.speed;
+        var duration = config.speed + Math.random() * 3;
+        var opacity = 0.08 + Math.random() * 0.14;
+
+        particle.style.cssText =
+          'left:' + left + '%;' +
+          'bottom:' + bottom + '%;' +
+          'width:' + size + 'px;' +
+          'height:' + size + 'px;' +
+          'animation-delay:' + delay + 's;' +
+          'animation-duration:' + duration + 's;' +
+          '--particle-opacity:' + opacity + ';';
+
+        container.appendChild(particle);
+      }
+    }
+
+    strataButtons.forEach(function (stratum) {
+      var particlesEl = stratum.querySelector('.stratum__particles');
+      if (particlesEl) {
+        createParticles(particlesEl, stratum.dataset.stratum);
+      }
+    });
+  })();
+</script>
+
