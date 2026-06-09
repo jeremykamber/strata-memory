@@ -34,7 +34,7 @@ strata init --non-interactive  # Skip QMD onboarding prompts
 **Notes:**
 - Interactive by default -- prompts to choose search backend (QMD hybrid, QMD + reranker, or FTS5 keyword)
 - If QMD is selected, attempted auto-install via `npx` with 30s timeout
-- Configuration is persisted to `.strata_config.json`
+- Configuration is persisted to `strata.json`
 
 #### `strata config`
 
@@ -62,7 +62,7 @@ strata config set search_backend fts5
 **Notes:**
 - Keys support dotted paths for nested fields (e.g., `decay_thresholds.projects`)
 - Values are auto-parsed: integers, floats, booleans, JSON, or plain strings
-- Changes persist to `.strata_config.json` immediately
+- Changes persist to `strata.json` immediately
 - JSON mode: `strata config --json`
 
 #### `strata status`

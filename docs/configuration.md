@@ -72,7 +72,7 @@ Resolution order for `base_dir`:
 
 ## Persisted Configuration
 
-Configuration is persisted to `.strata_config.json` in the base directory after `strata init` or `strata config set`. This file stores runtime-overridable settings:
+Configuration is persisted to `strata.json` in the base directory after `strata init` or `strata config set`. This file stores runtime-overridable settings:
 
 ```json
 {
@@ -123,7 +123,66 @@ The `strata config set` value parser understands:
 - JSON arrays/objects: `'["*.md", "*.txt"]'`, `'{"projects": 21}'`
 - Everything else: treated as a string
 
-Changes persist immediately to `.strata_config.json`.
+Changes persist immediately to `strata.json`.
+
+## Pi Extension Configuration
+
+The Pi extension (`skills/pi/strata.ts`) reads its own configuration from `<strataBaseDir>/pi-config.json`. This file is separate from `strata.json` because the Pi extension runs in TypeScript (not Python) and its config is consumed solely by the extension.
+
+### File Location
+
+| Strata Store | Config Path |
+|---|---|
+| Global (`~/.strata/`) | `~/.strata/pi-config.json` |
+| Project-local (`./strata_data/`) | `./strata_data/pi-config.json` |
+
+### Schema
+
+```json
+{
+  "llm": {
+    "enabled": false,
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "apiKey": "",
+    "temperature": 0.0,
+    "maxTokens": 500
+  }
+}
+```
+
+### Fields
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `llm.enabled` | `false` | Enable LLM-powered memory classification. **Off by default.** When disabled, the extension uses the heuristic regex fallback. |
+| `llm.provider` | `"openai"` | LLM provider: `"openai"`, `"anthropic"`, or `"openrouter"`. |
+| `llm.model` | Provider default | Model identifier. Defaults: `gpt-4o-mini` (OpenAI), `claude-3-5-haiku-latest` (Anthropic), `openai/gpt-4o-mini` (OpenRouter). |
+| `llm.apiKey` | `""` | API key or env var reference (`"${VAR_NAME}"`). When empty, falls back to well-known env vars per provider. |
+| `llm.temperature` | `0.0` | LLM temperature (0.0 = deterministic classification). |
+| `llm.maxTokens` | `500` | Maximum tokens for the classification response. |
+
+### API Key Resolution
+
+The extension resolves the API key in this order:
+1. Direct string in `llm.apiKey`
+2. Env var reference in `llm.apiKey` (e.g., `"${STRATA_OPENAI_API_KEY}"`)
+3. Well-known env vars per provider: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`
+4. Empty → LLM classification disabled, falls back to heuristic
+
+### Example
+
+```json
+{
+  "llm": {
+    "enabled": true,
+    "provider": "openai",
+    "apiKey": "${STRATA_OPENAI_API_KEY}"
+  }
+}
+```
+
+This file is consumed only by the Pi extension (TypeScript), not by the Python CLI. Changes require a `/reload` in Pi to take effect.
 
 ## Cross-Reference
 
@@ -131,3 +190,4 @@ Changes persist immediately to `.strata_config.json`.
 - [Architecture](architecture.md) -- how thresholds drive Janitor behaviour
 - [Tracking](tracking.md) -- how configuration affects cost calculations
 - [Search](search.md) -- search backend configuration details
+- [Pi Integration](pi-integration.md) -- Pi extension configuration and LLM setup
