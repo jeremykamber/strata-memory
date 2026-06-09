@@ -166,15 +166,28 @@ Requires Node.js. Delegates to `npx skills add` under the hood.
 
 **Why this matters:** Without the skill, you'd have to tell your agent about Strata every session. With it, the agent already knows the commands, the architecture, and how to use each stratum. One install, zero repetition.
 
-## Upcoming — Agent Plugins
+## Agent Plugins
 
-Native plugins for AI coding assistants are in development:
+Strata ships with native plugins for AI coding assistants, going beyond the CLI with automatic memory context injection and lifecycle management.
 
-- **OpenCode plugin** — full Strata integration via OpenCode's plugin system
-- **PI plugin** — native Strata support for PI workflows
-- **OpenClaw plugin** — OpenClaw harness integration with automatic context injection
+### PI Extension (Available Now)
 
-These plugins will go beyond the CLI — think automatic memory context injection, tool calling, and lifecycle management without any manual setup. Stay tuned.
+The [Pi coding agent](https://pi.ai) extension at `skills/pi/strata.ts` provides:
+
+- **Auto-injected system prompt** — the agent knows about Strata's tiers and commands on every session start
+- **Auto-memory storage** — after each turn, the extension evaluates whether the response contains information worth persisting
+- **Two-phase decision pipeline** — uses a configurable LLM classifier (OpenAI, Anthropic, or OpenRouter) when enabled, with a zero-dependency regex heuristic as fallback
+- **Semantic path routing** — LLM-suggested titles and categories organize memories into `pi/<category>/<title>.md`
+
+Install with `strata pi-install`, then `/reload` in Pi. The LLM classification is off by default -- enable it by creating `pi-config.json` in your Strata store. See the [Pi Integration](docs/pi-integration.md) documentation for details.
+
+### OpenCode Plugin (Coming Soon)
+
+Full Strata integration via OpenCode's plugin system with tool calling, automatic context injection, and lifecycle management.
+
+### OpenClaw Plugin (Coming Soon)
+
+OpenClaw harness integration with automatic context injection.
 
 ## CLI Reference
 
