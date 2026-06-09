@@ -8,10 +8,12 @@ from typing import Optional
 
 
 def _now() -> str:
+    """Return the current UTC time as an ISO 8601 string."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def _new_id() -> str:
+    """Return a new UUID4 hex string."""
     return str(uuid.uuid4())
 
 
@@ -30,13 +32,23 @@ class MemoryBlock:
     tier: str = "stratum_2"
 
     def to_dict(self) -> dict:
+        """Serialize this memory block to a plain dictionary."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> MemoryBlock:
+        """Create a MemoryBlock from a dictionary.
+
+        Args:
+            data: Dictionary with MemoryBlock fields.
+
+        Returns:
+            A new MemoryBlock instance.
+        """
         return cls(**data)
 
     def touch(self):
+        """Update the last_accessed timestamp and increment access_count."""
         self.last_accessed = _now()
         self.access_count += 1
 
@@ -52,6 +64,7 @@ class SearchResult:
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
+        """Serialize this search result to a plain dictionary."""
         return asdict(self)
 
 
@@ -67,8 +80,17 @@ class ShadowEntry:
     evicted_at: str = field(default_factory=_now)
 
     def to_dict(self) -> dict:
+        """Serialize this shadow entry to a plain dictionary."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> ShadowEntry:
+        """Create a ShadowEntry from a dictionary.
+
+        Args:
+            data: Dictionary with ShadowEntry fields.
+
+        Returns:
+            A new ShadowEntry instance.
+        """
         return cls(**data)

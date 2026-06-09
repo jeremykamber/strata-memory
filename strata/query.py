@@ -24,6 +24,14 @@ class QueryEngine:
         stratum_3: Stratum3Storage,
         config: StrataConfig,
     ):
+        """Initialize the query engine with storage backends.
+
+        Args:
+            stratum_1: The 1st Stratum (active) storage backend.
+            stratum_2: The 2nd Stratum (cooled) storage backend.
+            stratum_3: The 3rd Stratum (archive) storage backend.
+            config: Strata configuration with search backend settings.
+        """
         self.s1 = stratum_1
         self.s2 = stratum_2
         self.s3 = stratum_3
@@ -81,7 +89,12 @@ class QueryEngine:
         return self._fs_search(self.s1._root, query, tags, top_k, "stratum_1")
 
     def _search_stratum_2(self, query: str, tags: list[str] | None, top_k: int) -> list[SearchResult]:
-        return self._fs_search(self.s2._root, query, tags, top_k, "stratum_2")
+        results = self._fs_search(self.s2._root, query, tags, top_k, "stratum_2")
+        for r in results:
+            path = r.metadata.get("path", "")
+            if path:
+                self.s2.track_access(path)
+        return results
 
     def _fs_search(self, root, query: str, tags: list[str] | None, top_k: int, tier: str) -> list[SearchResult]:
         if not root or not root.exists():

@@ -22,10 +22,19 @@ class Stratum1Storage:
     """Filesystem-backed active memory. The agent's working context."""
 
     def __init__(self, config: StrataConfig):
+        """Initialize the 1st Stratum storage.
+
+        Args:
+            config: Strata configuration with active directory path.
+        """
         self.config = config
         self._root = config.active_path().resolve()
 
     def ensure_dirs(self):
+        """Create the active directory and default subdirectories (projects, entities, gtd).
+
+        Also regenerates the index after ensuring the structure exists.
+        """
         self._root.mkdir(parents=True, exist_ok=True)
         for sub in ["projects", "entities", "gtd"]:
             (self._root / sub).mkdir(parents=True, exist_ok=True)
@@ -39,6 +48,18 @@ class Stratum1Storage:
         return full
 
     def read(self, path: str) -> str:
+        """Read a file from the 1st Stratum.
+
+        Args:
+            path: Path relative to the active directory root.
+
+        Returns:
+            The full file contents as a string.
+
+        Raises:
+            FileNotFoundError: If the path does not exist.
+            IsADirectoryError: If the path is a directory.
+        """
         p = self._resolve(path)
         if not p.exists():
             raise FileNotFoundError(f"1st Stratum path not found: {path}")
@@ -47,6 +68,18 @@ class Stratum1Storage:
         return p.read_text(encoding="utf-8")
 
     def write(self, path: str, content: str) -> str:
+        """Write a file to the 1st Stratum.
+
+        Creates parent directories as needed. Regenerates the index
+        automatically. Writing to the index.md itself is a no-op.
+
+        Args:
+            path: Path relative to the active directory root.
+            content: File content to write.
+
+        Returns:
+            The absolute path to the written file.
+        """
         p = self._resolve(path)
         if str(p.resolve()) == str((self._root / "index.md").resolve()):
             return str(p)
@@ -56,6 +89,16 @@ class Stratum1Storage:
         return str(p)
 
     def delete(self, path: str) -> bool:
+        """Delete a file or directory from the 1st Stratum.
+
+        Regenerates the index after deletion.
+
+        Args:
+            path: Path relative to the active directory root.
+
+        Returns:
+            ``True`` if the path was deleted, ``False`` if it did not exist.
+        """
         p = self._resolve(path)
         if not p.exists():
             return False
@@ -67,6 +110,15 @@ class Stratum1Storage:
         return True
 
     def list_dir(self, path: str = "") -> list[dict]:
+        """List files and directories in the 1st Stratum.
+
+        Args:
+            path: Optional subdirectory path relative to active root.
+                Defaults to the root.
+
+        Returns:
+            A list of dicts with keys: name, path, type, size, modified.
+        """
         p = self._resolve(path)
         if not p.exists():
             return []
@@ -84,6 +136,14 @@ class Stratum1Storage:
         return entries
 
     def get_modified_days_ago(self, path: str) -> int:
+        """Return the number of days since a file was last modified.
+
+        Args:
+            path: Path relative to the active directory root.
+
+        Returns:
+            Days since modification, or ``0`` if the path does not exist.
+        """
         p = self._resolve(path)
         if not p.exists():
             return 0
@@ -92,6 +152,14 @@ class Stratum1Storage:
         return int(age // 86400)
 
     def scan_stale_files(self) -> list[dict]:
+        """Scan the 1st Stratum for files exceeding their decay threshold.
+
+        Uses ``active_file_patterns`` to filter relevant files and
+        ``get_decay_days`` to determine the threshold per path.
+
+        Returns:
+            A list of dicts with keys: path, age_days, threshold, size.
+        """
         stale = []
         for filepath in self._root.rglob("*"):
             if not filepath.is_file():
@@ -112,6 +180,14 @@ class Stratum1Storage:
         return stale
 
     def path_exists(self, path: str) -> bool:
+        """Check whether a path exists in the 1st Stratum.
+
+        Args:
+            path: Path relative to the active directory root.
+
+        Returns:
+            ``True`` if the path exists.
+        """
         return self._resolve(path).exists()
 
     def generate_index(self):
@@ -161,10 +237,16 @@ class Stratum2Storage:
     searchable via QMD or directly by the agent."""
 
     def __init__(self, config: StrataConfig):
+        """Initialize the 2nd Stratum storage.
+
+        Args:
+            config: Strata configuration with cooled directory path.
+        """
         self.config = config
         self._root = config.cooled_path().resolve()
 
     def ensure_dirs(self):
+        """Create the cooled directory if it does not exist."""
         self._root.mkdir(parents=True, exist_ok=True)
 
     def _resolve(self, path: str) -> Path:
@@ -175,25 +257,63 @@ class Stratum2Storage:
         return full
 
     def read(self, path: str) -> str:
+        """Read a file from the 2nd Stratum.
+
+        Args:
+            path: Path relative to the cooled directory root.
+
+        Returns:
+            The full file contents as a string.
+
+        Raises:
+            FileNotFoundError: If the path does not exist.
+        """
         p = self._resolve(path)
         if not p.exists():
             raise FileNotFoundError(f"2nd Stratum path not found: {path}")
         return p.read_text(encoding="utf-8")
 
     def write(self, path: str, content: str) -> str:
+        """Write a file to the 2nd Stratum.
+
+        Creates parent directories as needed.
+
+        Args:
+            path: Path relative to the cooled directory root.
+            content: File content to write.
+
+        Returns:
+            The absolute path to the written file.
+        """
         p = self._resolve(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
         return str(p)
 
     def move_from(self, source_path: Path, rel_target: str) -> str:
-        """Move a file from an external path into the cooled directory."""
+        """Move a file from an external path into the cooled directory.
+
+        Args:
+            source_path: Absolute path to the source file.
+            rel_target: Relative path within the cooled directory.
+
+        Returns:
+            The absolute path to the destination file.
+        """
         target = self._root / rel_target
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(str(source_path), str(target))
         return str(target)
 
     def delete(self, path: str) -> bool:
+        """Delete a file or directory from the 2nd Stratum.
+
+        Args:
+            path: Path relative to the cooled directory root.
+
+        Returns:
+            ``True`` if the path was deleted, ``False`` if it did not exist.
+        """
         p = self._resolve(path)
         if not p.exists():
             return False
@@ -204,6 +324,11 @@ class Stratum2Storage:
         return True
 
     def list_all(self) -> list[dict]:
+        """List all files in the 2nd Stratum.
+
+        Returns:
+            A list of dicts with keys: path, size, modified.
+        """
         entries = []
         for filepath in sorted(self._root.rglob("*")):
             if not filepath.is_file():
@@ -219,12 +344,84 @@ class Stratum2Storage:
         return entries
 
     def count(self) -> int:
+        """Return the total number of files in the 2nd Stratum.
+
+        Returns:
+            File count.
+        """
         return sum(1 for _ in self._root.rglob("*") if _.is_file())
 
     def path_exists(self, path: str) -> bool:
+        """Check whether a path exists in the 2nd Stratum.
+
+        Args:
+            path: Path relative to the cooled directory root.
+
+        Returns:
+            ``True`` if the path exists.
+        """
         return self._resolve(path).exists()
 
+    # ── Access Tracking (LRU sidecar) ──────────────────────────
+
+    def _access_sidecar_path(self) -> Path:
+        return self.config.base_dir / "stratum_2_access.json"
+
+    def _get_access_data(self) -> dict:
+        path = self._access_sidecar_path()
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+        return {}
+
+    def _save_access_data(self, data: dict):
+        self._access_sidecar_path().write_text(
+            json.dumps(data, indent=2), encoding="utf-8"
+        )
+
+    def track_access(self, path: str) -> dict:
+        """Record an access event for a cooled file.
+
+        Increments the access count and updates the last_accessed
+        timestamp in the LRU sidecar.
+
+        Args:
+            path: Relative path to the file in the cooled directory.
+
+        Returns:
+            The updated access entry dict.
+        """
+        data = self._get_access_data()
+        entry = data.get(path, {"access_count": 0, "last_accessed": 0})
+        entry["access_count"] += 1
+        entry["last_accessed"] = time.time()
+        data[path] = entry
+        self._save_access_data(data)
+        return entry
+
+    def init_access_tracking(self, path: str):
+        """Initialize the LRU access tracking entry for a newly migrated file.
+
+        Args:
+            path: Relative path to the file in the cooled directory.
+        """
+        data = self._get_access_data()
+        data[path] = {"access_count": 0, "last_accessed": time.time()}
+        self._save_access_data(data)
+
+    def remove_access_tracking(self, path: str):
+        """Remove the LRU access tracking entry for a file.
+
+        Called after a file is evicted to the 3rd Stratum.
+
+        Args:
+            path: Relative path to the file in the cooled directory.
+        """
+        data = self._get_access_data()
+        data.pop(path, None)
+        self._save_access_data(data)
+
     def close(self):
+        """No-op for 2nd Stratum (no persistent connections to close)."""
         pass
 
 
@@ -241,12 +438,18 @@ class Stratum3Storage:
     """
 
     def __init__(self, config: StrataConfig):
+        """Initialize the 3rd Stratum storage.
+
+        Args:
+            config: Strata configuration with archive and shadow paths.
+        """
         self.config = config
         self._archive_dir = config.stratum_3_archive_path()
         self._shadow_path = config.stratum_3_shadow_path()
         self._conn: Optional[sqlite3.Connection] = None
 
     def ensure_dirs(self):
+        """Create the archive directory if it does not exist."""
         self._archive_dir.mkdir(parents=True, exist_ok=True)
 
     def _connect_shadow(self) -> sqlite3.Connection:
@@ -329,6 +532,18 @@ class Stratum3Storage:
         conn.commit()
 
     def search_shadow(self, query: str, top_k: int = 5) -> list[dict]:
+        """Search the shadow index by full-text query.
+
+        Uses SQLite FTS5 for keyword search against archived file
+        summaries and keywords.
+
+        Args:
+            query: Free-text search query.
+            top_k: Maximum results to return (default: 5).
+
+        Returns:
+            A list of matching shadow index row dicts.
+        """
         conn = self._connect_shadow()
         clean = query.replace('"', "").replace("'", "")
         try:
@@ -345,6 +560,18 @@ class Stratum3Storage:
         return [dict(r) for r in rows]
 
     def search_shadow_by_tags(self, tags: list[str], top_k: int = 5) -> list[dict]:
+        """Search the shadow index by tag keywords.
+
+        Performs LIKE searches against the keywords JSON column for
+        each tag, deduplicating results.
+
+        Args:
+            tags: List of tag strings to search for.
+            top_k: Maximum results to return (default: 5).
+
+        Returns:
+            A list of matching shadow index row dicts.
+        """
         conn = self._connect_shadow()
         results = []
         for tag in tags:
@@ -368,15 +595,26 @@ class Stratum3Storage:
         return data
 
     def remove_shadow_entry(self, entry_id: str):
+        """Remove a shadow index entry by ID.
+
+        Args:
+            entry_id: The shadow entry ID to remove.
+        """
         conn = self._connect_shadow()
         conn.execute("DELETE FROM shadow_index WHERE id = ?", (entry_id,))
         conn.commit()
 
     def get_shadow_count(self) -> int:
+        """Return the total number of entries in the shadow index.
+
+        Returns:
+            Shadow entry count.
+        """
         conn = self._connect_shadow()
         return conn.execute("SELECT COUNT(*) FROM shadow_index").fetchone()[0]
 
     def close(self):
+        """Close the SQLite shadow index connection."""
         if self._conn:
             self._conn.close()
             self._conn = None
@@ -397,6 +635,11 @@ class QmdWrapper:
     """
 
     def __init__(self, config: StrataConfig):
+        """Initialize the QMD wrapper.
+
+        Args:
+            config: Strata configuration with QMD settings.
+        """
         self.config = config
         self._available: Optional[bool] = None
 
@@ -507,7 +750,22 @@ class QmdWrapper:
 # ────────────────────────────────────────────────────────────
 
 def _rrf_fuse(*result_lists: list[dict], top_k: int = 5, k: int = 60) -> list[dict]:
-    """Reciprocal Rank Fusion: combine multiple ranked result lists."""
+    """Reciprocal Rank Fusion: combine multiple ranked result lists.
+
+    Each result list contributes scores inversely proportional to rank.
+    Results are deduplicated by ``docid`` (or ``file`` if ``docid`` is
+    absent).
+
+    Args:
+        *result_lists: One or more ranked result lists to fuse.
+        top_k: Maximum results to return after fusion.
+        k: RRF constant (default: 60). Higher values give more weight
+            to top-ranked items.
+
+    Returns:
+        A single fused list of result dicts, sorted by fused score
+        descending.
+    """
     scores: dict[str, dict] = {}
     for rank, results in enumerate(result_lists):
         for pos, r in enumerate(results):

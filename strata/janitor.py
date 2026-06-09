@@ -25,13 +25,30 @@ class Janitor:
         stratum_3: Stratum3Storage,
         config: StrataConfig,
     ):
+        """Initialize the Janitor with storage backends and configuration.
+
+        Args:
+            stratum_1: The 1st Stratum (active) storage backend.
+            stratum_2: The 2nd Stratum (cooled) storage backend.
+            stratum_3: The 3rd Stratum (archive) storage backend.
+            config: Strata configuration with decay and LRU thresholds.
+        """
         self.s1 = stratum_1
         self.s2 = stratum_2
         self.s3 = stratum_3
         self.config = config
 
     def migrate_1_to_2(self, dry_run: bool = False) -> list[dict]:
-        """Move stale files from the 1st Stratum (active) to the 2nd (cooled)."""
+        """Move stale files from the 1st Stratum (active) to the 2nd (cooled).
+
+        Args:
+            dry_run: If ``True``, preview which files would be migrated
+                without moving them.
+
+        Returns:
+            A list of result dicts with keys: path, status, age_days
+            (and error on failure).
+        """
         stale = self.s1.scan_stale_files()
         results = []
         for entry in stale:
@@ -47,6 +64,7 @@ class Janitor:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(str(source), str(target))
                 source.unlink()
+                self.s2.init_access_tracking(rel_path)
                 results.append({"path": rel_path, "status": "migrated", "age_days": entry["age_days"]})
             except Exception as exc:
                 results.append({"path": rel_path, "status": "error", "error": str(exc)})
@@ -56,7 +74,16 @@ class Janitor:
         return results
 
     def evict_2_to_3(self, dry_run: bool = False) -> list[dict]:
-        """Evict old files from the 2nd Stratum (cooled) to the 3rd (archive)."""
+        """Evict old files from the 2nd Stratum (cooled) to the 3rd (archive).
+
+        Args:
+            dry_run: If ``True``, preview which files would be evicted
+                without moving them.
+
+        Returns:
+            A list of result dicts with keys: path, status, age_days,
+            archive_path (and error on failure).
+        """
         candidates = self._get_lru_candidates()
         results = []
         for entry in candidates:
@@ -71,6 +98,7 @@ class Janitor:
                 tags = self._infer_tags(rel_path)
                 archive_path = self.s3.archive_file(source, rel_path, tags=tags)
                 source.unlink()
+                self.s2.remove_access_tracking(rel_path)
                 results.append({"path": rel_path, "status": "evicted", "archive_path": archive_path})
             except Exception as exc:
                 results.append({"path": rel_path, "status": "error", "error": str(exc)})
@@ -78,7 +106,20 @@ class Janitor:
         return results
 
     def rehydrate(self, shadow_entry: dict) -> Optional[dict]:
-        """Restore an archived file back to the 1st Stratum (active)."""
+        """Restore an archived file back to the 1st Stratum (active).
+
+        Reads the archived content from the 3rd Stratum, writes it to
+        the 1st Stratum at its original path, and removes the shadow
+        index entry.
+
+        Args:
+            shadow_entry: A dict from the shadow index containing at
+                least ``id``, ``archive_path``, and metadata.
+
+        Returns:
+            The rehydrated data dict, or ``None`` if the archive file
+            could not be read.
+        """
         data = self.s3.hydrate(shadow_entry)
         if data is None:
             return None
@@ -93,17 +134,38 @@ class Janitor:
         return data
 
     def _get_lru_candidates(self) -> list[dict]:
-        """Find files in the cooled directory older than the LRU threshold."""
+        """Find files in the cooled directory eligible for LRU eviction.
+
+        A candidate must satisfy both conditions:
+          1. (now - last_accessed) >= config.get_lru_days(path)
+          2. access_count <= config.lru_min_access_count
+
+        If no tracking entry exists, falls back to mtime for last_accessed
+        and access_count=0 (conservative — always evictable).
+        """
         candidates = []
         now = time.time()
+        access_data = self.s2._get_access_data()
         for filepath in self.s2._root.rglob("*"):
             if not filepath.is_file():
                 continue
             rel = str(filepath.relative_to(self.s2._root))
-            mtime = filepath.stat().st_mtime
-            age_days = int((now - mtime) // 86400)
-            if age_days >= self.config.lru_days:
-                candidates.append({"path": rel, "age_days": age_days})
+            entry = access_data.get(rel)
+            if entry is None:
+                last_accessed = filepath.stat().st_mtime
+                access_count = 0
+            else:
+                last_accessed = entry["last_accessed"]
+                access_count = entry["access_count"]
+            age_days = int((now - last_accessed) // 86400)
+            lru_days = self.config.get_lru_days(rel)
+            if age_days >= lru_days and access_count <= self.config.lru_min_access_count:
+                candidates.append({
+                    "path": rel,
+                    "age_days": age_days,
+                    "access_count": access_count,
+                    "last_accessed": last_accessed,
+                })
         return candidates
 
     @staticmethod
