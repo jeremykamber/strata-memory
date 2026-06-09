@@ -41,7 +41,7 @@ const { lines, title = 'terminal' } = Astro.props;
               <span class="line-content">
                 {line.type === 'prompt' && <span class="prompt-symbol" aria-hidden="true">$</span>}
                 {line.type === 'prompt' ? (
-                  <span class="typing-text" aria-label={line.text} role="text"></span>
+                  <span class="typing-text" aria-label={line.text}></span>
                 ) : (
                   <span>{line.text}</span>
                 )}
