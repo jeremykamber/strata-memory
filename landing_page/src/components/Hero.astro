@@ -1,4 +1,5 @@
 ---
+import Button from './Button.astro';
 import Terminal from './Terminal.astro';
 
 const demoLines = [
@@ -37,12 +38,10 @@ const demoLines = [
   <div class="hero__inner">
     <!-- ── Left column: content ── -->
     <div class="hero-content">
-      <h1 class="hero-heading">Stop burning tokens on agent memory.</h1>
+        <h1 class="hero-heading">Finally, agent memory that models how <em>we think</em>.</h1>
 
       <p class="hero-subtitle">
-        Strata is a CLI-first, stdlib-first tiered memory system for AI
-        agents. Algorithmic tiered decay means zero LLM calls for memory
-        management.
+      An open-source, three-tier memory architecture that automatically degrades and archives old agent context. You get the benefits of llm-wiki, a vector DB, AND cold storage.
       </p>
 
       <div class="hero-install">
@@ -60,91 +59,22 @@ const demoLines = [
         </div>
       </div>
 
-      <div class="hero-demo">
-        <Terminal lines={demoLines} title="strata init" />
+      <div class="hero-actions">
+        <Button variant="primary" href="https://github.com/jeremykamber/strata-memory" target="_blank" rel="noopener noreferrer">
+          View on GitHub
+        </Button>
+        <Button variant="secondary" href="https://jeremykamber.substack.com/p/strata-memory-system" target="_blank" rel="noopener noreferrer">
+          Read the Philosophy
+        </Button>
       </div>
 
-      <div class="hero-cta">
-        <a href="https://substack.com/@jeremykamber" class="hero-button" target="_blank" rel="noopener noreferrer">
-          Follow on Substack
-        </a>
-      </div>
     </div>
 
-    <!-- ── Right column: three floating geological stratum slabs ── -->
+    <!-- ── Right column: animated terminal demo ── -->
     <div class="hero-visual" aria-hidden="true">
-      <div class="slabs">
-        <!-- ===== 1st Stratum — Active ===== -->
-        <figure class="slab slab--active">
-          <div class="slab__annotation">
-            <span class="slab__annotation-line"></span>
-            <span class="slab__annotation-label">1st Stratum</span>
-          </div>
-          <div class="slab__body">
-            <div class="slab__inner">
-              <span class="slab__tag">active</span>
-              <div class="slab__atoms">
-                <span class="slab__file">spec.md</span>
-                <span class="slab__file">notes.md</span>
-                <span class="slab__file">todo.md</span>
-              </div>
-              <span class="slab__tool slab__tool--pick">
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="2.5" y1="13.5" x2="11" y2="5" />
-                  <path d="M8 8l4-4 1 1-5 3z" fill="currentColor" stroke="none" opacity="0.5" />
-                  <line x1="5.5" y1="10.5" x2="8" y2="8" />
-                </svg>
-              </span>
-            </div>
-          </div>
-        </figure>
-
-        <!-- ===== 2nd Stratum — Cooled ===== -->
-        <figure class="slab slab--cooled">
-          <div class="slab__annotation">
-            <span class="slab__annotation-line"></span>
-            <span class="slab__annotation-label">2nd Stratum</span>
-          </div>
-          <div class="slab__body">
-            <div class="slab__inner">
-              <span class="slab__tag">cooled</span>
-              <div class="slab__atoms">
-                <span class="slab__record">user: "dark mode"</span>
-                <span class="slab__record">token: "sk-…"</span>
-              </div>
-              <span class="slab__tool slab__tool--lens">
-                <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
-                  <circle cx="7.5" cy="7.5" r="5.5" />
-                  <line x1="11.5" y1="11.5" x2="16.5" y2="16.5" />
-                </svg>
-              </span>
-            </div>
-          </div>
-        </figure>
-
-        <!-- ===== 3rd Stratum — Archive ===== -->
-        <figure class="slab slab--archive">
-          <div class="slab__annotation">
-            <span class="slab__annotation-line"></span>
-            <span class="slab__annotation-label">3rd Stratum</span>
-          </div>
-          <div class="slab__body">
-            <div class="slab__inner">
-              <span class="slab__tag">archive</span>
-              <div class="slab__atoms">
-                <span class="slab__vault-label">cold storage</span>
-                <span class="slab__temp">−4°C</span>
-              </div>
-              <span class="slab__tool slab__tool--vault">
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="6" width="12" height="8" rx="1.5" />
-                  <path d="M5 6V4a3 3 0 016 0v2" />
-                  <circle cx="8" cy="10" r="1.5" fill="currentColor" opacity="0.4" stroke="none" />
-                </svg>
-              </span>
-            </div>
-          </div>
-        </figure>
+      <div class="hero-terminal">
+        <span class="hero-terminal__label">Live demo</span>
+        <Terminal lines={demoLines} title="strata init" />
       </div>
     </div>
   </div>
@@ -165,17 +95,18 @@ const demoLines = [
   }
 
   .hero__inner {
-    display: grid;
-    grid-template-columns: 1fr 440px;
+    display: flex;
     gap: var(--space-2xl);
     align-items: center;
+    justify-content: space-between;
     max-width: 1200px;
     margin: 0 auto;
     width: 100%;
   }
 
-  /* ---- Left column: content (unchanged from previous) ---- */
+  /* ---- Left column: content ---- */
   .hero-content {
+    flex: 0 1 540px;
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
@@ -266,376 +197,51 @@ const demoLines = [
     display: block;
   }
 
-  /* ---- Terminal demo ---- */
-  .hero-demo {
-    animation: hero-fade-up var(--duration-entrance) var(--ease-out-quart) both;
-    animation-delay: 450ms;
-  }
-
-  /* ---- CTA button (Substack) ---- */
-  .hero-cta {
+  /* ---- Action buttons (GitHub, Philosophy) ---- */
+  .hero-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-sm);
     max-width: 480px;
     animation: hero-fade-up var(--duration-entrance) var(--ease-out-quart) both;
     animation-delay: 600ms;
   }
 
-  .hero-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-xs) var(--space-lg);
-    font-family: var(--font-display);
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--color-surface);
-    background: var(--color-accent);
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-    transition: background var(--duration-fast) var(--ease-out-quart),
-                transform var(--duration-fast) var(--ease-out-quart);
-  }
-
-  .hero-button:hover {
-    background: var(--color-accent-hover);
-  }
-
-  .hero-button:active {
-    transform: scale(0.97);
-  }
-
-  .hero-button:focus-visible {
-    outline: var(--focus-ring);
-    outline-offset: var(--focus-ring-offset);
-  }
-
   /* ==================================================================
-     Right column: floating geological stratum slabs
+     Right column: animated terminal demo
      ================================================================== */
 
   .hero-visual {
+    flex: 0 1 500px;
     position: relative;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-xl) 0 var(--space-xl) var(--space-lg);
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
     animation: visual-fade-in 0.8s var(--ease-out-quart) both;
     animation-delay: 300ms;
   }
 
-  .slabs {
+  .hero-terminal {
     display: flex;
     flex-direction: column;
-    gap: 28px;
-    width: 100%;
-    position: relative;
+    gap: var(--space-2xs);
   }
 
-  /* ---- Individual slab ---- */
-  .slab {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    margin: 0;
-    padding: 0;
-    border: none;
-    position: relative;
-    /* Each slab drifts at a different rhythm — longhands to avoid var() shorthand parsing issues */
-    animation-name: slab-drift-1;
-    animation-duration: 4.5s;
-    animation-timing-function: var(--ease-out-quart);
-    animation-iteration-count: infinite;
-    animation-delay: 0s;
-    animation-direction: normal;
-    animation-fill-mode: none;
-    animation-play-state: running;
-  }
-
-  .slab--active {
-    /* defaults from .slab */
-  }
-
-  .slab--cooled {
-    animation-name: slab-drift-2;
-    animation-duration: 5s;
-    animation-delay: 0.6s;
-  }
-
-  .slab--archive {
-    animation-name: slab-drift-3;
-    animation-duration: 4s;
-    animation-delay: 1.2s;
-  }
-
-  @keyframes slab-drift-1 {
-    0%, 100% { transform: translateY(0) rotate(-0.3deg); }
-    33%      { transform: translateY(-8px) rotate(0.5deg); }
-    66%      { transform: translateY(-4px) rotate(-0.6deg); }
-  }
-
-  @keyframes slab-drift-2 {
-    0%, 100% { transform: translateY(0) rotate(0.4deg); }
-    40%      { transform: translateY(-10px) rotate(-0.3deg); }
-    70%      { transform: translateY(-5px) rotate(0.5deg); }
-  }
-
-  @keyframes slab-drift-3 {
-    0%, 100% { transform: translateY(0) rotate(-0.2deg); }
-    30%      { transform: translateY(-6px) rotate(0.6deg); }
-    65%      { transform: translateY(-9px) rotate(-0.4deg); }
-  }
-
-  /* ---- Slab annotation (geological callout) ---- */
-  .slab__annotation {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 2;
-    /* Hand-drawn slight rotation */
-    transform: rotate(-0.5deg);
-  }
-
-  .slab__annotation-line {
-    display: block;
-    width: 36px;
-    height: 1px;
-    opacity: 0.35;
-  }
-
-  .slab--active .slab__annotation-line {
-    background: var(--stratum-active-annotation);
-  }
-
-  .slab--cooled .slab__annotation-line {
-    background: var(--stratum-cooled-annotation);
-  }
-
-  .slab--archive .slab__annotation-line {
-    background: var(--stratum-archive-annotation);
-  }
-
-  .slab__annotation-label {
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .slab--active .slab__annotation-label {
-    color: var(--stratum-active-annotation);
-  }
-
-  .slab--cooled .slab__annotation-label {
-    color: var(--stratum-cooled-annotation);
-  }
-
-  .slab--archive .slab__annotation-label {
-    color: var(--stratum-archive-annotation);
-  }
-
-  /* ---- Slab body (the rounded pill shape) ---- */
-  .slab__body {
-    flex: 1;
-    min-width: 0;
-    height: 96px;
-    display: flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 16px 24px;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid transparent;
-  }
-
-  .slab--active .slab__body {
-    background: var(--stratum-active-bg);
-    border-color: oklch(from var(--stratum-active-bg) calc(l - 0.08) c h / 0.3);
-  }
-
-  .slab--cooled .slab__body {
-    background: var(--stratum-cooled-bg);
-    border-color: oklch(from var(--stratum-cooled-bg) calc(l - 0.08) c h / 0.3);
-  }
-
-  .slab--archive .slab__body {
-    background: var(--stratum-archive-bg);
-    border-color: oklch(from var(--stratum-archive-bg) calc(l + 0.06) c h / 0.25);
-  }
-
-  .slab__inner {
-    display: flex;
-    align-items: center;
-    gap: 8px 12px;
-    flex-wrap: wrap;
-    position: relative;
-    z-index: 1;
-    width: 100%;
-  }
-
-  /* ---- Slab tag (active / cooled / archive) ---- */
-  .slab__tag {
+  .hero-terminal__label {
     font-family: var(--font-mono);
     font-size: 0.625rem;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    padding: 2px 8px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    background: rgba(255,255,255,0.12);
+    color: var(--color-text-muted);
+    padding-left: 2px;
   }
 
-  .slab--active .slab__tag {
-    color: var(--stratum-active-heading);
-  }
-
-  .slab--cooled .slab__tag {
-    color: var(--stratum-cooled-heading);
-  }
-
-  .slab--archive .slab__tag {
-    color: var(--stratum-archive-heading);
-  }
-
-  /* ---- Atoms container (files, records, vault) ---- */
-  .slab__atoms {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    flex: 1;
-    min-width: 0;
-  }
-
-  /* ── Active stratum: floating .md files ── */
-  .slab__file {
-    display: inline-flex;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    color: var(--stratum-active-annotation);
-    background: oklch(from var(--stratum-active-bg) calc(l - 0.04) c h / 0.4);
-    animation: file-float 3s ease-in-out infinite;
-    animation-delay: var(--file-delay, 0s);
-  }
-
-  .slab__file:nth-child(1) { --file-delay: 0s; }
-  .slab__file:nth-child(2) { --file-delay: 0.8s; }
-  .slab__file:nth-child(3) { --file-delay: 1.6s; }
-
-  @keyframes file-float {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-4px);
-    }
-  }
-
-  /* ── Pickaxe tool (swinging) ── */
-  .slab__tool {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-  }
-
-  .slab--active .slab__tool {
-    color: var(--stratum-active-annotation);
-    background: oklch(from var(--stratum-active-bg) calc(l - 0.04) c h / 0.3);
-  }
-
-  .slab__tool--pick {
-    animation: pick-swing 1.2s ease-in-out infinite;
-    transform-origin: 70% 70%;
-  }
-
-  @keyframes pick-swing {
-    0%, 100% {
-      transform: rotate(-12deg);
-    }
-    50% {
-      transform: rotate(12deg);
-    }
-  }
-
-  /* ── Cooled stratum: key-value records ── */
-  .slab__record {
-    display: inline-flex;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    color: var(--stratum-cooled-annotation);
-    background: oklch(from var(--stratum-cooled-bg) calc(l + 0.06) c h / 0.35);
-  }
-
-  .slab__record:nth-child(1) { animation: file-float 3.5s ease-in-out infinite; }
-  .slab__record:nth-child(2) { animation: file-float 4s ease-in-out infinite 0.7s; }
-
-  .slab--cooled .slab__tool {
-    color: var(--stratum-cooled-annotation);
-    background: oklch(from var(--stratum-cooled-bg) calc(l + 0.06) c h / 0.3);
-  }
-
-  .slab__tool--lens {
-    animation: lens-scan 2.5s ease-in-out infinite;
-  }
-
-  @keyframes lens-scan {
-    0%, 100% {
-      transform: translateX(0);
-    }
-    50% {
-      transform: translateX(4px);
-    }
-  }
-
-  /* ── Archive stratum: cold storage vault ── */
-  .slab__vault-label {
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    color: var(--stratum-archive-annotation);
-    opacity: 0.7;
-  }
-
-  .slab__temp {
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    font-weight: 600;
-    color: oklch(0.6 0.08 220);
-  }
-
-  .slab--archive .slab__tool {
-    color: var(--stratum-archive-annotation);
-    background: oklch(from var(--stratum-archive-bg) calc(l + 0.06) c h / 0.3);
-  }
-
-  .slab__tool--vault {
-    animation: vault-pulse 3s ease-in-out infinite;
-  }
-
-  @keyframes vault-pulse {
-    0%, 100% {
-      opacity: 0.6;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.08);
-    }
+  /* Ensure the terminal component fills available width */
+  .hero-terminal .terminal {
+    width: 100%;
+    max-width: 100%;
   }
 
   /* ==================================================================
@@ -654,11 +260,6 @@ const demoLines = [
   }
 
   /* Fade-in for the visual column */
-  .hero-visual {
-    animation: visual-fade-in 0.8s var(--ease-out-quart) both;
-    animation-delay: 300ms;
-  }
-
   @keyframes visual-fade-in {
     from {
       opacity: 0;
@@ -678,7 +279,6 @@ const demoLines = [
     .hero-heading,
     .hero-subtitle,
     .hero-install,
-    .hero-demo,
     .hero-cta {
       animation: none;
       opacity: 1;
@@ -690,22 +290,6 @@ const demoLines = [
       opacity: 1;
       transform: none;
     }
-
-    .slab {
-      animation: none;
-      transform: none;
-    }
-
-    .slab__file,
-    .slab__record {
-      animation: none;
-    }
-
-    .slab__tool--pick,
-    .slab__tool--lens,
-    .slab__tool--vault {
-      animation: none;
-    }
   }
 
   /* ==================================================================
@@ -714,27 +298,21 @@ const demoLines = [
 
   @media (max-width: 1100px) {
     .hero__inner {
-      grid-template-columns: 1fr 360px;
       gap: var(--space-lg);
     }
 
+    .hero-content {
+      flex: 0 1 420px;
+    }
+
     .hero-visual {
-      padding: var(--space-lg) 0 var(--space-lg) var(--space-md);
-    }
-
-    .slab__body {
-      height: 84px;
-      padding: 12px 16px;
-    }
-
-    .slab__annotation-line {
-      width: 24px;
+      flex: 0 1 380px;
     }
   }
 
   @media (max-width: 820px) {
     .hero__inner {
-      grid-template-columns: 1fr;
+      flex-direction: column;
       gap: var(--space-lg);
     }
 
@@ -757,11 +335,12 @@ const demoLines = [
       font-size: var(--text-base);
     }
 
-    .hero-cta {
+    .hero-actions {
       max-width: 100%;
+      flex-direction: column;
     }
 
-    .hero-button {
+    :global(.btn) {
       width: 100%;
       text-align: center;
     }
