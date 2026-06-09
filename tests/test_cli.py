@@ -29,7 +29,7 @@ def test_cli_init_non_interactive(tmp_base, monkeypatch, capsys):
     captured = capsys.readouterr()
     assert "Select search backend" not in captured.out
     assert (tmp_base / "strata_data" / "active" / "projects").exists()
-    config_path = tmp_base / "strata_data" / ".strata_config.json"
+    config_path = tmp_base / "strata_data" / "strata.json"
     assert config_path.exists()
     data = json.loads(config_path.read_text())
     assert data.get("search_backend") == "qmd"
@@ -47,7 +47,7 @@ def test_cli_init_qmd_onboarding_fts5(tmp_base, monkeypatch):
     monkeypatch.setattr(sys, "stdin", _TTYStringIO("3\n"))
     monkeypatch.chdir(tmp_base)
     main(["init"])
-    config_path = tmp_base / "strata_data" / ".strata_config.json"
+    config_path = tmp_base / "strata_data" / "strata.json"
     assert config_path.exists()
     data = json.loads(config_path.read_text())
     assert data.get("search_backend") == "fts5"
@@ -72,7 +72,7 @@ def test_cli_init_npx_failure(tmp_base, monkeypatch, capsys):
     main(["init"])
     captured = capsys.readouterr()
     assert "QMD auto-install failed" in captured.out
-    config_path = tmp_base / "strata_data" / ".strata_config.json"
+    config_path = tmp_base / "strata_data" / "strata.json"
     assert config_path.exists()
     data = json.loads(config_path.read_text())
     assert data.get("search_backend") == "fts5"

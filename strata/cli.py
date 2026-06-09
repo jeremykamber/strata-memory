@@ -56,7 +56,7 @@ def _config(**kwargs) -> StrataConfig:
         kwargs["base_dir"] = detect_base_dir()
     config = StrataConfig(**kwargs)
     # Load persisted config to override defaults
-    config_path = config.base_dir / ".strata_config.json"
+    config_path = config.base_dir / "strata.json"
     if config_path.exists():
         try:
             data = json.loads(config_path.read_text())
@@ -407,8 +407,8 @@ def _qmd_reranker_prompt(config: StrataConfig) -> None:
 
 
 def _save_strata_config(config: StrataConfig) -> None:
-    """Persist config choices to .strata_config.json."""
-    config_path = config.base_dir / ".strata_config.json"
+    """Persist config choices to strata.json."""
+    config_path = config.base_dir / "strata.json"
     # Load existing data to preserve any fields not explicitly managed
     data = {}
     if config_path.exists():

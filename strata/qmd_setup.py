@@ -93,7 +93,7 @@ class QmdSetup:
     def migrate_from_old_config(self) -> dict:
         """Detect and document migration from legacy configuration.
 
-        Reads ``.strata_config.json`` from the base directory and checks
+        Reads ``strata.json`` from the base directory and checks
         whether it uses the old ``qmd_enabled`` boolean style (``True`` /
         ``False``) instead of the current ``search_backend`` string.
 
@@ -109,7 +109,7 @@ class QmdSetup:
         ``{"migrated": True, "old_backend": ..., "new_backend": ..., "changes": [...]}``
             Old-style ``qmd_enabled`` was detected and mapped.
         """
-        config_path = self.config.base_dir / ".strata_config.json"
+        config_path = self.config.base_dir / "strata.json"
         if not config_path.exists():
             return {"migrated": False}
 

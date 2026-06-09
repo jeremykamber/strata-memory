@@ -59,7 +59,7 @@ class TestQmdSetup:
         assert qmd.configure_reranker("bogus") is False
 
     def test_qmd_setup_migrate_old_config(self, tmp_base):
-        config_path = tmp_base / ".strata_config.json"
+        config_path = tmp_base / "strata.json"
         config_path.write_text(json.dumps({"qmd_enabled": True}))
         config = StrataConfig(base_dir=tmp_base)
         qmd = QmdSetup(config)
