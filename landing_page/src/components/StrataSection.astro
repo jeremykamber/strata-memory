@@ -8,14 +8,11 @@
   <div class="container">
     <div class="strata-section__header">
       <span class="label strata-section__kicker">Cross-section</span>
-      <h2 class="strata-section__heading">How memory stratifies</h2>
+      <h2 class="strata-section__heading">How memory decays and consolidates</h2>
     </div>
 
     <p class="strata-section__intro">
-      Memory enters the active stratum - hot, immediate, fully hydrated. With disuse, it settles
-      into the cooled stratum: compressed but recallable. Over time, what stays untouched sinks
-      into the archive: deep storage with no decay, algorithmically indexed, retrievable at zero
-      LLM cost. Like sediment, each layer has its own character.
+      Human memory is efficient because it knows how to forget. Strata applies the same principle. A new memory lands hot in the active stratum, settles into cooled as it ages, and eventually sinks to the archive as compact JSON. Every transition is deterministic; no LLM calls.
     </p>
 
     <div class="cross-section">
@@ -45,44 +42,44 @@
         <!-- Core sample frame -->
         <div class="core-sample" role="group" aria-label="Memory strata cross-section">
         <!-- Active stratum -->
-        <button class="stratum stratum--active" data-stratum="active" aria-label="Active stratum: Recent memory, fast retrieval">
+        <button class="stratum stratum--active" data-stratum="active" aria-label="Active stratum: Working memory, immediate context">
           <span class="stratum__texture" aria-hidden="true"></span>
           <span class="stratum__particles" aria-hidden="true"></span>
           <span class="stratum__content">
             <span class="stratum__name">Active</span>
-            <span class="stratum__desc">Recent memory. Fast retrieval, full context.</span>
+            <span class="stratum__desc">Working memory. Hot, immediate, full context.</span>
           </span>
           <span class="stratum__annotation" aria-hidden="true">
             <span class="stratum__annotation-line"></span>
-            <span class="stratum__annotation-text">High-frequency access. Low latency.</span>
+            <span class="stratum__annotation-text">0-14 days since last access. Full read/write.</span>
           </span>
         </button>
 
         <!-- Cooled stratum -->
-        <button class="stratum stratum--cooled" data-stratum="cooled" aria-label="Cooled stratum: Settled memory, compressed but recallable">
+        <button class="stratum stratum--cooled" data-stratum="cooled" aria-label="Cooled stratum: Settled memory, readable and searchable">
           <span class="stratum__texture" aria-hidden="true"></span>
           <span class="stratum__particles" aria-hidden="true"></span>
           <span class="stratum__content">
             <span class="stratum__name">Cooled</span>
-            <span class="stratum__desc">Settled memory. Compressed but recallable.</span>
+            <span class="stratum__desc">Long-term memory. Compressed but readable.</span>
           </span>
           <span class="stratum__annotation" aria-hidden="true">
             <span class="stratum__annotation-line"></span>
-            <span class="stratum__annotation-text">Mid-frequency access. Moderate latency.</span>
+            <span class="stratum__annotation-text">14-90 days since last access. Read-only via search.</span>
           </span>
         </button>
 
         <!-- Archive stratum -->
-        <button class="stratum stratum--archive" data-stratum="archive" aria-label="Archive stratum: Deep memory, durable storage">
+        <button class="stratum stratum--archive" data-stratum="archive" aria-label="Archive stratum: Archived memory, keyword-searchable">
           <span class="stratum__texture" aria-hidden="true"></span>
           <span class="stratum__particles" aria-hidden="true"></span>
           <span class="stratum__content">
             <span class="stratum__name">Archive</span>
-            <span class="stratum__desc">Deep memory. Durable storage, no decay.</span>
+            <span class="stratum__desc">Archival memory. Cold JSON, keyword-indexed.</span>
           </span>
           <span class="stratum__annotation" aria-hidden="true">
             <span class="stratum__annotation-line"></span>
-            <span class="stratum__annotation-text">Low-frequency access. Zero LLM cost.</span>
+            <span class="stratum__annotation-text">90+ days untouched. Shadow index for retrieval.</span>
           </span>
         </button>
       </div>
@@ -711,29 +708,29 @@
       active: {
         name: 'Active',
         depth: '0-10cm',
-        description: 'Recent memory. Fast retrieval, full context.',
-        trigger: 'Accessed within the last N minutes.',
-        decay: 'Moves to cooled strata when not accessed for N minutes.',
+        description: 'Working memory. Hot, immediate, full context.',
+        trigger: 'Recently created or modified file. Actively in use.',
+        decay: 'Migrates to cooled stratum after the decay threshold (14 days for projects, 60 for entities) without modification.',
         cli: '$ strata recall --recent',
-        memo: 'High-frequency access. Low latency.'
+        memo: '0-14 days since last access. Full read/write.'
       },
       cooled: {
         name: 'Cooled',
         depth: '10-100cm',
-        description: 'Settled memory. Compressed but recallable.',
-        trigger: 'Memories older than the active threshold, accessed occasionally.',
-        decay: 'Moves to archive when not accessed for N hours.',
+        description: 'Long-term memory. Still plain markdown, now read-only.',
+        trigger: 'Files past their decay threshold, accessed occasionally.',
+        decay: 'Evicted to archive after 90 days without access (fewer than 2 total accesses).',
         cli: '$ strata recall --cooled',
-        memo: 'Mid-frequency access. Moderate latency.'
+        memo: '14-90 days since last access. Queryable via search.'
       },
       archive: {
         name: 'Archive',
         depth: '100-300cm',
-        description: 'Deep memory. Durable storage, no decay.',
-        trigger: 'Oldest memories, rarely accessed.',
-        decay: 'No decay. Algorithmically indexed for retrieval.',
+        description: 'Archival memory. Compact JSON backed by a keyword shadow index.',
+        trigger: 'Files untouched for 90+ days with minimal access history.',
+        decay: 'No further decay. Shadow Index (SQLite FTS5) keeps a ghost entry for keyword search.',
         cli: '$ strata recall --archive',
-        memo: 'Low-frequency access. Higher latency but zero LLM cost.'
+        memo: '90+ days untouched. Keyword-searchable ghost index. Rehydrates on access.'
       }
     };
 

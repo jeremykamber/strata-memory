@@ -405,3 +405,5 @@ No API calls needed. No SDK required. Just files.
 **Author:** Jeremy Kamber
 
 **Version:** 0.2.0
+
+**Follow development:** [Substack](https://substack.com/@jeremykamber) | [Blog](https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents)

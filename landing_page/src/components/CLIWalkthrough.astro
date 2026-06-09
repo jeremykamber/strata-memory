@@ -15,8 +15,8 @@
         See it in action
       </h2>
       <p class="cli-walkthrough__intro">
-        Run strata in any project directory to store and recall memories
-        directly on the filesystem, no servers or API keys required.
+        Strata runs on the filesystem. Plain markdown files and algorithmic decay,
+        no external services. Memories settle deeper over time without any LLM supervision.
       </p>
     </header>
 
@@ -78,8 +78,7 @@
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-            Strata creates a .strata directory with three strata. Minimal config,
-            minimal pip dependencies.
+            Strata creates three layers: active, cooled, and archive. The Janitor moves data between them using file age and access count, with zero LLM calls.
           </p>
         </div>
       </article>
@@ -118,8 +117,7 @@
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-            New memories land in the active stratum. Fast to write, fast to
-            recall.
+            New memories land in the active stratum. This is the agent's working memory: hot, fast, and fully editable.
           </p>
         </div>
       </article>
@@ -184,8 +182,7 @@
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-            Recall scans strata by recency. Active first, then cooled, then
-            archive. No LLM calls, no API costs.
+            Recall scans active first, then cooled, then archive. Recent context surfaces before distant memories, just like the human brain.
           </p>
         </div>
       </article>
@@ -262,8 +259,7 @@
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-            One command to see the full cross-section. Memory counts, decay
-            timers, and byte-level sizes for every stratum.
+            One command shows the full cross-section. Count, decay timer, and byte size for every stratum — full visibility into how memories are aging.
           </p>
         </div>
       </article>
