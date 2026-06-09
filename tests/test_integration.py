@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from strata import Strata
+from strata.cli import main
 from strata.config import StrataConfig
 
 
@@ -9,6 +12,7 @@ class TestStrataIntegration:
             base_dir=tmp_base,
             decay_thresholds={"*": 0},
             lru_days=0,
+            lru_decay_thresholds={"*": 0},
         )
         strata = Strata(config)
 
@@ -71,3 +75,50 @@ class TestStrataIntegration:
         with Strata(config) as s:
             result = s.tools.execute("nonexistent_tool", {})
             assert "error" in result
+
+    def test_cli_full_lifecycle(self, tmp_base, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_base)
+
+        main(["init", "--non-interactive"])
+        captured = capsys.readouterr()
+        assert "Initialized" in captured.out
+        assert (tmp_base / "strata_data" / "active" / "projects").exists()
+
+        main(["config", "get", "search_backend"])
+        captured = capsys.readouterr()
+        assert captured.out.strip()
+
+        main(["add", "projects/test.md", "# Test memory"])
+        captured = capsys.readouterr()
+        assert "Written" in captured.out
+        assert (tmp_base / "strata_data" / "active" / "projects" / "test.md").exists()
+
+        main(["search", "test"])
+        captured = capsys.readouterr()
+        assert "test" in captured.out or "ACTIVE" in captured.out
+
+        main(["maintenance"])
+        main(["status"])
+        captured = capsys.readouterr()
+        assert "Stratum" in captured.out
+
+    def test_search_fallback_without_qmd(self, tmp_base, monkeypatch, capsys):
+        """Search without QMD installed should fall back to filesystem grep."""
+        monkeypatch.chdir(tmp_base)
+
+        main(["init", "--non-interactive"])
+        main(["add", "projects/fallback.md", "Fallback content"])
+        main(["search", "fallback"])
+        captured = capsys.readouterr()
+        assert "fallback" in captured.out or "ACTIVE" in captured.out
+
+    def test_pi_extension_file_exists(self):
+        """Verify the Pi extension TypeScript file exists and has valid structure."""
+        pi_path = Path(__file__).parent.parent / "skills" / "pi" / "strata.ts"
+
+        assert pi_path.exists(), f"Pi extension not found at {pi_path}"
+        content = pi_path.read_text()
+        assert "import type { ExtensionAPI }" in content
+        assert "export default function" in content
+        assert 'pi.on("before_agent_start"' in content
+        assert 'pi.on("turn_end"' in content

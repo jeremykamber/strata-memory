@@ -49,6 +49,7 @@ class TestStrataDaemon:
             decay_thresholds={"*": 100},
             lru_days=0,
             lru_min_access_count=0,
+            lru_decay_thresholds={"*": 0},
         )
         daemon = StrataDaemon(config=config)
 

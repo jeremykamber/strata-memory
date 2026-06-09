@@ -14,6 +14,70 @@ def test_cli_init(tmp_base, monkeypatch):
     assert (tmp_base / "strata_data" / "active" / "gtd").exists()
 
 
+def test_cli_init_shows_daemon_mention(tmp_base, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_base)
+    main(["init"])
+    captured = capsys.readouterr()
+    assert "daemon" in captured.out or "serve" in captured.out
+
+
+def test_cli_init_non_interactive(tmp_base, monkeypatch, capsys):
+    import json
+
+    monkeypatch.chdir(tmp_base)
+    main(["init", "--non-interactive"])
+    captured = capsys.readouterr()
+    assert "Select search backend" not in captured.out
+    assert (tmp_base / "strata_data" / "active" / "projects").exists()
+    config_path = tmp_base / "strata_data" / ".strata_config.json"
+    assert config_path.exists()
+    data = json.loads(config_path.read_text())
+    assert data.get("search_backend") == "qmd"
+
+
+def test_cli_init_qmd_onboarding_fts5(tmp_base, monkeypatch):
+    import json
+    import sys
+    from io import StringIO
+
+    class _TTYStringIO(StringIO):
+        def isatty(self):
+            return True
+
+    monkeypatch.setattr(sys, "stdin", _TTYStringIO("3\n"))
+    monkeypatch.chdir(tmp_base)
+    main(["init"])
+    config_path = tmp_base / "strata_data" / ".strata_config.json"
+    assert config_path.exists()
+    data = json.loads(config_path.read_text())
+    assert data.get("search_backend") == "fts5"
+
+
+def test_cli_init_npx_failure(tmp_base, monkeypatch, capsys):
+    import json
+    import subprocess
+    import sys
+    from io import StringIO
+
+    class _TTYStringIO(StringIO):
+        def isatty(self):
+            return True
+
+    monkeypatch.setattr(sys, "stdin", _TTYStringIO("1\n"))
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda *a, **kw: (_ for _ in ()).throw(FileNotFoundError()),
+    )
+    monkeypatch.chdir(tmp_base)
+    main(["init"])
+    captured = capsys.readouterr()
+    assert "QMD auto-install failed" in captured.out
+    config_path = tmp_base / "strata_data" / ".strata_config.json"
+    assert config_path.exists()
+    data = json.loads(config_path.read_text())
+    assert data.get("search_backend") == "fts5"
+
+
 def test_cli_help(tmp_base, monkeypatch, capsys):
     monkeypatch.chdir(tmp_base)
     main([])
@@ -261,3 +325,107 @@ def test_cli_skill_bogus_subcommand(tmp_base, monkeypatch, capsys):
         pass
     captured = capsys.readouterr()
     assert "Unknown" in captured.out or "bogus" in captured.out
+
+
+def test_pi_install_no_pi(tmp_path, monkeypatch, capsys):
+    """pi-install errors when pi CLI is not on PATH."""
+    import shutil
+    monkeypatch.setattr(shutil, "which", lambda cmd: None)
+    try:
+        main(["pi-install"])
+    except SystemExit:
+        pass
+    captured = capsys.readouterr()
+    assert "pi" in captured.err
+
+
+def test_pi_install_file_copy(tmp_path, monkeypatch, capsys):
+    """pi-install copies the extension file to the correct destination."""
+    import shutil
+    from pathlib import Path
+    from strata import cli as strata_cli
+
+    src = tmp_path / "skills" / "pi" / "strata.ts"
+    src.parent.mkdir(parents=True)
+    src.write_text("export default function() {}")
+
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+    main(["pi-install", "--force"])
+
+    dst = tmp_path / ".pi" / "agent" / "extensions" / "strata.ts"
+    assert dst.exists()
+    assert dst.read_text() == "export default function() {}"
+    captured = capsys.readouterr()
+    assert "installed" in captured.out
+
+
+def test_pi_install_directory_creation(tmp_path, monkeypatch):
+    """pi-install creates the extensions directory if it doesn't exist."""
+    import shutil
+    from pathlib import Path
+    from strata import cli as strata_cli
+
+    src = tmp_path / "skills" / "pi" / "strata.ts"
+    src.parent.mkdir(parents=True)
+    src.write_text("export default function() {}")
+
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+    main(["pi-install", "--force"])
+
+    ext_dir = tmp_path / ".pi" / "agent" / "extensions"
+    assert ext_dir.is_dir()
+
+
+def test_pi_install_force_overwrite(tmp_path, monkeypatch, capsys):
+    """pi-install --force overwrites an existing strata.ts without prompting."""
+    import shutil
+    from pathlib import Path
+    from strata import cli as strata_cli
+
+    src = tmp_path / "skills" / "pi" / "strata.ts"
+    src.parent.mkdir(parents=True)
+    src.write_text("new content")
+
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+    dst = tmp_path / ".pi" / "agent" / "extensions" / "strata.ts"
+    dst.parent.mkdir(parents=True)
+    dst.write_text("old content")
+
+    main(["pi-install", "--force"])
+
+    assert dst.read_text() == "new content"
+
+
+def test_pi_install_overwrite_abort(tmp_path, monkeypatch, capsys):
+    """pi-install without --force aborts when user declines overwrite."""
+    import shutil
+    from pathlib import Path
+    from strata import cli as strata_cli
+
+    src = tmp_path / "skills" / "pi" / "strata.ts"
+    src.parent.mkdir(parents=True)
+    src.write_text("new content")
+
+    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setattr("builtins.input", lambda _: "n")
+
+    dst = tmp_path / ".pi" / "agent" / "extensions" / "strata.ts"
+    dst.parent.mkdir(parents=True)
+    dst.write_text("old content")
+
+    main(["pi-install"])
+
+    assert dst.read_text() == "old content"
+    captured = capsys.readouterr()
+    assert "Aborted" in captured.out
