@@ -2,6 +2,8 @@
 
 ## Why Memory Needs Layers
 
+Strata is a CLI-first memory system. Agents interact with it through shell commands (`strata add`, `strata search`, `strata read`) — no SDK required, no API calls, just the filesystem. The Python API is a secondary interface for programmatic use.
+
 In geology, strata are layers of rock that build up over time. The top layer is today's sediment — fresh, accessible, still settling. Dig deeper and you find older layers — compressed, quieter, but still there if you need to drill down.
 
 Human memory works the same way. What you had for breakfast is near the surface. What you learned in high school is deeper. But both are retrievable — they just sit at different depths.
@@ -97,7 +99,7 @@ If the agent searches and finds nothing in active or cooled, it hits the Shadow 
 - **No vector database.** Search is filesystem grep or optional QMD (BM25 + vector).
 - **No graph database.** Relationships are implicit through directory structure.
 - **No distributed consensus.** Single filesystem, single agent.
-- **No API keys.** Zero configuration out of the box.
+- **No API keys.** Minimal configuration out of the box.
 
 ## The Agent Contract
 
@@ -128,7 +130,3 @@ Information decays. That's not a bug — it's the feature that makes memory usef
 Like geological strata, Strata layers memories by age. The top layer is for today's work. The middle layer is for last month's projects. The bottom layer is for everything else — compressed, indexed, but never truly gone.
 
 And unlike real rock, these layers are permeable. A memory from the bottom can resurface when the agent needs it. The Shadow Index is the fault line that connects deep time to the present.
-
----
-
-*"The best part is no part. The best process is not having one. The best memory is the one you don't need to search for."*

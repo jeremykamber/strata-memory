@@ -1,21 +1,34 @@
 # Strata — Tiered Memory for AI Agents
 
-**Zero-dependency memory system for AI agents.** Think of it like geological strata — your most recent memories sit in the top layer where you can grab them instantly. As they age, they settle into deeper layers. But unlike real rock, they can be brought back to the surface when needed.
+**CLI-first, stdlib-first memory system for AI agents.** Install it, run `strata init`, and your agent has a three-tier memory system — no API key, no database, no vector search.
+
+```bash
+# Install from source (PyPI publishing coming soon)
+pip install git+https://github.com/jeremykamber/strata-memory.git
+
+# Initialize your global memory store
+strata init
+
+# Write a memory
+strata add projects/koda/requirements.md "# Koda needs OAuth2 + payments"
+
+# Search across all layers
+strata search "koda oauth2"
+```
+
+**Or use it programmatically from Python:**
 
 ```python
 from strata import Strata
-
 strata = Strata()
-
-# Write a memory (1st Stratum — surface layer)
 strata.write_active("projects/koda/requirements.md", "# Koda needs OAuth2 + payments")
-
-# Search across all layers
 results = strata.query("koda oauth2")
-
-# Let the Janitor handle the rest automatically
 strata.run_maintenance()
 ```
+
+Think of it like geological strata — your most recent memories sit in the top layer where you can grab them instantly. As they age, they settle into deeper layers. But unlike real rock, they can be brought back to the surface when needed.
+
+**For AI coding assistants:** install the Strata skill and your agent will know Strata's commands and architecture automatically. [Jump to Skill Install →](#skill-install)
 
 Interested more of the conceptual, "head in the clouds" stuff? [Check out the blog post.](https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents)
 
@@ -60,15 +73,21 @@ Three insights make this work:
 
 ## Quick Start
 
+Strata is a CLI first — agents use it via shell commands. The Python API is also available for programmatic use.
+
 ### Install
 
 ```bash
-pip install strata-memory
+# Install from source (PyPI publishing coming soon)
+pip install git+https://github.com/jeremykamber/strata-memory.git
+
+# Or local development install:
+# cd strata-memory && pip install -e .
 ```
 
-Zero dependencies. Works anywhere Python 3.9+ runs.
+Zero external pip dependencies. Works anywhere Python 3.9+ runs.
 
-### Use globally (recommended)
+### CLI — use globally (recommended)
 
 ```bash
 strata init            # Creates ~/.strata/ — your global memory store
@@ -76,7 +95,7 @@ strata add projects/idea.md "# My idea"
 strata search "idea"
 ```
 
-### Or per-project
+### CLI — per-project
 
 ```bash
 cd my-project
@@ -85,7 +104,9 @@ strata add docs/spec.md "# Project spec"
 strata search "spec"
 ```
 
-### Full example
+### Python API
+
+Use Strata programmatically from Python scripts and applications:
 
 ```python
 from strata import Strata
@@ -126,6 +147,34 @@ strata.evict()
 # Both at once
 strata.run_maintenance()
 ```
+
+## Skill Install — Make Any Agent Strata-Aware
+
+Strata ships with an agent skill that teaches AI coding assistants how to use Strata's commands and architecture. Once installed, your agent knows about `strata init`, `strata add`, `strata search`, and the three-tier architecture — without being told.
+
+```bash
+# Interactive — follow the prompts to choose scope + agents
+strata skill install
+
+# Non-interactive — install globally to all agents at once
+strata skill install --global
+```
+
+**Works with:** OpenCode, Claude Code, PI, Cursor, Codex, Windsurf, and any agent that supports the [Vercel Skills](https://github.com/vercel-labs/skills) protocol (55+ agent formats).
+
+Requires Node.js. Delegates to `npx skills add` under the hood.
+
+**Why this matters:** Without the skill, you'd have to tell your agent about Strata every session. With it, the agent already knows the commands, the architecture, and how to use each stratum. One install, zero repetition.
+
+## Upcoming — Agent Plugins
+
+Native plugins for AI coding assistants are in development:
+
+- **OpenCode plugin** — full Strata integration via OpenCode's plugin system
+- **PI plugin** — native Strata support for PI workflows
+- **OpenClaw plugin** — OpenClaw harness integration with automatic context injection
+
+These plugins will go beyond the CLI — think automatic memory context injection, tool calling, and lifecycle management without any manual setup. Stay tuned.
 
 ## CLI Reference
 
@@ -223,7 +272,30 @@ When you search and don't find anything in active or cooled, Strata hits the Sha
 
 ## Agent Integration
 
-Strata exposes 5 function-calling tools in OpenAI format:
+Strata exposes **both a CLI and a Python API.** The CLI is the most natural interface for AI agents that can run shell commands. The Python API is available for programmatic use in scripts and applications.
+
+### CLI (recommended for agents)
+
+```bash
+strata add path/to/doc.md "# content"
+strata search "query"
+strata read path/to/doc.md
+strata list active/
+```
+
+### Python API
+
+```python
+from strata import Strata
+strata = Strata()
+strata.write_active("path/to/doc.md", "# content")
+strata.query("query")
+strata.list_active()
+```
+
+### Via function-calling tools
+
+Strata also exposes 5 function-calling tools in OpenAI format:
 
 | Tool | What it does |
 |------|-------------|
@@ -241,7 +313,7 @@ tools = strata.tools.all_schemas()
 result = strata.tools.execute("strata_query", {"query": "koda"})
 ```
 
-Works with OpenAI, Anthropic, OpenClaw, or any harness that speaks function calling.
+Works with OpenAI, Anthropic, OpenClaw, or any harness that speaks function calling. Native plugins for these platforms are [coming soon](#upcoming--agent-plugins).
 
 ## Configuration
 
@@ -284,20 +356,6 @@ strata history --lines=20
 # Stop when you want
 strata stop
 ```
-
-## Skill Install — Make AI Agents Strata-Aware
-
-Strata ships with an agent skill that teaches AI coding assistants (OpenCode, Claude Code, PI, Cursor, Codex, Windsurf, etc.) how to use Strata's commands and architecture.
-
-```bash
-# Interactive — follow the prompts to choose scope + agents
-strata skill install
-
-# Non-interactive — install globally to all agents at once
-strata skill install --global
-```
-
-It delegates to [vercel-labs/skills](https://github.com/vercel-labs/skills) (`npx skills add`), which handles all 55+ agent directory formats automatically. Requires Node.js.
 
 ## QMD Integration (Optional)
 
@@ -346,4 +404,4 @@ No API calls needed. No SDK required. Just files.
 
 **Author:** Jeremy Kamber
 
-**Version:** 0.1.0
+**Version:** 0.2.0
