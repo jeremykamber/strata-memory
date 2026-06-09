@@ -165,6 +165,15 @@ strata/
   skills/            Agent skill definitions for AI coding assistants
 
 docs/
+  index.md                          Docs index
+  architecture.md                   Three-tier architecture and Janitor lifecycle
+  installation.md                   Install guide and setup
+  cli-reference.md                  Full CLI command reference
+  configuration.md                  StrataConfig fields and Pi extension config
+  pi-integration.md                 Pi extension setup with LLM-powered auto-memory hook
+  search.md                         Search backends (FTS5, QMD, cascading)
+  tracking.md                       Cost tracking methodology
+  philosophy-mapping.md             Blog-to-code philosophy alignment
   strata_blog_post.md               Published blog post about Strata
   how_to_make_pi_extension.md       Guide for creating PI-compatible extensions
 
@@ -179,7 +188,7 @@ Agent-facing documentation lives in:
 
 - **README.md** — Full project documentation, CLI reference, install guide, Python API
 - **AGENTS.md** (this file) — Concise guide for AI agents working ON this project
-- **docs/** — Extended documentation (blog posts, integration guides)
+- **docs/** — Extended documentation (architecture, installation, CLI reference, configuration, Pi integration, search, tracking, blog posts, extension guides)
 - **strata/cli.py** docstring — Inline CLI reference (also printed by `strata` with no args)
 
 ## Contribution Rules
