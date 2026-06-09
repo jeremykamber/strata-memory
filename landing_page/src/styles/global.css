@@ -248,6 +248,21 @@ a:focus-visible {
   border-width: 0;
 }
 
+/* ---------- Button contextual theming ---------- */
+/* Button.astro reads these CSS custom properties for .btn--secondary.
+   Dark sections override them to use lighter tones. */
+.section-depth-archive,
+.section-depth-bedrock {
+  --btn-secondary-color: var(--color-accent-light);
+  --btn-secondary-bg: oklch(0.75 0.08 45 / 0.06);
+  --btn-secondary-border: oklch(0.75 0.08 45 / 0.25);
+  --btn-secondary-hover-bg: oklch(0.75 0.08 45 / 0.12);
+  --btn-secondary-hover-border: oklch(0.75 0.08 45 / 0.45);
+  --btn-secondary-hover-shadow:
+    0 3px 8px oklch(0 0 0 / 0.15),
+    0 6px 16px oklch(0.75 0.08 45 / 0.10);
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;

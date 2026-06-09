@@ -1,24 +1,26 @@
 ---
+import Button from './Button.astro';
 // MailingListCTA.astro
 // Follow Strata development on Substack.
 ---
 
 <section class="cta section-depth-archive" aria-labelledby="cta-heading">
   <div class="cta__container">
-    <span class="cta__label">Follow along</span>
+    <span class="cta__label">The philosophy</span>
 
     <h2 class="cta__heading" id="cta-heading">
-      Follow Strata development
+      Follow the memory philosophy
     </h2>
 
     <p class="cta__text">
-      I write about building Strata — the architecture decisions, the tradeoffs,
-      and what I learn along the way. Follow on Substack for updates.
+      Agentic coding, agent memory, and building autonomous systems that
+      learn how to forget. Architecture notes, tradeoffs, and what
+      I learn along the way.
     </p>
 
-    <a href="https://substack.com/@jeremykamber" class="cta__button" target="_blank" rel="noopener noreferrer">
+    <Button variant="secondary" href="https://substack.com/@jeremykamber" target="_blank" rel="noopener noreferrer">
       Follow on Substack
-    </a>
+    </Button>
   </div>
 </section>
 
@@ -49,39 +51,6 @@
     max-width: 48ch;
   }
 
-  .cta__button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-xs) var(--space-xl);
-    font-family: var(--font-display);
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--color-text-on-dark);
-    background: var(--color-accent);
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-    transition:
-      background var(--duration-fast) var(--ease-out-quart),
-      transform var(--duration-fast) var(--ease-out-quart);
-  }
-
-  .cta__button:hover {
-    background: var(--color-accent-hover);
-  }
-
-  .cta__button:active {
-    transform: scale(0.97);
-  }
-
-  .cta__button:focus-visible {
-    outline: var(--focus-ring);
-    outline-offset: var(--focus-ring-offset);
-  }
-
   /* ---- Responsive ---- */
   @media (max-width: 768px) {
     .cta {
@@ -92,14 +61,10 @@
       font-size: var(--text-base);
     }
 
-    .cta__button {
+    :global(.btn.btn--secondary) {
       width: 100%;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .cta__button {
-      transition: none;
-    }
-  }
+
 </style>
