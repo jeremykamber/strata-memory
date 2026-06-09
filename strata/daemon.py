@@ -1,3 +1,10 @@
+"""Background Janitor daemon for automatic memory lifecycle management.
+
+Provides the :class:`StrataDaemon` class which runs maintenance cycles
+on a configurable interval, and module-level helper functions for
+checking daemon status and stopping the daemon from the CLI.
+"""
+
 from __future__ import annotations
 
 import json
@@ -30,6 +37,20 @@ class StrataDaemon:
         pid_file: Optional[str] = None,
         dry_run_first: bool = True,
     ):
+        """Initialize the daemon.
+
+        Args:
+            config: Optional configuration. Auto-detects base directory
+                if not provided.
+            interval_seconds: Sleep time between maintenance cycles
+                (default: 900, i.e. 15 minutes).
+            log_file: Custom path for the daemon log file. Defaults to
+                ``<base_dir>/strata.log``.
+            pid_file: Custom path for the PID file. Defaults to
+                ``<base_dir>/strata.pid``.
+            dry_run_first: If ``True`` (default), the first cycle runs
+                as a dry run.
+        """
         self.config = config or StrataConfig(base_dir=detect_base_dir())
         self.interval = interval_seconds
         self._log_path = Path(log_file) if log_file else self.config.base_dir / "strata.log"
@@ -113,10 +134,24 @@ class StrataDaemon:
                 if details:
                     self._log("info", "Dry-run details:\n" + "\n".join(details))
 
+            if not dry_run:
+                self._log_cost_data(self._cycle_count + 1, migrated, evicted)
+
             return result
         except Exception as exc:
             self._log("error", f"[Cycle {self._cycle_count + 1}] Failed: {exc}")
             return {"error": str(exc)}
+
+    def _log_cost_data(self, cycle_num: int, migrated: int, evicted: int) -> None:
+        """Append a cost tracking line to strata_cost.log after a live cycle."""
+        cost_log = self.config.base_dir / "strata_cost.log"
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        line = f"CYCLE:{cycle_num}:{migrated}:{evicted}:{timestamp}\n"
+        try:
+            with open(cost_log, "a") as f:
+                f.write(line)
+        except OSError:
+            self._log("warning", f"Could not write cost data to {cost_log}")
 
     def _setup_logging(self):
         if self._logger is not None:
