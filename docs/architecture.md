@@ -1,0 +1,172 @@
+# Architecture
+
+Strata organises memory across three tiers -- active, cooled, and archive -- inspired by geological stratification. This page explains how the system works, how data moves between strata, and the design decisions behind each component.
+
+## Three-Tier Structure
+
+```
+~/.strata/                    # Or ./strata_data/ for project-local
+├── active/                   # 1st Stratum -- working memory
+│   ├── index.md              # Auto-generated master map
+│   ├── projects/             # Current initiatives
+│   ├── entities/             # People, companies, tools
+│   └── gtd/                  # Tasks and quick notes
+├── cooled/                   # 2nd Stratum -- aged-out files
+├── archive/                  # 3rd Stratum -- cold JSON storage
+├── shadow.db                 # Shadow Index (SQLite FTS5)
+├── strata.log                # Daemon activity log
+├── strata.pid                # Daemon PID file
+└── strata_cost.log           # Cost tracking data
+```
+
+| Stratum | Directory | Access | Latency | Storage |
+|---|---|---|---|---|
+| 1st (Active) | `active/` | Read/write | ~1 ms | Markdown files |
+| 2nd (Cooled) | `cooled/` | Read-only via search | ~5 ms | Markdown files |
+| 3rd (Archive) | `archive/` | Read-only via search + rehydration | ~10 ms | JSON blobs + SQLite FTS5 |
+
+### 1st Stratum -- Active
+
+The agent reads and writes here directly. Files are plain markdown on disk. There is no database, no vector index -- just files.
+
+An auto-generated `index.md` serves as the master map. It lists every file in the active stratum with its first heading as a description. The agent workflow is: read `index.md` first, then navigate to specific files by path.
+
+**Agent rule:** Full read/write access. This is your workspace.
+
+**Characteristics:**
+- Fastest access (~1 ms per read)
+- No indexing overhead -- the `index.md` is regenerated after every write
+- Path-based navigation (no search needed for known files)
+- Files older than their decay threshold are eligible for migration
+
+### 2nd Stratum -- Cooled
+
+When a file has not been modified for longer than its decay threshold, the Janitor moves it from `active/` to `cooled/`. The file stays as a plain markdown file on disk. The only difference is the agent cannot write to it directly.
+
+**Agent rule:** Read-only via search. The Janitor tracks access counts for LRU calculations. If you need to edit something, it can be rehydrated back to active.
+
+**Characteristics:**
+- Same storage medium as active (markdown files)
+- Searchable via filesystem grep or QMD
+- Access tracking via a JSON sidecar file (`stratum_2_access.json`)
+- Files that exceed the LRU threshold are evicted to the archive
+
+### 3rd Stratum -- Archive
+
+When a cooled file has not been accessed for longer than the LRU window, the Janitor evicts it to `archive/`. The full content is saved as a JSON blob. A lightweight Shadow Index (SQLite FTS5) keeps it keyword-searchable.
+
+**Agent rule:** Cannot write here. Archived files can be rehydrated back to active when a search match proves them useful.
+
+**Characteristics:**
+- Coldest storage tier
+- Keyword search via SQLite FTS5 shadow index
+- Rehydration restores the file to `active/` for editing
+- Minimal storage overhead per entry (keywords + 200-char preview + path)
+
+## The Janitor
+
+The Janitor is the only process that moves data between strata. It runs on a schedule and uses deterministic rules -- no LLM calls required. This means maintenance costs are bounded and predictable.
+
+```
+┌─────────────┐         ┌──────────────┐         ┌──────────────┐
+│   active/   │ ──migrate──▶   cooled/   │ ──evict──▶   archive/   │
+│ (1st Strat) │   age>    │ (2nd Strat) │   LRU>    │ (3rd Strat)  │
+│             │ threshold │             │ threshold │  + shadow.db │
+└─────────────┘         └──────────────┘         └──────────────┘
+       │                                                │
+       └──────────────────────◀─────────────────────────┘
+                              rehydrate
+```
+
+### Migration (1st -> 2nd)
+
+`strata migrate` or the daemon's periodic cycle:
+
+1. Scan `active/` for files matching `active_file_patterns`
+2. For each file, calculate its age in days since last modification
+3. Look up the decay threshold for the file's top-level directory (e.g., `projects/` -> 14 days)
+4. If age >= threshold, copy the file to `cooled/` and delete from `active/`
+5. Log the migration
+
+**Dry run preview:** `strata migrate --dry-run` shows what would happen without making changes. The daemon's first cycle is always a dry run.
+
+### Eviction (2nd -> 3rd)
+
+`strata evict` or the daemon's periodic cycle:
+
+1. Scan `cooled/` for files
+2. For each file, check its access data from `stratum_2_access.json`
+3. If (now - last_accessed) > `lru_days` AND access_count <= `lru_min_access_count`:
+   a. Save the file content as a JSON blob in `archive/`
+   b. Create a Shadow Index entry (keywords, 200-char preview, path to JSON)
+   c. Delete the file from `cooled/`
+   d. Log the eviction
+
+### Rehydration (3rd -> 1st)
+
+When a search query matches an archived entry via the Shadow Index:
+
+1. The search result includes `_needs_rehydration: true`
+2. The agent (or user) can request rehydration
+3. Strata reads the archived JSON blob
+4. The file is restored to `active/`
+5. The Shadow Index entry is preserved (for future search)
+
+Rehydration is not automatic -- it is triggered by explicit action when search results indicate archived content is relevant.
+
+## The Shadow Index
+
+When a file is archived, the Janitor does not just delete it. It stores a lightweight entry in a SQLite FTS5 database -- keywords, a 200-character preview, and the path to the full JSON blob.
+
+This enables keyword search across millions of archived entries at minimal cost. A million ghosts cost practically nothing in storage.
+
+**Schema:**
+
+```
+shadow_index table:
+  id              TEXT PRIMARY KEY    -- UUID
+  original_path   TEXT NOT NULL       -- path in cooled/
+  keywords        TEXT DEFAULT '[]'   -- JSON array of tags
+  archive_path    TEXT NOT NULL       -- path to JSON blob
+  summary_preview TEXT DEFAULT ''     -- first 200 chars of content
+  evicted_at      TEXT NOT NULL       -- ISO timestamp
+
+shadow_fts virtual table (FTS5):
+  keywords, summary_preview
+```
+
+The FTS5 virtual table is kept in sync via INSERT and DELETE triggers on `shadow_index`. No manual maintenance needed.
+
+## Daemon Mode
+
+The background daemon automates the Janitor. It runs as a standalone Python process with:
+
+- A configurable interval (default: 900 seconds / 15 minutes)
+- First cycle is always a dry run (unless `--live` is passed)
+- Logging to both `strata.log` and stderr
+- PID file for process management
+- Graceful shutdown on SIGINT/SIGTERM
+- Cost data logging to `strata_cost.log`
+
+The daemon is the key component that makes Strata a "set and forget" memory system. Start it once; it handles everything.
+
+## Data Integrity
+
+- **No in-place modification.** Migration copies then deletes. Eviction reads, archives, then deletes. A crash between copy and delete may leave the file in both locations, but data is never lost.
+- **Shadow Index is append-friendly.** Archived files are never modified. Rehydration reads the JSON but does not remove the shadow entry. The index only grows.
+- **File patterns prevent surprises.** Only files matching `active_file_patterns` (`.md`, `.txt`, `.json`, `.yaml`, `.yml`) are considered for migration. Other files in the active directory are ignored.
+
+## Concurrency Model
+
+The daemon runs a single maintenance thread. Concurrent `strata migrate` / `strata evict` calls from the CLI against the same data directory can race with the daemon. This is safe because:
+
+- Migration uses `shutil.copy2` + `unlink` (atomic on most filesystems)
+- Eviction reads the JSON, writes to archive, then deletes from cooled
+- The Shadow Index uses SQLite with WAL mode for safe concurrent reads
+
+## Cross-Reference
+
+- [Configuration](configuration.md) -- thresholds that control Janitor behaviour
+- [CLI Reference](cli-reference.md) -- lifecycle commands (migrate, evict, maintenance)
+- [Search](search.md) -- how searches span all three strata
+- [Tracking](tracking.md) -- cost implications of each stratum
