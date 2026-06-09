@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Three strata slabs - warm orange shades -->
+  <rect x="1" y="1" width="30" height="7" rx="2" fill="#D4A574" />
+  <rect x="1" y="10" width="30" height="7" rx="2" fill="#C2825A" />
+  <rect x="1" y="22" width="30" height="9" rx="2" fill="#A0603F" />
+</svg>
