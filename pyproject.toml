@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "strata-memory"
-version = "0.1.0"
-description = "Tiered memory system for AI agents with lifecycle management"
+version = "0.2.0"
+description = "Tiered memory system for AI agents with lifecycle management and CLI-first design"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -14,12 +14,18 @@ authors = [
 requires-python = ">=3.9"
 keywords = ["ai", "memory", "agent", "llm", "strata"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: MIT License",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Utilities",
 ]
+urls = {Homepage = "https://github.com/jeremykamber/strata-memory"}
 
 dependencies = []
 
@@ -27,9 +33,11 @@ dependencies = []
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.30.0"]
 all = ["strata-memory[openai,anthropic]"]
+qmd = []  # QMD is an optional npm dependency (npm install -g @tobilu/qmd)
 
 [project.scripts]
 strata = "strata.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["strata*"]
+
