@@ -1,7 +1,7 @@
 """Minimal MCP (Model Context Protocol) server for Strata.
 
 Implements the MCP protocol over stdio (JSON-RPC 2.0, line-delimited).
-Zero external dependencies — uses only Python stdlib.
+Zero external pip dependencies — uses only Python stdlib.
 
 The MCP protocol spec: https://modelcontextprotocol.io
 """
@@ -17,6 +17,17 @@ from strata.config import StrataConfig, detect_base_dir
 
 
 def rpc_error(id_val, code: int, message: str, data=None) -> str:
+    """Build a JSON-RPC 2.0 error response.
+
+    Args:
+        id_val: The request ID (or ``None`` for parse errors).
+        code: JSON-RPC error code (e.g. ``-32700``, ``-32601``).
+        message: Human-readable error message.
+        data: Optional additional error data.
+
+    Returns:
+        A JSON-RPC 2.0 error response string.
+    """
     err = {"code": code, "message": message}
     if data is not None:
         err["data"] = data
@@ -24,10 +35,28 @@ def rpc_error(id_val, code: int, message: str, data=None) -> str:
 
 
 def rpc_result(id_val, result) -> str:
+    """Build a JSON-RPC 2.0 success response.
+
+    Args:
+        id_val: The request ID.
+        result: The result payload (any JSON-serializable value).
+
+    Returns:
+        A JSON-RPC 2.0 result response string.
+    """
     return json.dumps({"jsonrpc": "2.0", "id": id_val, "result": result})
 
 
 def rpc_notification(method: str, params=None) -> str:
+    """Build a JSON-RPC 2.0 notification (no ``id`` field).
+
+    Args:
+        method: The method name for the notification.
+        params: Optional parameters payload.
+
+    Returns:
+        A JSON-RPC 2.0 notification string.
+    """
     msg = {"jsonrpc": "2.0", "method": method}
     if params is not None:
         msg["params"] = params
@@ -43,6 +72,14 @@ class MCPServer:
     """
 
     def __init__(self, config: Optional[StrataConfig] = None):
+        """Initialize the MCP server.
+
+        Creates the Strata instance and ensures the 1st and 3rd Stratum
+        directories exist.
+
+        Args:
+            config: Optional configuration. Auto-detects if not provided.
+        """
         self.config = config or StrataConfig(base_dir=detect_base_dir())
         self.strata = Strata(self.config)
         self.strata.s1.ensure_dirs()
@@ -117,6 +154,16 @@ class MCPServer:
         return rpc_error(req_id, -32601, f"Method not found: {method}")
 
     def _call_tool(self, req_id, tool_name: str, arguments: dict) -> str:
+        """Execute a Strata tool via JSON-RPC and return the result.
+
+        Args:
+            req_id: The JSON-RPC request ID.
+            tool_name: Name of the tool to call (e.g. ``strata_read_active``).
+            arguments: Tool arguments dict.
+
+        Returns:
+            A JSON-RPC result response string.
+        """
         try:
             result = self.strata.tools.execute(tool_name, arguments)
             content = []
@@ -150,6 +197,7 @@ class MCPServer:
         return response or ""
 
     def close(self):
+        """Close the Strata instance and release resources."""
         self.strata.close()
 
 

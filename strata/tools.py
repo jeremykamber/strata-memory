@@ -15,9 +15,21 @@ class StrataTools:
     """
 
     def __init__(self, strata: "Strata"):
+        """Initialize the tools wrapper.
+
+        Args:
+            strata: The parent Strata instance to delegate tool
+                execution to.
+        """
         self.strata = strata
 
     def all_schemas(self) -> list[dict]:
+        """Return all tool schemas in OpenAI-compatible format.
+
+        Returns:
+            A list of function-calling schema dicts for all five
+            Strata tools.
+        """
         return [
             self.read_active_schema(),
             self.write_active_schema(),
@@ -27,6 +39,11 @@ class StrataTools:
         ]
 
     def read_active_schema(self) -> dict:
+        """Return the schema for the ``strata_read_active`` tool.
+
+        Returns:
+            An OpenAI-compatible function-calling schema dict.
+        """
         return {
             "type": "function",
             "function": {
@@ -46,6 +63,11 @@ class StrataTools:
         }
 
     def write_active_schema(self) -> dict:
+        """Return the schema for the ``strata_write_active`` tool.
+
+        Returns:
+            An OpenAI-compatible function-calling schema dict.
+        """
         return {
             "type": "function",
             "function": {
@@ -69,6 +91,11 @@ class StrataTools:
         }
 
     def list_active_schema(self) -> dict:
+        """Return the schema for the ``strata_list_active`` tool.
+
+        Returns:
+            An OpenAI-compatible function-calling schema dict.
+        """
         return {
             "type": "function",
             "function": {
@@ -88,6 +115,11 @@ class StrataTools:
         }
 
     def query_schema(self) -> dict:
+        """Return the schema for the ``strata_query`` tool.
+
+        Returns:
+            An OpenAI-compatible function-calling schema dict.
+        """
         return {
             "type": "function",
             "function": {
@@ -117,6 +149,11 @@ class StrataTools:
         }
 
     def forget_schema(self) -> dict:
+        """Return the schema for the ``strata_forget`` tool.
+
+        Returns:
+            An OpenAI-compatible function-calling schema dict.
+        """
         return {
             "type": "function",
             "function": {
