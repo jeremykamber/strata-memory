@@ -1,332 +1,286 @@
-# Strata — Tiered Memory for AI Agents
+# Strata
 
-**CLI-first, stdlib-first memory system for AI agents.** Install it, run `strata init`, and your agent has a three-tier memory system — no API key, no database, no vector search.
+**Tiered memory for AI agents.** One install, one `strata init`, and you have a three-layer memory system. It bypasses API keys, vector databases, and background LLM janitors that burn tokens on every query.
 
 ```bash
-# Install from source (PyPI publishing coming soon)
-pip install git+https://github.com/jeremykamber/strata-memory.git
+pip install git+[https://github.com/jeremykamber/strata-memory.git](https://github.com/jeremykamber/strata-memory.git)
 
-# Initialize your global memory store
 strata init
+strata add projects/kynd/requirements.md "# Kynd needs OAuth2 + payments"
+strata search "oauth2 payments"
 
-# Write a memory
-strata add projects/koda/requirements.md "# Koda needs OAuth2 + payments"
-
-# Search across all layers
-strata search "koda oauth2"
 ```
 
-**Or use it programmatically from Python:**
+I named it after rock layers. Each stratum represents a different depth of memory. Active items sit at the surface where your agent grabs them fast; old items settle into deeper layers over time. Information decays on purpose. That is a deliberate design choice. A system that remembers every single detail is functionally identical to a system that remembers nothing at all. The signal gets drowned out by the noise. Perfect recall is an anchor.
 
-```python
-from strata import Strata
-strata = Strata()
-strata.write_active("projects/koda/requirements.md", "# Koda needs OAuth2 + payments")
-results = strata.query("koda oauth2")
-strata.run_maintenance()
-```
+---
 
-Think of it like geological strata — your most recent memories sit in the top layer where you can grab them instantly. As they age, they settle into deeper layers. But unlike real rock, they can be brought back to the surface when needed.
+## The Problem
 
-**For AI coding assistants:** install the Strata skill and your agent will know Strata's commands and architecture automatically. [Jump to Skill Install →](#skill-install)
+Most memory systems treat every piece of data identically. A passing thought from five minutes ago and a core architectural decision from six months ago get the exact same storage, retrieval, and fidelity. That wastes resources in two major ways.
 
-Interested more of the conceptual, "head in the clouds" stuff? [Check out the blog post.](https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents)
+First, vector search degrades as the document count rises. Eventually every document becomes semantically similar to every other document. You end up digging through your own haystack to find a needle that should have been on your desk.
 
-## Why Strata?
+Second, developers try to solve this by running an LLM-powered background process on every query. Every single read, write, or search triggers an API call to clean and prioritize those memories. Your API credits disappear quickly. The LLM then has to judge incoming data against potentially hundreds of existing memories; this gets harder and more expensive the more you use the system.
 
-Current memory systems treat all information the same. A conversation from five minutes ago and a decision from six months ago get identical treatment — same storage, same retrieval cost, same fidelity. That's wasteful.
+Human memory works through compression and neglect. We actively remember what we use, and we forget what we ignore. Our brains push old conversations to the background (eventually letting them fade out completely). Autonomous systems need this exact mechanic to function long-term. Structured decay beats throwing more compute at the problem.
 
-**Strata fixes this with a simple idea:** memories age like geological strata. Fresh memories sit on top where you can reach them fast. Old memories settle into deeper layers. But unlike rocks, they can be brought back when dug up.
+## What Makes Strata Different
 
-Three insights make this work:
+Two specific choices define the architecture.
 
-1. **Information decays** — a memory from today deserves higher fidelity than one from two years ago
-2. **Don't pay an LLM to check the time** — algorithmic triggers (file age, access count) decide *when* to move data; no AI needed for that
-3. **Files are the fastest database** — for active work, reading a markdown file from a known path beats any vector search
+**Active memory remains physically separated from long-term storage.** The agent only interacts with a small subset of memories at any given moment. It never gets bogged down by old context it stopped touching weeks ago.
+
+**The migration trigger is algorithmic.** File age and access recency dictate what shifts between the tiers. There is no LLM getting paid to guess if a file is old. That job belongs to simple system timestamps.
+
+This creates an environment where information naturally settles into deeper, cheaper storage. You avoid spending tokens to decide what matters.
 
 ## How It Works
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    STRATA ARCHITECTURE                   │
-├─────────────┬──────────────┬────────────────────────────┤
-│ 1st Stratum │ 2nd Stratum  │ 3rd Stratum               │
-│ (active/)   │ (cooled/)    │ (archive/ + shadow.db)    │
-├─────────────┼──────────────┼────────────────────────────┤
-│ Agent reads │ Query-only   │ Cold storage              │
-│ and writes  │ (Janitor     │ with keyword              │
-│ here        │  manages)    │ shadow index              │
-├─────────────┼──────────────┼────────────────────────────┤
-│ ~1ms access │ ~5ms access  │ ~10ms via re-hydration    │
-│ Filesystem  │ Filesystem   │ JSON blobs + SQLite FTS5  │
-└──────┬──────┴──────┬───────┴────────────┬───────────────┘
-       │             │                    │
-       ▼             ▼                    ▼
-  ┌─────────┐  ┌─────────┐         ┌──────────┐
-  │ Janitor │─►│ Janitor │─►       │ Shadow   │
-  │ migrate │  │ evict   │  ──►    │ Index    │
-  │ 1st→2nd │  │ 2nd→3rd │         │ (search) │
-  └─────────┘  └─────────┘         └──────────┘
+```text
+┌──────────────────┬─────────────────┬────────────────────────────┐
+│  1st Stratum     │  2nd Stratum    │  3rd Stratum               │
+│  (active/)       │  (cooled/)      │  (archive/ + shadow.db)    │
+├──────────────────┼─────────────────┼────────────────────────────┤
+│  Read/write      │  Query-only     │  Cold JSON storage         │
+│  Plain .md files │  Aged-out .md   │  with FTS5 keyword index   │
+│  on disk         │  files on disk  │                            │
+├──────────────────┼─────────────────┼────────────────────────────┤
+│  ~1ms access     │  ~5ms access    │  ~10ms via re-hydration    │
+│  No database     │  No database    │                            │
+└────────┬─────────┴────────┬────────┴──────────┬─────────────────┘
+         │                  │                   │
+         ▼                  ▼                   ▼
+    ┌──────────┐      ┌──────────┐       ┌──────────┐
+    │ Janitor  │ ──── │ Janitor  │ ────  │ Shadow   │
+    │ migrate  │      │ evict    │       │ Index    │
+    │ 1st→2nd  │      │ 2nd→3rd  │       │ (search) │
+    └──────────┘      └──────────┘       └──────────┘
+
 ```
 
-**The Janitor** is the only thing that moves data between layers. It runs on a schedule (every 15 min by default) and uses simple rules — no LLM calls needed.
+The Janitor moves data between the layers. It runs on a schedule or whenever you call it. It relies entirely on simple rules; there are no LLM calls, no text compression, and no token spend.
+
+### 1st Stratum — Active (the surface layer)
+
+This functions as the agent's working memory. You get plain markdown files inside a standard directory tree. You won't find a database or a vector index here.
+
+The agent reads `active/index.md` first. This auto-generated map lists every file and uses the first heading as the description. The agent looks at the map, picks a path, and reads the target file directly. You bypass vector search and embedding noise completely; things are exactly where you put them.
+
+Write structured markdown with clear headings. The index grabs the first `# heading` to use as the file's description.
+
+**Agent rule:** Full read/write access. This acts as the main workspace.
+
+**Transition trigger:** The Janitor checks the modification time. If a file sits untouched past its decay threshold (the default is 14 days for projects, 60 for entities, and 7 for tasks), it becomes eligible for migration.
+
+### 2nd Stratum — Cooled (the middle layer)
+
+The Janitor copies aged-out files from `active/` to `cooled/`. It stays a standard markdown file on your disk. The agent can search and read it; direct writes are blocked.
+
+**Agent rule:** Read-only access through `strata search`. Queries return the results directly. Editing the file requires rehydration back to the active tier.
+
+**Transition trigger:** A cooled file faces eviction when it meets two specific conditions. It must sit untouched for `lru_days` (default is 90). The access count must also be at or below `lru_min_access_count` (default is 1). A JSON sidecar file logs every read and search hit to track this access.
+
+### 3rd Stratum — Archive (the deep layer)
+
+Untouched cooled files eventually drop into `archive/`. The Janitor saves the full content as JSON in flat storage. A minimal entry goes into the Shadow Index (a SQLite FTS5 database) with just the keywords, a 200-character preview, and the file path. You still avoid vectors and embeddings here.
+
+A million archived entries cost less than a megabyte of disk space.
+
+If a future search matches an archived entry, the file rehydrates. The Janitor reads the JSON, writes it back into the active tier, and deletes the shadow entry. The memory resurfaces simply because it proved useful again.
+
+There is a massive difference between throwing an item in the trash and packing it in a labeled box in your basement.
+
+### The Janitor (lifecycle manager)
+
+The Janitor runs entirely on algorithms. It checks the time instead of analyzing text.
+
+* **Migration (1st → 2nd):** Copies the file from `active/` to `cooled/`, deletes the original, and starts the access tracking. File age triggers this step.
+* **Eviction (2nd → 3rd):** Reads the file content, saves it as JSON to `archive/`, creates the FTS5 entry in `shadow.db`, and deletes the cooled copy. The LRU logic triggers this step.
+* **Rehydration (3rd → 1st):** Reads the archived JSON, writes the content back to `active/` at the original path, and removes the shadow entry. A successful search match in the archive triggers this step.
+
+You avoid all LLM calls and token spend. The Janitor just looks at the clock.
 
 ## Quick Start
-
-Strata is a CLI first — agents use it via shell commands. The Python API is also available for programmatic use.
 
 ### Install
 
 ```bash
-# Install from source (PyPI publishing coming soon)
-pip install git+https://github.com/jeremykamber/strata-memory.git
+pip install git+[https://github.com/jeremykamber/strata-memory.git](https://github.com/jeremykamber/strata-memory.git)
 
-# Or local development install:
-# cd strata-memory && pip install -e .
 ```
 
-Zero external pip dependencies. Works anywhere Python 3.9+ runs.
+This requires zero pip dependencies. It works on Python 3.9 and newer.
 
-### CLI — use globally (recommended)
+### Initialize
 
 ```bash
-strata init            # Creates ~/.strata/ — your global memory store
-strata add projects/idea.md "# My idea"
-strata search "idea"
+# Project-local (creates ./strata_data/)
+strata init
+
+# Global (creates ~/.strata/)
+strata init --global
+
 ```
 
-### CLI — per-project
+### Write Memories
 
 ```bash
-cd my-project
-strata init --local    # Creates ./strata_data/
-strata add docs/spec.md "# Project spec"
-strata search "spec"
-```
-
-### Python API
-
-Use Strata programmatically from Python scripts and applications:
-
-```python
-from strata import Strata
-
-# Auto-detects: uses ./strata_data/ if it exists, else ~/.strata/
-strata = Strata()
-
-# ── 1st Stratum: Working memory ──────────────────────────
-# Write markdown files. They're real files on disk.
-strata.write_active("projects/koda/spec.md", """# Koda Platform
+strata add projects/kynd/requirements.md "# Kynd Platform
 Stack: React + Go + PostgreSQL
 Features: OAuth2, Stripe, real-time dashboard
-""")
+"
 
-strata.write_active("entities/joe.md", "# Joe: React/Go engineer on Koda team")
+# Pipe content in
+echo "Joe: React/Go engineer on the Kynd team" | strata add entities/joe.md
 
-# Read it back — exact, no fuzzy search
-schema = strata.read_active("projects/koda/spec.md")
+# Quick note (auto-routed to gtd/)
+strata add --text "Review PR by end of day"
+
+# Read it back
+strata read projects/kynd/requirements.md
 
 # List what's available
-files = strata.list_active("projects")
+strata list projects
 
-# ── Search across all layers ─────────────────────────────
-results = strata.query("koda oauth2")
-for r in results:
-    print(f"[{r['tier']}] {r['source']}: {r['content'][:80]}")
-
-# ── Lifecycle ────────────────────────────────────────────
-# Preview what the Janitor would do
-strata.migrate(dry_run=True)
-
-# Execute migration (1st → 2nd Stratum)
-strata.migrate()
-
-# Execute eviction (2nd → 3rd Stratum)
-strata.evict()
-
-# Both at once
-strata.run_maintenance()
 ```
 
-## Skill Install — Make Any Agent Strata-Aware
-
-Strata ships with an agent skill that teaches AI coding assistants how to use Strata's commands and architecture. Once installed, your agent knows about `strata init`, `strata add`, `strata search`, and the three-tier architecture — without being told.
+### Search Across All Three Strata
 
 ```bash
-# Interactive — follow the prompts to choose scope + agents
-strata skill install
+strata search "oauth2 payments"
+# → [1] [ACTIVE] · score=1.50 · projects/kynd/requirements.md
+#       Kynd Platform Stack: React + Go + PostgreSQL Features: OAuth2...
+# → [2] [ARCHIVE] · score=0.50 · archive:strata_3/abc123.json
+#       [in archive — archived file can be rehydrated]
 
-# Non-interactive — install globally to all agents at once
-strata skill install --global
+# JSON output
+strata query "oauth2"
+
 ```
 
-**Works with:** OpenCode, Claude Code, PI, Cursor, Codex, Windsurf, and any agent that supports the [Vercel Skills](https://github.com/vercel-labs/skills) protocol (55+ agent formats).
-
-Requires Node.js. Delegates to `npx skills add` under the hood.
-
-**Why this matters:** Without the skill, you'd have to tell your agent about Strata every session. With it, the agent already knows the commands, the architecture, and how to use each stratum. One install, zero repetition.
-
-## Agent Plugins
-
-Strata ships with native plugins for AI coding assistants, going beyond the CLI with automatic memory context injection and lifecycle management.
-
-### PI Extension (Available Now)
-
-The [Pi coding agent](https://pi.ai) extension at `skills/pi/strata.ts` provides:
-
-- **Auto-injected system prompt** — the agent knows about Strata's tiers and commands on every session start
-- **Auto-memory storage** — after each turn, the extension evaluates whether the response contains information worth persisting
-- **Two-phase decision pipeline** — uses a configurable LLM classifier (OpenAI, Anthropic, or OpenRouter) when enabled, with a zero-dependency regex heuristic as fallback
-- **Semantic path routing** — LLM-suggested titles and categories organize memories into `pi/<category>/<title>.md`
-
-Install with `strata pi-install`, then `/reload` in Pi. The LLM classification is off by default -- enable it by creating `pi-config.json` in your Strata store. See the [Pi Integration](docs/pi-integration.md) documentation for details.
-
-### OpenCode Plugin (Coming Soon)
-
-Full Strata integration via OpenCode's plugin system with tool calling, automatic context injection, and lifecycle management.
-
-### OpenClaw Plugin (Coming Soon)
-
-OpenClaw harness integration with automatic context injection.
-
-## CLI Reference
+### Let the Janitor Work
 
 ```bash
-# Setup
-strata init                # Create ~/.strata/ (global)
-strata init --local        # Create ./strata_data/ (project)
-strata init --global       # Force ~/.strata/
+# Preview first
+strata migrate --dry-run
+strata evict --dry-run
 
-strata config              # Show settings
-strata status              # Show system state
+# Execute
+strata maintenance
 
-# Writing (1st Stratum only — working memory)
-strata add <path> <content>
-echo "note" | strata add <path>
-strata add --text "quick note"
+# Or background daemon (every 15 min by default)
+strata serve &
 
-# Reading
-strata read <path>         # Read a file
-strata list [path]         # List files
-
-# Searching (all three layers)
-strata search <query>      # Human-readable
-strata query <text>        # JSON (for scripts)
-
-# Lifecycle
-strata migrate             # Move stale files to cooled/
-strata evict               # Move cold files to archive/
-strata maintenance         # Both at once
-strata forget <path>       # Archive a specific file
-
-# Daemon (background Janitor)
-strata serve               # Start (checks every 15 min)
-strata serve --interval=300# Every 5 min
-strata stop                # Stop daemon
-strata restart             # Restart
-strata history             # View daemon log
-
-# Agent integration
-strata mcp                 # MCP protocol server
-strata --agent-help        # Agent usage guide
-strata skill install       # Install Strata skill for AI coding assistants (interactive)
-strata skill install --global  # Install globally to all agents (non-interactive)
-
-# QMD (optional hybrid search)
-strata qmd-setup           # Add collections
-strata qmd-embed           # Generate embeddings
 ```
 
-## How the Strata Work
-
-### 1st Stratum — Active (surface layer)
-
-Fastest layer. Plain markdown files in `active/`. The agent reads and writes here directly. There's no database, no vector index — just files on disk.
-
-The `index.md` file is auto-generated and acts as the master map. When the agent needs context, it reads `index.md` first, then navigates to the right file by path.
-
-```bash
-strata add projects/koda/spec.md "# Koda spec"
-cat strata_data/active/index.md
-# → Lists every file with its heading as description
-```
-
-**Agent rule:** Full read/write access. This is your workspace.
-
-### 2nd Stratum — Cooled (middle layer)
-
-When a file hasn't been touched for a while (configurable: 14 days for projects, 60 for entities), the Janitor moves it from `active/` to `cooled/`. It's still a markdown file on disk. The only difference is the agent can't write to it directly.
-
-```bash
-strata migrate              # Janitor moves stale files
-strata list-stratum-2       # See what's in cooled/
-strata search "query"       # Searches cooled/ too (read-only)
-```
-
-**Agent rule:** Read-only via search. If you need to edit something, the Janitor can rehydrate it back to active.
-
-### 3rd Stratum — Archive (deep layer)
-
-When a cooled file hasn't been accessed in months (default: 90 days), the Janitor evicts it to `archive/`. The full content is saved as JSON. A lightweight Shadow Index (SQLite FTS5) keeps it searchable by keyword.
-
-```bash
-strata evict                # Janitor archives old files
-strata search "old project" # Still finds it via shadow index
-# → Shows "_needs_rehydration: true"
-```
-
-**Agent rule:** Can't write here either. Archived files can be rehydrated back to active when needed.
-
-### The Shadow Index
-
-This is what makes Strata different from mem0 or QMD. When a file is archived, the Janitor doesn't just delete it. It stores a "ghost" entry in a tiny SQLite database — just keywords, a 200-char preview, and a file path to the JSON. A million ghosts cost practically nothing.
-
-When you search and don't find anything in active or cooled, Strata hits the Shadow Index. If it finds a match, it reads the archived JSON and puts the file back in active. The memory resurfaces because it proved useful again.
-
-## Agent Integration
-
-Strata exposes **both a CLI and a Python API.** The CLI is the most natural interface for AI agents that can run shell commands. The Python API is available for programmatic use in scripts and applications.
-
-### CLI (recommended for agents)
-
-```bash
-strata add path/to/doc.md "# content"
-strata search "query"
-strata read path/to/doc.md
-strata list active/
-```
-
-### Python API
+## Python API
 
 ```python
 from strata import Strata
+
+# Auto-detects: ./strata_data/ if it exists, else ~/.strata/
 strata = Strata()
-strata.write_active("path/to/doc.md", "# content")
-strata.query("query")
-strata.list_active()
+
+# Write to active tier
+strata.write_active("projects/kynd/spec.md", "# Kynd Platform\n...")
+
+# Read from active tier
+content = strata.read_active("projects/kynd/spec.md")
+
+# Search across all three tiers
+results = strata.query("oauth2 payments")
+
+# Lifecycle
+strata.migrate(dry_run=True)  # Preview
+strata.migrate()              # Execute
+strata.evict()                # Archive old memories
+strata.run_maintenance()      # Both at once
+
+# Context manager
+with Strata() as s:
+    s.write_active("note.md", "# Hello")
+
 ```
 
-### Via function-calling tools
+### Function-Calling Tools
 
-Strata also exposes 5 function-calling tools in OpenAI format:
+Strata exposes five OpenAI-compatible function-calling tools:
 
-| Tool | What it does |
-|------|-------------|
-| `strata_read_active` | Read a file from active/ |
-| `strata_write_active` | Write a file to active/ |
-| `strata_list_active` | List files in active/ |
-| `strata_query` | Search across all 3 strata |
-| `strata_forget` | Archive a cooled file to archive/ |
+| Tool | Purpose |
+| --- | --- |
+| `strata_read_active` | Read a file from active memory |
+| `strata_write_active` | Write a file to active memory |
+| `strata_list_active` | List files in active memory |
+| `strata_query` | Search across all three tiers |
+| `strata_forget` | Archive a cooled file to cold storage |
 
 ```python
-# Get tool schemas
+# Get tool schemas for any LLM harness
 tools = strata.tools.all_schemas()
 
 # Execute a tool call
-result = strata.tools.execute("strata_query", {"query": "koda"})
+result = strata.tools.execute("strata_query", {"query": "kynd"})
+
 ```
 
-Works with OpenAI, Anthropic, OpenClaw, or any harness that speaks function calling. Native plugins for these platforms are [coming soon](#upcoming--agent-plugins).
+This works with OpenAI, Anthropic, OpenClaw, or any harness supporting function calling.
+
+### MCP Server
+
+Strata ships with an MCP (Model Context Protocol) server for agents speaking JSON-RPC 2.0 over stdio:
+
+```bash
+strata mcp
+
+```
+
+It supports Claude Code and any standard MCP client.
+
+## CLI Reference
+
+```text
+SETUP
+  strata init                    Initialize directory structure
+  strata config [get/set]        Show or modify configuration
+  strata status                  Show system state
+
+READING / WRITING (1st Stratum only)
+  strata add <path> [content]    Write content (or pipe, or --text)
+  strata read <path>             Read a 1st Stratum file
+  strata list [path]             List files and directories
+  strata list-stratum-2          List 2nd Stratum (cooled) files
+  strata index                   Regenerate index.md
+
+SEARCHING (all three strata)
+  strata search <query>          Human-readable results
+  strata query <text>            JSON output
+
+LIFECYCLE
+  strata migrate [--dry-run]     Move stale files active/ → cooled/
+  strata evict [--dry-run]       Move cold files cooled/ → archive/
+  strata maintenance [--dry-run] Both at once
+  strata forget <path>           Archive a specific cooled file
+  strata cost                    Show estimated Janitor savings
+
+DAEMON
+  strata serve [--interval=N]    Start background Janitor daemon
+  strata stop                    Stop daemon
+  strata restart                 Restart daemon
+  strata history [--lines=N]     Show daemon activity log
+
+AGENT INTEGRATION
+  strata mcp                     MCP protocol server (stdio)
+  strata skill install           Install Strata skill for AI agents
+  strata pi-install [--force]    Install Strata Pi extension
+  strata --agent-help            Agent usage guide
+
+QMD (optional hybrid search)
+  strata qmd-setup               Configure QMD collections (needs Node.js)
+  strata qmd-embed               Generate vector embeddings
+  strata qmd-status              Show QMD index status
+
+```
 
 ## Configuration
 
@@ -334,89 +288,189 @@ Works with OpenAI, Anthropic, OpenClaw, or any harness that speaks function call
 from strata.config import StrataConfig
 
 config = StrataConfig(
-    # How many days before a file is "stale" enough to migrate
-    # Key is first directory name, "*" is the default
     decay_thresholds={
         "projects": 14,    # Active projects: 2 weeks
-        "entities": 60,    # People/companies: 2 months
+        "entities": 60,    # People and companies: 2 months
         "gtd": 7,          # Tasks: 1 week
         "*": 30,           # Everything else: 1 month
     },
-
-    # Eviction from cooled → archive
-    lru_days=90,            # Evict if not accessed in 90 days
-    lru_min_access_count=1, # And accessed ≤ 1 time
+    lru_days=90,             # Evict if not accessed in 90 days
+    lru_min_access_count=1,  # And accessed 1 time or fewer
 )
+
+```
+
+The config persists to `strata.json` in the base directory. You can alter it at runtime:
+
+```bash
+strata config set decay_thresholds.gtd 14
+strata config get lru_days
+# → 90
+
 ```
 
 ## Daemon Mode
 
-The daemon automates the Janitor. It runs in the background and handles migration + eviction on a schedule:
+The daemon automates the Janitor operations. It runs silently in the background and loops through the migration and eviction processes. The first cycle defaults to a dry run unless you supply the `--live` flag:
 
 ```bash
 strata serve &
 
-# Check on it
+# Check status
 strata status
 # → Daemon: RUNNING (pid=12345)
 # → Cycles completed: 3
 
-# See what it's been doing
-strata history --lines=20
-# → 2026-01-15 02:00:00 [Cycle 1] Migrated: 3, Evicted: 0
-# → 2026-01-15 02:15:00 [Cycle 2] Migrated: 0, Evicted: 1
+# View the log
+strata history
+# → 2026-06-09 02:00:00 [Cycle 1] Migrated: 3, Evicted: 0
 
-# Stop when you want
 strata stop
+
 ```
 
-## QMD Integration (Optional)
+## Agent Integration
 
-[QMD](https://github.com/tobi/qmd) by Tobias Lütke is a local hybrid search engine. If you have it installed, Strata can use it for BM25 + vector search — still no LLM calls:
+You have four ways to connect Strata to an AI agent:
+
+### 1. CLI (recommended)
+
+```bash
+strata add path/to/doc.md "# content"
+strata search "query"
+strata read path/to/doc.md
+strata list
+
+```
+
+### 2. Python API
+
+```python
+from strata import Strata
+strata = Strata()
+strata.write_active("path/doc.md", "# content")
+
+```
+
+### 3. Function-calling tools
+
+```python
+tools = strata.tools.all_schemas()
+
+```
+
+### 4. MCP protocol
+
+```bash
+strata mcp
+
+```
+
+### Skill Install
+
+Strata includes a skill specifically for AI coding assistants. Once installed, your agent automatically understands the commands and the architecture.
+
+```bash
+# Interactive
+strata skill install
+
+# Non-interactive, global
+strata skill install --global
+
+```
+
+This works across 55+ agent formats (including OpenCode, Claude Code, Pi, Cursor, Codex, and Windsurf). You will need Node.js for the `npx skills add` command.
+
+### Pi Extension
+
+You can also install the Strata extension for the Pi coding agent:
+
+```bash
+strata pi-install
+
+```
+
+## Search Backends
+
+Strata provides three search modes. You choose one during initialization or swap it later.
+
+### 1. FTS5 Keyword Search (default)
+
+The system gracefully handles missing dependencies. If you skip installing QMD, the search drops back to filesystem grep across `active/` and `cooled/`; it also runs SQLite FTS5 queries against the Shadow Index to find archived files. You need zero external dependencies. It works wherever Python runs.
+
+### 2. QMD Hybrid Search (optional, recommended)
+
+[QMD](https://github.com/tobi/qmd) by Tobias Lütke introduces BM25 full-text and vector search. You still avoid LLM calls completely. The vectors generate locally on your machine:
 
 ```bash
 npm install -g @tobilu/qmd
-strata qmd-setup     # Add active/ + cooled/ as collections
-strata qmd-embed     # Generate vector embeddings
-strata search "..."  # Now uses BM25 + vector fusion
+strata qmd-setup
+strata qmd-embed
+strata search "..."  # Now uses hybrid search
+
 ```
 
-Without QMD, search falls back to built-in filesystem grep. Works either way.
+### 3. QMD with LLM Rerankers (optional)
+
+You can plug a reranker provider (OpenAI, Ollama, etc.) into QMD for better relevance scoring. This represents the only search path that actually touches an LLM. It remains entirely optional.
+
+## Why Files
+
+Every single memory in Strata exists as a plain file on your disk. It avoids database rows; it avoids graph nodes. Everything is just a standard `.md` file.
+
+Files provide the most agent-native format available today.
+
+* You can run `cat`, `vim`, or `grep` against them.
+* Piping them into standard unix tools works flawlessly.
+* Git handles the version control perfectly.
+
+You bypass SDKs, APIs, and database drivers. You just use the filesystem (which every operating system has supported since 1971).
 
 ## Project Structure
 
-```
-~/.strata/                    # Or ./strata_data/ for local
+```text
+~/.strata/                    # Or ./strata_data/ for local projects
 ├── active/                   # 1st Stratum — working memory
 │   ├── index.md              # Auto-generated master map
-│   ├── projects/             # Current initiatives
-│   ├── entities/             # People, companies, tools
-│   └── gtd/                  # Tasks
+│   ├── projects/
+│   ├── entities/
+│   └── gtd/
 ├── cooled/                   # 2nd Stratum — aged-out files
 ├── archive/                  # 3rd Stratum — cold JSON storage
 ├── shadow.db                 # Shadow Index (SQLite FTS5)
 ├── strata.log                # Daemon activity log
-└── strata.pid                # Daemon PID file
+├── strata.pid                # Daemon PID file
+└── strata.json               # Persisted configuration
+
 ```
 
-## Why Files?
+## Comparison
 
-Every memory in Strata is a plain markdown file on disk. Not a blob in a database. Not a node in a graph. A file.
+| System | Storage Layer | Data Migration | Lifecycle AI Calls | Search Mechanism |
+| --- | --- | --- | --- | --- |
+| **mem0** | Graph DB | Manual only | Per query + maintenance | Semantic + graph traversal |
+| **LangMem** | LangGraph BaseStore (Vectors) | Manual only | High (extracts/updates prompts) | Vector similarity |
+| **Karpathy's LLM Wiki** | Plain Markdown | No tiers (active graph) | High (compiles/links notes) | Semantic + keyword |
+| **OpenClaw** | Markdown files + SQLite | No active decay | Low (turn summarization) | QMD hybrid / built-in |
+| **OpenBrain** | Supabase (Postgres) | No active decay | Low (RAG extraction) | pgvector semantic + keyword |
+| **Strata** | Filesystem + SQLite | **Yes (Algorithmic Janitor)** | **Zero** | FTS5 + optional QMD |
 
-This matters because:
-- **The agent can grep it.** `grep -r "OAuth2" strata_data/`
-- **The agent can edit it.** `vim strata_data/active/projects/koda/spec.md`
-- **The agent can pipe it.** `cat strata_data/active/index.md | head -20`
-- **The agent can version it.** `git add strata_data && git commit -m "update"`
+## What Strata Doesn't Do
 
-No API calls needed. No SDK required. Just files.
+* **No LLM calls during lifecycle management.** The Janitor watches timestamps instead of evaluating semantics. You pay nothing in token costs.
+* **Vector databases are strictly optional.** The search defaults to standard grep and FTS5. You can add vectors later using QMD.
+* **Graph databases are excluded.** Relationship context lives strictly in the directory structure.
+* **External API keys aren't needed.** You rely entirely on local resources.
+* **Distributed consensus isn't part of the design.** You get a single filesystem for a single agent. It functions as a memory space rather than a production database.
+
+The underlying philosophy is extremely simple. Information naturally decays over time. You shouldn't fight that reality; you should build around it. The mechanism of forgetting actually makes memory useful. The real question is how to store each piece of information at the fidelity it deserves, for precisely the duration it remains relevant.
 
 ---
+
+**Version:** 0.1.0 (in beta)
 
 **License:** MIT
 
 **Author:** Jeremy Kamber
 
-**Version:** 0.2.0
-
-**Follow development:** [Substack](https://substack.com/@jeremykamber) | [Blog](https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents)
+**Links:** [GitHub](https://github.com/jeremykamber/strata-memory) · [Substack](https://substack.com/@jeremykamber) · [Blog](https://jeremykamber.com/blog/strata-a-tiered-memory-system-for-effective-ai-agents)
