@@ -20,3 +20,6 @@ landing_page/.astro/
 
 # OS files
 .DS_Store
+
+# Local Netlify folder
+.netlify
