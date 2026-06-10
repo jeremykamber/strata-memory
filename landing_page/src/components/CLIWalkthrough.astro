@@ -16,7 +16,7 @@
       </h2>
       <p class="cli-walkthrough__intro">
         Strata runs on the filesystem. Plain markdown files and algorithmic decay,
-        no external services. Memories settle deeper over time without any LLM supervision.
+        no external services. Memories settle deeper over time and resurface when they prove useful again.
       </p>
     </header>
 
@@ -47,14 +47,14 @@
             <div class="cli-walkthrough__terminal-content">
               <code class="cli-walkthrough__command">
                 <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
-                strata init --project my-agent
+                strata init
               </code>
               <samp class="cli-walkthrough__output">
                 <span class="cli-walkthrough__output-line">
                   <span class="cli-walkthrough__check" aria-hidden="true"
                     >&check;</span
                   >
-                  Created .strata directory
+                  Created ./strata_data
                 </span>
                 <span class="cli-walkthrough__output-line">
                   <span class="cli-walkthrough__check" aria-hidden="true"
@@ -94,7 +94,7 @@
           <div
             class="cli-walkthrough__terminal"
             role="region"
-            aria-label="Terminal output: strata store"
+            aria-label="Terminal output: strata add"
           >
             <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
               <span class="cli-walkthrough__terminal-dot"></span>
@@ -104,20 +104,20 @@
             <div class="cli-walkthrough__terminal-content">
               <code class="cli-walkthrough__command">
                 <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
-                strata store &quot;User prefers dark mode&quot; --tier active
+                strata add user/preferences.md &quot;# User prefers dark mode&quot;
               </code>
               <samp class="cli-walkthrough__output">
                 <span class="cli-walkthrough__output-line">
                   <span class="cli-walkthrough__check" aria-hidden="true"
                     >&check;</span
                   >
-                  Stored at depth 1 (active stratum)
+                  Written to: active/user/preferences.md
                 </span>
               </samp>
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-            New memories land in the active stratum. This is the agent's working memory: hot, fast, and fully editable.
+            New memories land in the active stratum as plain markdown. This is the agent's working memory: hot, fast, and fully editable.
           </p>
         </div>
       </article>
@@ -133,7 +133,7 @@
           <div
             class="cli-walkthrough__terminal"
             role="region"
-            aria-label="Terminal output: strata recall"
+            aria-label="Terminal output: strata search"
           >
             <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
               <span class="cli-walkthrough__terminal-dot"></span>
@@ -143,46 +143,42 @@
             <div class="cli-walkthrough__terminal-content">
               <code class="cli-walkthrough__command">
                 <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
-                strata recall --context &quot;user preferences&quot;
+                strata search &quot;user preferences&quot;
               </code>
               <samp class="cli-walkthrough__output">
                 <span
                   class="cli-walkthrough__output-line cli-walkthrough__output-line--header"
                 >
-                  <span class="cli-walkthrough__output-col">Depth</span>
-                  <span class="cli-walkthrough__output-col">Memory</span>
+                  <span class="cli-walkthrough__output-col">Score</span>
                   <span class="cli-walkthrough__output-col">Tier</span>
-                  <span class="cli-walkthrough__output-col">Age</span>
+                  <span class="cli-walkthrough__output-col">Source</span>
                 </span>
                 <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">1</span>
+                  <span class="cli-walkthrough__output-col">1.50</span>
+                  <span class="cli-walkthrough__output-col">ACTIVE</span>
                   <span class="cli-walkthrough__output-col"
-                    >User prefers dark mode</span
+                    >user/preferences.md</span
                   >
-                  <span class="cli-walkthrough__output-col">active</span>
-                  <span class="cli-walkthrough__output-col">2h</span>
                 </span>
                 <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">3</span>
+                  <span class="cli-walkthrough__output-col">0.50</span>
+                  <span class="cli-walkthrough__output-col">MEDIUM</span>
                   <span class="cli-walkthrough__output-col"
-                    >User dashboard layout</span
+                    >user/dashboard.md</span
                   >
-                  <span class="cli-walkthrough__output-col">cooled</span>
-                  <span class="cli-walkthrough__output-col">3d</span>
                 </span>
                 <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">7</span>
+                  <span class="cli-walkthrough__output-col">0.25</span>
+                  <span class="cli-walkthrough__output-col">ARCHIVE</span>
                   <span class="cli-walkthrough__output-col"
-                    >Rate limit preferences</span
+                    >Rate limit prefs...</span
                   >
-                  <span class="cli-walkthrough__output-col">archive</span>
-                  <span class="cli-walkthrough__output-col">14d</span>
                 </span>
               </samp>
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-            Recall scans active first, then cooled, then archive. Recent context surfaces before distant memories, just like the human brain.
+            Search cascades across all three tiers. Active results rank highest, cooled appears next, and archived matches carry a flag for rehydration. Recent context surfaces before distant memories, just like the human brain.
           </p>
         </div>
       </article>
@@ -198,7 +194,7 @@
           <div
             class="cli-walkthrough__terminal"
             role="region"
-            aria-label="Terminal output: strata status"
+            aria-label="Terminal output: strata promote"
           >
             <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
               <span class="cli-walkthrough__terminal-dot"></span>
@@ -208,54 +204,65 @@
             <div class="cli-walkthrough__terminal-content">
               <code class="cli-walkthrough__command">
                 <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
-                strata status
+                strata promote
               </code>
               <samp class="cli-walkthrough__output">
-                <span
-                  class="cli-walkthrough__output-line cli-walkthrough__output-line--header"
-                >
-                  <span class="cli-walkthrough__output-col">Stratum</span>
-                  <span class="cli-walkthrough__output-col">Decay Timer</span>
-                  <span class="cli-walkthrough__output-col">Size</span>
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Promoted user/dashboard.md (accessed 4 times, threshold 3)
                 </span>
                 <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">
-                    <span
-                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--active"
-                      aria-hidden="true"
-                    ></span>
-                    active
-                  </span>
-                  <span class="cli-walkthrough__output-col">23h 14m</span>
-                  <span class="cli-walkthrough__output-col">4.2 KB</span>
-                </span>
-                <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">
-                    <span
-                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--cooled"
-                      aria-hidden="true"
-                    ></span>
-                    cooled
-                  </span>
-                  <span class="cli-walkthrough__output-col">3d 2h</span>
-                  <span class="cli-walkthrough__output-col">2.8 KB</span>
-                </span>
-                <span class="cli-walkthrough__output-line">
-                  <span class="cli-walkthrough__output-col">
-                    <span
-                      class="cli-walkthrough__depth-marker cli-walkthrough__depth-marker--archive"
-                      aria-hidden="true"
-                    ></span>
-                    archive
-                  </span>
-                  <span class="cli-walkthrough__output-col">-</span>
-                  <span class="cli-walkthrough__output-col">16.1 KB</span>
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Moved back to active/user/dashboard.md
                 </span>
               </samp>
             </div>
           </div>
           <p class="cli-walkthrough__annotation">
-          One command gives you full visibility into how memories are aging -- when a stratum is about to decay, and the size of the stratum.
+            Memories don't just sink; they resurface. When the agent reads a cooled file enough times, it gets promoted back to the active stratum automatically — no separate command needed. The file proved useful again.
+          </p>
+        </div>
+      </article>
+
+      <!-- Step 5 -->
+      <article class="cli-walkthrough__step" data-step="4">
+        <div class="cli-walkthrough__step-marker">
+          <span class="cli-walkthrough__step-circle" aria-hidden="true"
+            >05</span
+          >
+        </div>
+        <div class="cli-walkthrough__step-body">
+          <div
+            class="cli-walkthrough__terminal"
+            role="region"
+            aria-label="Terminal output: strata rehydrate"
+          >
+            <div class="cli-walkthrough__terminal-bar" aria-hidden="true">
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+              <span class="cli-walkthrough__terminal-dot"></span>
+            </div>
+            <div class="cli-walkthrough__terminal-content">
+              <code class="cli-walkthrough__command">
+                <span class="cli-walkthrough__prompt" aria-hidden="true">$</span>
+                strata rehydrate a1b2c3d4e5f6 --target=active
+              </code>
+              <samp class="cli-walkthrough__output">
+                <span class="cli-walkthrough__output-line">
+                  <span class="cli-walkthrough__check" aria-hidden="true"
+                    >&check;</span
+                  >
+                  Restored to 1st Stratum (active): user/rate-limits.md
+                </span>
+              </samp>
+            </div>
+          </div>
+          <p class="cli-walkthrough__annotation">
+            Archived files are never gone for good. Reading an archived file by its original path auto-rehydrates it to active, or use `strata rehydrate` to choose the target tier yourself.
           </p>
         </div>
       </article>

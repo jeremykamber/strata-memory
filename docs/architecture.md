@@ -43,7 +43,9 @@ An auto-generated `index.md` serves as the master map. It lists every file in th
 
 When a file has not been modified for longer than its decay threshold, the Janitor moves it from `active/` to `cooled/`. The file stays as a plain markdown file on disk. The only difference is the agent cannot write to it directly.
 
-**Agent rule:** Read-only via search. The Janitor tracks access counts for LRU calculations. If you need to edit something, it can be rehydrated back to active.
+**Agent rule:** Read-only via search. The Janitor tracks access counts for LRU calculations and promotion decisions. If you need to edit something, it can be rehydrated back to active.
+
+**Moving back up (Promotion):** The Janitor also moves files in the opposite direction. When a cooled file is accessed 3 or more times (configurable via `promotion_threshold`), it gets promoted back to active/. The file has proven useful again -- it's restored to the working tier where the agent can read and edit it directly.
 
 **Characteristics:**
 - Same storage medium as active (markdown files)
@@ -55,7 +57,7 @@ When a file has not been modified for longer than its decay threshold, the Janit
 
 When a cooled file has not been accessed for longer than the LRU window, the Janitor evicts it to `archive/`. The full content is saved as a JSON blob. A lightweight Shadow Index (SQLite FTS5) keeps it keyword-searchable.
 
-**Agent rule:** Cannot write here. Archived files can be rehydrated back to active when a search match proves them useful.
+**Agent rule:** Cannot write here. Archived files can be rehydrated back to active/ or cooled/ using `strata rehydrate <id> --target=active|cooled`. The agent can choose whether to restore the file for editing (active) or for reference (cooled).
 
 **Characteristics:**
 - Coldest storage tier
@@ -68,14 +70,14 @@ When a cooled file has not been accessed for longer than the LRU window, the Jan
 The Janitor is the only process that moves data between strata. It runs on a schedule and uses deterministic rules -- no LLM calls required. This means maintenance costs are bounded and predictable.
 
 ```
-┌─────────────┐         ┌──────────────┐         ┌──────────────┐
-│   active/   │ ──migrate──▶   cooled/   │ ──evict──▶   archive/   │
-│ (1st Strat) │   age>    │ (2nd Strat) │   LRU>    │ (3rd Strat)  │
-│             │ threshold │             │ threshold │  + shadow.db │
+┌─────────────┐    promote     ┌──────────────┐         ┌──────────────┐
+│   active/   │ ◀──────2+──────   cooled/   │ ──evict──▶   archive/   │
+│ (1st Strat) │ ──migrate──▶   │ (2nd Strat) │   LRU>    │ (3rd Strat)  │
+│             │   age>    │    │             │ threshold │  + shadow.db │
 └─────────────┘         └──────────────┘         └──────────────┘
-       │                                                │
+       ▲                                                │
        └──────────────────────◀─────────────────────────┘
-                              rehydrate
+                       rehydrate
 ```
 
 ### Migration (1st -> 2nd)
@@ -102,17 +104,33 @@ The Janitor is the only process that moves data between strata. It runs on a sch
    c. Delete the file from `cooled/`
    d. Log the eviction
 
-### Rehydration (3rd -> 1st)
+### Promotion (2nd -> 1st)
+
+The Janitor moves files **up** the strata. When a cooled file is read frequently enough, it gets promoted back to active/.
+
+**Trigger:** Access count >= `promotion_threshold` (default: 3).
+
+**Automatic promotion:** `strata read` on a cooled file tracks the access count. When the threshold is reached, the file is promoted inline — the content is returned, and the file is moved from `cooled/` to `active/` as part of the same operation. No separate command needed.
+
+**Batch promotion:** `strata promote` and `strata maintenance` also promote eligible files for cases where the Janitor ran a batch cycle.
+
+**Effect:** Copy from `cooled/` to `active/`, delete the cooled copy, remove the access tracking entry, regenerate the index.
+
+**Intent:** If the agent keeps reading a cooled file, that file is clearly still relevant. Rather than letting it sink into archive, promotion brings it back to the surface where the agent can work with it directly.
+
+### Rehydration (3rd -> 1st or 3rd -> 2nd)
 
 When a search query matches an archived entry via the Shadow Index:
 
-1. The search result includes `_needs_rehydration: true`
-2. The agent (or user) can request rehydration
+1. The search result includes the archive path and a hint to rehydrate
+2. The agent can:
+   - Run `strata rehydrate <shadow_id> --target=active|cooled` for explicit control
+   - Run `strata read <original_path>` for automatic rehydration to active
 3. Strata reads the archived JSON blob
-4. The file is restored to `active/`
-5. The Shadow Index entry is preserved (for future search)
+4. The file is restored to the target tier (active/ for editing, cooled/ for reference)
+5. The Shadow Index entry is removed
 
-Rehydration is not automatic -- it is triggered by explicit action when search results indicate archived content is relevant.
+Rehydration happens automatically when you read an archived file by its original path. The file is restored to the 1st Stratum so the agent can work with it directly without an extra command.
 
 ## The Shadow Index
 

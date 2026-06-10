@@ -29,7 +29,7 @@ pip install strata-memory
 Version pinning is recommended for production use:
 
 ```bash
-pip install strata-memory==0.1.0
+pip install strata-memory==0.2.0
 ```
 
 ## Verify Installation

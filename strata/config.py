@@ -46,18 +46,25 @@ class StrataConfig:
     stratum_3_archive: str = "archive"
     stratum_3_shadow_db: str = "stratum_3_shadow.db"
 
-    decay_thresholds: dict = field(default_factory=lambda: {
-        "projects": 14,
-        "entities": 60,
-        "gtd": 7,
-        "*": 30,
-    })
+    decay_thresholds: dict = field(
+        default_factory=lambda: {
+            "projects": 14,
+            "entities": 60,
+            "gtd": 7,
+            "*": 30,
+        }
+    )
 
     lru_days: int = 90
     lru_min_access_count: int = 1
     lru_decay_thresholds: dict = field(default_factory=lambda: {"*": 90})
 
-    active_file_patterns: list = field(default_factory=lambda: ["*.md", "*.txt", "*.json", "*.yaml", "*.yml"])
+    promotion_threshold: int = 3
+    rehydration_target: str = "active"
+
+    active_file_patterns: list = field(
+        default_factory=lambda: ["*.md", "*.txt", "*.json", "*.yaml", "*.yml"]
+    )
 
     qmd_enabled: bool = False
     qmd_collection_prefix: str = "strata_"

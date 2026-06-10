@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from strata import Strata
-
 
 class StrataTools:
     """Agent tool definitions in OpenAI-compatible function calling format.
@@ -14,7 +9,7 @@ class StrataTools:
     OpenClaw, custom).
     """
 
-    def __init__(self, strata: "Strata"):
+    def __init__(self, strata):
         """Initialize the tools wrapper.
 
         Args:
@@ -27,7 +22,7 @@ class StrataTools:
         """Return all tool schemas in OpenAI-compatible format.
 
         Returns:
-            A list of function-calling schema dicts for all five
+            A list of function-calling schema dicts for all six
             Strata tools.
         """
         return [
@@ -36,6 +31,7 @@ class StrataTools:
             self.list_active_schema(),
             self.query_schema(),
             self.forget_schema(),
+            self.rehydrate_schema(),
         ]
 
     def read_active_schema(self) -> dict:
@@ -172,6 +168,36 @@ class StrataTools:
             },
         }
 
+    def rehydrate_schema(self) -> dict:
+        """Return the schema for the ``strata_rehydrate`` tool.
+
+        Returns:
+            An OpenAI-compatible function-calling schema dict.
+        """
+        return {
+            "type": "function",
+            "function": {
+                "name": "strata_rehydrate",
+                "description": "Restore an archived file from the 3rd Stratum back to the 1st (active) or 2nd (cooled). Use when a search result has _needs_rehydration: true and you want to edit or re-read the full content.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "shadow_id": {
+                            "type": "string",
+                            "description": "Shadow entry ID or original_path from the search result metadata (id, shadow_id, or memory_id field)",
+                        },
+                        "target_tier": {
+                            "type": "string",
+                            "enum": ["active", "cooled"],
+                            "description": "Target stratum: 'active' (1st, editable) or 'cooled' (2nd, query-only)",
+                            "default": "active",
+                        },
+                    },
+                    "required": ["shadow_id"],
+                },
+            },
+        }
+
     def execute(self, tool_name: str, arguments: dict) -> dict:
         """Execute a tool by name with the given arguments."""
         handlers = {
@@ -180,6 +206,7 @@ class StrataTools:
             "strata_list_active": self._handle_list_active,
             "strata_query": self._handle_query,
             "strata_forget": self._handle_forget,
+            "strata_rehydrate": self._handle_rehydrate,
         }
         handler = handlers.get(tool_name)
         if not handler:
@@ -218,3 +245,29 @@ class StrataTools:
         archive_path = self.strata.s3.archive_file(source, path, tags=tags)
         source.unlink()
         return {"path": path, "archive_path": archive_path, "status": "archived"}
+
+    def _handle_rehydrate(self, args: dict) -> dict:
+        shadow_id = args["shadow_id"]
+        target_tier = args.get("target_tier", "active")
+        if target_tier not in ("active", "cooled"):
+            return {"error": f"Invalid target_tier: {target_tier}"}
+
+        s3 = self.strata.s3
+        conn = s3._connect_shadow()
+        row = conn.execute(
+            "SELECT * FROM shadow_index WHERE id = ? OR original_path = ?",
+            (shadow_id, shadow_id),
+        ).fetchone()
+        if not row:
+            return {"error": f"Shadow entry not found: {shadow_id}"}
+
+        entry = dict(row)
+        result = self.strata.rehydrate(entry, target_tier=target_tier)
+        if result is None:
+            return {"error": f"Could not read archive file for: {shadow_id}"}
+
+        return {
+            "original_path": result.get("original_path", "?"),
+            "target_tier": target_tier,
+            "status": "rehydrated",
+        }

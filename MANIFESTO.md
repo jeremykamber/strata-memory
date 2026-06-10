@@ -48,6 +48,8 @@ Like sediment that's settled but hasn't hardened into rock. The files are still 
 
 The Janitor moves files here from the 1st Stratum based on age (default: 14 days for projects, 60 for entities). The agent can still search and read them via `strata search`, but it can't write to them directly. If it needs to edit something, the file gets rehydrated back to the 1st Stratum first.
 
+**Moving back up:** The Janitor also promotes files in the other direction. When a cooled file is accessed 3 or more times (configurable via `promotion_threshold`), it gets moved back to active/. The file proved useful again. This makes the lifecycle genuinely bidirectional — information doesn't just sink, it can resurface when the agent needs it.
+
 **Latency:** ~5ms. **Storage:** Filesystem. **Managed by:** Janitor.
 
 ### 3rd Stratum — The Archive
@@ -56,7 +58,14 @@ This is the bedrock. Memories that haven't been touched in months get compressed
 
 When the Janitor evicts a file here, it leaves behind a "ghost" in the Shadow Index — just keywords, a 200-character preview, and a file path. No vectors, no embeddings. A million ghosts cost less than a megabyte.
 
-If a search finds a ghost, the file gets rehydrated back to the 1st Stratum. The memory resurfaces because it proved useful again.
+If a search finds a ghost, the file can be rehydrated back to either the 1st Stratum (active, editable) or the 2nd Stratum (cooled, query-only). The agent chooses:
+
+```bash
+strata rehydrate <shadow_id> --target=active   # Restore for editing
+strata rehydrate <shadow_id> --target=cooled   # Restore for reference only
+```
+
+Rehydrating to cooled avoids the re-eviction risk — the file stays in the middle layer where it's searchable but won't clutter the active workspace.
 
 **Latency:** ~10ms (with rehydration). **Storage:** Flat JSON + SQLite FTS5.
 

@@ -31,6 +31,24 @@ Default thresholds by directory:
 | `gtd/` | 7 days | Tasks and quick notes. One week and they are stale. |
 | Everything else | 30 days | Default. One month without access. |
 
+### Promotion (2nd -> 1st Stratum)
+
+Controls how frequently a cooled file must be accessed before it gets promoted back to active.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `promotion_threshold` | `int` | `3` | Number of accesses to a cooled file before the Janitor promotes it back to active. Once a file crosses this threshold, it is moved from `cooled/` to `active/` and access tracking is reset. |
+
+When a file in `cooled/` is read (via `strata read`), the access count increments. If it reaches `promotion_threshold`, the file is automatically promoted back to `active/` during the read operation. The batch `strata promote` and `strata maintenance` commands also check thresholds. This prevents frequently-referenced content from being buried by age-based decay.
+
+### Rehydration (3rd -> 1st / 3rd -> 2nd)
+
+Controls the default target tier when rehydrating archived files.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `rehydration_target` | `str` | `"active"` | Default target stratum for rehydration. `"active"` restores to the 1st Stratum (editable). `"cooled"` restores to the 2nd Stratum (query-only). Can be overridden per-call with `--target=active|cooled`. |
+
 ### LRU Eviction (2nd -> 3rd Stratum)
 
 Controls how long a file can sit untouched in the cooled stratum before the Janitor evicts it to the archive.

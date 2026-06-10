@@ -31,9 +31,9 @@ strata status                         # System state
 
 ## Commands
 
-### Read/Write (1st Stratum only)
+### Read/Write
 - `strata add <path> <content>` — Write a file (`strata add projects/koda/spec.md "# Spec..."`)
-- `strata read <path>` — Read full content (`strata read projects/koda/spec.md`)
+- `strata read <path>` — Read from any stratum (cascades active → cooled → archive). Reading cooled files tracks access and auto-promotes after 3 reads. Reading archived files auto-rehydrates to active.
 - `strata list [path]` — List files (`strata list projects`)
 
 ### Search (all tiers)
@@ -42,8 +42,10 @@ strata status                         # System state
 
 ### Lifecycle
 - `strata migrate` — Move stale active/ files to cooled/
+- `strata promote` — Batch-promote hot cooled files to active/ (automatic on read, but this catches leftovers)
 - `strata evict` — Move cold cooled/ files to archive/
-- `strata maintenance` — Both in one command
+- `strata maintenance` — Full cycle: promote → migrate → evict
+- `strata rehydrate <id>` — Restore an archived file to active or cooled"
 
 ### Daemon
 - `strata serve [--interval=N]` — Start automatic Janitor
