@@ -64,7 +64,8 @@ def test_cli_init_npx_failure(tmp_base, monkeypatch, capsys):
 
     monkeypatch.setattr(sys, "stdin", _TTYStringIO("1\n"))
     monkeypatch.setattr(
-        subprocess, "run",
+        subprocess,
+        "run",
         lambda *a, **kw: (_ for _ in ()).throw(FileNotFoundError()),
     )
     monkeypatch.chdir(tmp_base)
@@ -107,6 +108,7 @@ def test_cli_add_stdin(tmp_base, monkeypatch):
     monkeypatch.chdir(tmp_base)
     import sys
     from io import StringIO
+
     monkeypatch.setattr(sys, "stdin", StringIO("# Stdin content"))
     main(["init"])
     main(["add", "projects/stdin_test.md"])
@@ -244,16 +246,21 @@ def test_cli_maintenance(tmp_base, monkeypatch):
     main(["maintenance", "--dry-run"])
 
 
-def _fake_npx_cmd(tmp_path, monkeypatch, extra_args: Optional[List[str]] = None) -> List[str]:
+def _fake_npx_cmd(
+    tmp_path, monkeypatch, extra_args: Optional[List[str]] = None
+) -> List[str]:
     """Run strata skill install with mocks and return the npx command that would execute."""
     import shutil
     import subprocess
 
     skill_dir = tmp_path / "skills" / "strata"
     skill_dir.mkdir(parents=True)
-    (skill_dir / "SKILL.md").write_text("---\nname: strata-memory\ndescription: test\n---")
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: strata-memory\ndescription: test\n---"
+    )
 
     from strata import cli as strata_cli
+
     monkeypatch.setattr(strata_cli, "_find_skill_dir", lambda: skill_dir)
     monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/npx")
 
@@ -301,11 +308,15 @@ def test_cli_skill_install_global(tmp_path, monkeypatch, capsys):
 
 def test_cli_skill_install_no_npx(tmp_base, monkeypatch, capsys):
     import shutil
+
     monkeypatch.setattr(shutil, "which", lambda _: None)
     from strata import cli as strata_cli
+
     skill_dir = tmp_base / "skills" / "strata"
     skill_dir.mkdir(parents=True)
-    (skill_dir / "SKILL.md").write_text("---\nname: strata-memory\ndescription: test\n---")
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: strata-memory\ndescription: test\n---"
+    )
     monkeypatch.setattr(strata_cli, "_find_skill_dir", lambda: skill_dir)
 
     try:
@@ -329,6 +340,7 @@ def test_cli_skill_bogus_subcommand(tmp_base, monkeypatch, capsys):
 def test_pi_install_no_pi(tmp_path, monkeypatch, capsys):
     """pi-install errors when pi CLI is not on PATH."""
     import shutil
+
     monkeypatch.setattr(shutil, "which", lambda cmd: None)
     try:
         main(["pi-install"])
@@ -347,7 +359,9 @@ def test_pi_install_file_copy(tmp_path, monkeypatch, capsys):
     src.parent.mkdir(parents=True)
     src.write_text("export default function() {}")
 
-    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
+    )
     monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
@@ -369,7 +383,9 @@ def test_pi_install_directory_creation(tmp_path, monkeypatch):
     src.parent.mkdir(parents=True)
     src.write_text("export default function() {}")
 
-    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
+    )
     monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
@@ -388,7 +404,9 @@ def test_pi_install_force_overwrite(tmp_path, monkeypatch, capsys):
     src.parent.mkdir(parents=True)
     src.write_text("new content")
 
-    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
+    )
     monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
@@ -410,7 +428,9 @@ def test_pi_install_overwrite_abort(tmp_path, monkeypatch, capsys):
     src.parent.mkdir(parents=True)
     src.write_text("new content")
 
-    monkeypatch.setattr(shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None)
+    monkeypatch.setattr(
+        shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
+    )
     monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr("builtins.input", lambda _: "n")

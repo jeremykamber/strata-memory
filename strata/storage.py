@@ -18,6 +18,7 @@ from strata.models import ShadowEntry
 #  1ST STRATUM — Active Shell (Filesystem)
 # ────────────────────────────────────────────────────────────
 
+
 class Stratum1Storage:
     """Filesystem-backed active memory. The agent's working context."""
 
@@ -123,15 +124,17 @@ class Stratum1Storage:
             return []
         entries = []
         for child in sorted(p.iterdir()):
-            entries.append({
-                "name": child.name,
-                "path": str(child.relative_to(self._root)),
-                "type": "directory" if child.is_dir() else "file",
-                "size": child.stat().st_size if child.is_file() else 0,
-                "modified": datetime.fromtimestamp(
-                    child.stat().st_mtime, tz=timezone.utc
-                ).isoformat(),
-            })
+            entries.append(
+                {
+                    "name": child.name,
+                    "path": str(child.relative_to(self._root)),
+                    "type": "directory" if child.is_dir() else "file",
+                    "size": child.stat().st_size if child.is_file() else 0,
+                    "modified": datetime.fromtimestamp(
+                        child.stat().st_mtime, tz=timezone.utc
+                    ).isoformat(),
+                }
+            )
         return entries
 
     def get_modified_days_ago(self, path: str) -> int:
@@ -170,12 +173,14 @@ class Stratum1Storage:
             days = self.get_modified_days_ago(rel)
             threshold = self.config.get_decay_days(rel)
             if days >= threshold:
-                stale.append({
-                    "path": rel,
-                    "age_days": days,
-                    "threshold": threshold,
-                    "size": filepath.stat().st_size,
-                })
+                stale.append(
+                    {
+                        "path": rel,
+                        "age_days": days,
+                        "threshold": threshold,
+                        "size": filepath.stat().st_size,
+                    }
+                )
         return stale
 
     def path_exists(self, path: str) -> bool:
@@ -197,9 +202,15 @@ class Stratum1Storage:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         lines.append(f"_Last updated: {now}_")
         lines.append("")
-        lines.append("This index lists every file in active memory. Read this first to find")
-        lines.append("relevant context, then navigate to specific files by path. The AI")
-        lines.append("should organise files however it sees fit — create directories as")
+        lines.append(
+            "This index lists every file in active memory. Read this first to find"
+        )
+        lines.append(
+            "relevant context, then navigate to specific files by path. The AI"
+        )
+        lines.append(
+            "should organise files however it sees fit — create directories as"
+        )
         lines.append("needed. There are no pre-determined folders; the structure grows")
         lines.append("organically with use.")
         lines.append("")
@@ -252,6 +263,7 @@ class Stratum1Storage:
 # ────────────────────────────────────────────────────────────
 #  2ND STRATUM — Cooled (Filesystem, aged-out files)
 # ────────────────────────────────────────────────────────────
+
 
 class Stratum2Storage:
     """Filesystem-backed cooled memory. Stale files from the 1st Stratum
@@ -356,13 +368,15 @@ class Stratum2Storage:
             if not filepath.is_file():
                 continue
             rel = str(filepath.relative_to(self._root))
-            entries.append({
-                "path": rel,
-                "size": filepath.stat().st_size,
-                "modified": datetime.fromtimestamp(
-                    filepath.stat().st_mtime, tz=timezone.utc
-                ).isoformat(),
-            })
+            entries.append(
+                {
+                    "path": rel,
+                    "size": filepath.stat().st_size,
+                    "modified": datetime.fromtimestamp(
+                        filepath.stat().st_mtime, tz=timezone.utc
+                    ).isoformat(),
+                }
+            )
         return entries
 
     def count(self) -> int:
@@ -451,6 +465,7 @@ class Stratum2Storage:
 #  3RD STRATUM — Cold Archive + Shadow Index
 # ────────────────────────────────────────────────────────────
 
+
 class Stratum3Storage:
     """Cold archive with flat-file JSON storage + SQLite Shadow Index.
 
@@ -512,7 +527,9 @@ class Stratum3Storage:
             END;
         """)
 
-    def archive_file(self, source_path: Path, original_rel_path: str, tags: list[str] | None = None) -> str:
+    def archive_file(
+        self, source_path: Path, original_rel_path: str, tags: list[str] | None = None
+    ) -> str:
         """Save a file's content into the cold archive and index it."""
         self.ensure_dirs()
         content = source_path.read_text(encoding="utf-8")
@@ -597,7 +614,7 @@ class Stratum3Storage:
         conn = self._connect_shadow()
         results = []
         for tag in tags:
-            like = f"%\"{tag}\"%"
+            like = f'%"{tag}"%'
             rows = conn.execute(
                 "SELECT * FROM shadow_index WHERE keywords LIKE ? LIMIT ?",
                 (like, top_k),
@@ -646,6 +663,7 @@ class Stratum3Storage:
 #  QMD WRAPPER — Optional hybrid search via QMD CLI
 # ────────────────────────────────────────────────────────────
 
+
 class QmdWrapper:
     """Wrapper around the QMD CLI for hybrid search.
 
@@ -672,7 +690,8 @@ class QmdWrapper:
         try:
             subprocess.run(
                 ["qmd", "--version"],
-                capture_output=True, timeout=5,
+                capture_output=True,
+                timeout=5,
             )
             self._available = True
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -693,9 +712,18 @@ class QmdWrapper:
             try:
                 r = subprocess.run(
                     ["qmd", "collection", "add", str(path), "--name", name],
-                    capture_output=True, text=True, timeout=15,
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
                 )
-                results.append({"name": name, "path": str(path), "status": "ok" if r.returncode == 0 else "error", "output": r.stderr.strip()})
+                results.append(
+                    {
+                        "name": name,
+                        "path": str(path),
+                        "status": "ok" if r.returncode == 0 else "error",
+                        "output": r.stderr.strip(),
+                    }
+                )
             except Exception as e:
                 results.append({"name": name, "status": "error", "error": str(e)})
         return results
@@ -707,7 +735,10 @@ class QmdWrapper:
             if force:
                 cmd.append("-f")
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-            return {"status": "ok" if r.returncode == 0 else "error", "output": r.stderr.strip()}
+            return {
+                "status": "ok" if r.returncode == 0 else "error",
+                "output": r.stderr.strip(),
+            }
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
@@ -716,9 +747,14 @@ class QmdWrapper:
         try:
             r = subprocess.run(
                 ["qmd", "update"],
-                capture_output=True, text=True, timeout=120,
+                capture_output=True,
+                text=True,
+                timeout=120,
             )
-            return {"status": "ok" if r.returncode == 0 else "error", "output": r.stderr.strip()}
+            return {
+                "status": "ok" if r.returncode == 0 else "error",
+                "output": r.stderr.strip(),
+            }
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
@@ -727,7 +763,9 @@ class QmdWrapper:
         try:
             r = subprocess.run(
                 ["qmd", "search", query, "--json", "-n", str(top_k)],
-                capture_output=True, text=True, timeout=30,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             if r.returncode != 0:
                 return []
@@ -740,7 +778,9 @@ class QmdWrapper:
         try:
             r = subprocess.run(
                 ["qmd", "vsearch", query, "--json", "-n", str(top_k)],
-                capture_output=True, text=True, timeout=30,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             if r.returncode != 0:
                 return []
@@ -760,7 +800,9 @@ class QmdWrapper:
         try:
             r = subprocess.run(
                 ["qmd", "status"],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             return {"status": "ok", "output": r.stderr.strip()}
         except Exception as e:
@@ -770,6 +812,7 @@ class QmdWrapper:
 # ────────────────────────────────────────────────────────────
 #  RRF Fusion Utility
 # ────────────────────────────────────────────────────────────
+
 
 def _rrf_fuse(*result_lists: list[dict], top_k: int = 5, k: int = 60) -> list[dict]:
     """Reciprocal Rank Fusion: combine multiple ranked result lists.
