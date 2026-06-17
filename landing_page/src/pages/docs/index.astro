@@ -43,7 +43,7 @@ const sections = [
   <main class="docs-landing">
     <h1>Documentation</h1>
     <p class="docs-landing-subtitle">
-      Everything you need to use Strata  -  from setup to architecture to integration.
+      Everything you need to use Strata, from setup to architecture to integration.
     </p>
 
     <div class="docs-landing-grid">
@@ -76,27 +76,28 @@ const sections = [
   }
 
   .docs-landing-subtitle {
-    font-size: var(--text-lg, 1.25rem);
-    color: var(--color-text-secondary, oklch(0.35 0.015 50));
-    margin-bottom: var(--space-2xl, 4rem);
+    font-size: var(--text-lg);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-2xl);
     max-width: 60ch;
   }
 
   .docs-landing-grid {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2xl, 4rem);
+    gap: var(--space-2xl);
   }
 
   .docs-landing-section-title {
-    font-size: var(--text-sm, 0.875rem);
+    font-family: var(--font-display);
+    font-size: var(--text-xs);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--color-text-muted, oklch(0.55 0.02 55));
-    margin: 0 0 var(--space-sm, 1rem) 0;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-sm) 0;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--color-border, oklch(0.80 0.015 55));
+    border-bottom: 1px solid var(--color-border);
   }
 
   .docs-landing-list {
@@ -105,24 +106,26 @@ const sections = [
     margin: 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-xs, 0.75rem);
+    gap: var(--space-xs);
   }
 
   .docs-landing-card {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    padding: var(--space-sm, 1rem) var(--space-md, 1.5rem);
-    background: var(--color-surface, oklch(0.96 0.008 65));
-    border: 1px solid var(--color-border, oklch(0.80 0.015 55));
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 6px;
     text-decoration: none;
-    transition: all var(--duration-fast, 150ms) var(--ease-out-quart);
+    transition: background var(--duration-fast) var(--ease-out-quart),
+                border-color var(--duration-fast) var(--ease-out-quart),
+                transform var(--duration-fast) var(--ease-out-quart);
   }
 
   .docs-landing-card:hover {
-    background: var(--color-surface-raised, oklch(0.98 0.005 70));
-    border-color: var(--color-accent, oklch(0.55 0.15 40));
+    background: var(--color-surface-raised);
+    border-color: var(--color-accent);
     transform: translateY(-1px);
   }
 
@@ -132,16 +135,16 @@ const sections = [
   }
 
   .docs-landing-card-title {
-    font-family: var(--font-display, 'Barlow', sans-serif);
-    font-size: var(--text-base, 1rem);
+    font-family: var(--font-display);
+    font-size: var(--text-base);
     font-weight: 600;
-    color: var(--color-text-primary, oklch(0.15 0.015 50));
+    color: var(--color-text-primary);
   }
 
   .docs-landing-card-desc {
-    font-family: var(--font-body, 'Source Serif 4', Georgia, serif);
-    font-size: var(--text-sm, 0.875rem);
-    color: var(--color-text-secondary, oklch(0.35 0.015 50));
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
     line-height: 1.4;
   }
 
