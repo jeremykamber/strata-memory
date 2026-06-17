@@ -85,6 +85,7 @@ If no facts are worth extracting, respond with exactly: No significant facts to 
 #  Distiller class
 # ────────────────────────────────────────────────────────────
 
+
 class Distiller:
     """Background LLM-powered conversation distillation.
 
@@ -157,7 +158,11 @@ class Distiller:
 
         new_convs = self._find_new_conversations()
         if not new_convs:
-            return {"status": "skipped", "reason": "no_new_conversations", "processed": 0}
+            return {
+                "status": "skipped",
+                "reason": "no_new_conversations",
+                "processed": 0,
+            }
 
         pending = len(new_convs)
 
@@ -175,7 +180,11 @@ class Distiller:
             transcripts.append({"path": rel_path, "content": content})
 
         if not transcripts:
-            return {"status": "skipped", "reason": "all_files_unreadable", "processed": 0}
+            return {
+                "status": "skipped",
+                "reason": "all_files_unreadable",
+                "processed": 0,
+            }
 
         # Call the LLM
         result = self._call_llm(transcripts)
@@ -242,9 +251,7 @@ class Distiller:
             or PROVIDER_DEFAULTS.get(provider)
             or DEFAULT_LLM_CONFIG["model"]
         )
-        api_key = self._resolve_api_key(
-            str(llm.get("apiKey", "")), provider
-        )
+        api_key = self._resolve_api_key(str(llm.get("apiKey", "")), provider)
 
         if not api_key:
             self._llm_config = None
@@ -255,7 +262,9 @@ class Distiller:
             "provider": provider,
             "model": model,
             "apiKey": api_key,
-            "temperature": float(llm.get("temperature", DEFAULT_LLM_CONFIG["temperature"])),
+            "temperature": float(
+                llm.get("temperature", DEFAULT_LLM_CONFIG["temperature"])
+            ),
             "maxTokens": int(llm.get("maxTokens", DEFAULT_LLM_CONFIG["maxTokens"])),
         }
         return self._llm_config
@@ -394,8 +403,7 @@ class Distiller:
             return {"error": "no_config"}
 
         joined = "\n\n==========\n\n".join(
-            f"=== Transcript: {t['path']} ===\n\n{t['content']}"
-            for t in transcripts
+            f"=== Transcript: {t['path']} ===\n\n{t['content']}" for t in transcripts
         )
 
         provider = cfg["provider"]
@@ -415,15 +423,17 @@ class Distiller:
 
     def _call_openai(self, cfg: dict, user_text: str) -> dict:
         """Call the OpenAI chat completions API."""
-        payload = json.dumps({
-            "model": cfg["model"],
-            "messages": [
-                {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-                {"role": "user", "content": user_text},
-            ],
-            "temperature": cfg["temperature"],
-            "max_tokens": cfg["maxTokens"],
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "model": cfg["model"],
+                "messages": [
+                    {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_text},
+                ],
+                "temperature": cfg["temperature"],
+                "max_tokens": cfg["maxTokens"],
+            }
+        ).encode("utf-8")
 
         req = urllib.request.Request(
             "https://api.openai.com/v1/chat/completions",
@@ -443,13 +453,15 @@ class Distiller:
 
     def _call_anthropic(self, cfg: dict, user_text: str) -> dict:
         """Call the Anthropic messages API."""
-        payload = json.dumps({
-            "model": cfg["model"],
-            "max_tokens": cfg["maxTokens"],
-            "system": EXTRACTION_SYSTEM_PROMPT,
-            "messages": [{"role": "user", "content": user_text}],
-            "temperature": cfg["temperature"],
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "model": cfg["model"],
+                "max_tokens": cfg["maxTokens"],
+                "system": EXTRACTION_SYSTEM_PROMPT,
+                "messages": [{"role": "user", "content": user_text}],
+                "temperature": cfg["temperature"],
+            }
+        ).encode("utf-8")
 
         req = urllib.request.Request(
             "https://api.anthropic.com/v1/messages",
@@ -470,15 +482,17 @@ class Distiller:
 
     def _call_openrouter(self, cfg: dict, user_text: str) -> dict:
         """Call the OpenRouter API (OpenAI-compatible)."""
-        payload = json.dumps({
-            "model": cfg["model"],
-            "messages": [
-                {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-                {"role": "user", "content": user_text},
-            ],
-            "temperature": cfg["temperature"],
-            "max_tokens": cfg["maxTokens"],
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "model": cfg["model"],
+                "messages": [
+                    {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_text},
+                ],
+                "temperature": cfg["temperature"],
+                "max_tokens": cfg["maxTokens"],
+            }
+        ).encode("utf-8")
 
         req = urllib.request.Request(
             "https://openrouter.ai/api/v1/chat/completions",

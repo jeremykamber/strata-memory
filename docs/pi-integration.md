@@ -40,6 +40,64 @@ Then run `/reload` in Pi.
 - Pi CLI (`pi`) must be installed. Get it from [pi.ai](https://pi.ai).
 - Strata CLI must be installed and on `$PATH`.
 
+## Quick Setup: LLM Distillation
+
+Once the extension is installed and Pi is capturing conversations, enable LLM-powered fact extraction in two steps.
+
+### 1. Set your API key
+
+```bash
+# Using OpenRouter (free tier available):
+export STRATA_OPENROUTER_API_KEY="sk-or-..."
+strata config set llm.provider openrouter
+strata config set llm.model openrouter/free
+strata config set llm.enabled true
+
+# Or using OpenAI:
+# export STRATA_OPENAI_API_KEY="sk-..."
+# strata config set llm.provider openai
+# strata config set llm.model gpt-4o-mini
+# strata config set llm.enabled true
+```
+
+Add the `export STRATA_OPENROUTER_API_KEY=...` line to your `~/.zshrc` or `~/.bashrc`
+so it persists across terminal sessions.
+
+### 2. Check it's working
+
+```bash
+strata distiller status
+# → Distiller: ENABLED (openrouter / openrouter/free)
+# → Pending: 0 conversation(s)
+```
+
+Now run Pi for a while. Each prompt is automatically captured as a transcript.
+To manually trigger extraction of any pending conversations:
+
+```bash
+strata distiller run
+# → Processed 3 conversation(s)
+# → Wrote 1 fact file(s)
+```
+
+Or start the daemon for automatic extraction every 15 minutes:
+
+```bash
+strata serve
+```
+
+### Full CLI Reference
+
+| Command | What it does |
+|---------|--------------|
+| `strata distiller status` | Show LLM config state and pending conversation count |
+| `strata distiller run` | Manually trigger LLM fact extraction |
+| `strata distiller run --dry-run` | Preview what would be processed |
+| `strata config get llm` | Show full LLM configuration |
+| `strata config get llm.<key>` | Show a specific LLM config value |
+| `strata config set llm.<key> <value>` | Set an LLM config value |
+| `strata status` | Show system status (includes distiller state) |
+
 ## Extension Behaviour
 
 ### Auto-Injected System Prompt

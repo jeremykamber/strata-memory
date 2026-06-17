@@ -24,6 +24,8 @@ Usage:
     strata qmd-setup               Configure QMD collections (requires Node.js)
     strata qmd-embed               Generate QMD vector embeddings
     strata qmd-status              Show QMD index status
+    strata distiller status       Show distillation status and pending conversations
+    strata distiller run           Manually trigger LLM distillation
     strata skill install           Install Strata skill for AI coding assistants (interactive)
     strata skill install --global  Install globally to all agents (non-interactive)
     strata pi-install [--force]   Install Strata Pi extension (~/.pi/agent/extensions/)
@@ -168,6 +170,9 @@ def main(argv: list[str] | None = None):
     elif command == "pi-install":
         _cmd_pi_install(args[1:])
 
+    elif command == "distiller":
+        _cmd_distiller(args[1:])
+
     elif command == "skill":
         _cmd_skill(args[1:])
 
@@ -254,6 +259,8 @@ def _print_usage():
                 (_fmt_cmd("install-service"), "Install systemd service"),
                 (_fmt_cmd("uninstall-service"), "Uninstall systemd service"),
                 (_fmt_cmd("history [--lines=N]"), "Show Janitor daemon log"),
+                (_fmt_cmd("distiller status"), "Show distillation state and pending conversations"),
+                (_fmt_cmd("distiller run"), "Manually trigger LLM distillation"),
             ],
         ),
         (
@@ -385,6 +392,34 @@ def _parse_config_value(raw: str):
     except (json.JSONDecodeError, ValueError):
         pass
     return raw
+
+
+def _llm_config_path(config: StrataConfig) -> Path:
+    """Return the path to the LLM config file (pi-config.json)."""
+    return config.base_dir / "pi-config.json"
+
+
+def _read_llm_config(config: StrataConfig) -> dict | None:
+    """Read the LLM config from pi-config.json. Returns None if missing."""
+    path = _llm_config_path(config)
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text())
+        return data.get("llm")
+    except (json.JSONDecodeError, KeyError):
+        return None
+
+
+def _write_llm_config(config: StrataConfig, llm_cfg: dict) -> None:
+    """Write the LLM config dict to pi-config.json, preserving other keys."""
+    path = _llm_config_path(config)
+    existing = {}
+    if path.exists():
+        with contextlib.suppress(json.JSONDecodeError):
+            existing = json.loads(path.read_text())
+    existing["llm"] = llm_cfg
+    path.write_text(json.dumps(existing, indent=2) + "\n")
 
 
 def _config_to_dict(config: StrataConfig) -> dict:
@@ -1063,6 +1098,13 @@ def _cmd_status():
         p3_count = s.s3.get_shadow_count()
         active_root = config.active_path().resolve()
 
+    from strata.distiller import Distiller
+
+    d = Distiller(config)
+    llm_cfg = d._load_config()
+    distiller_ready = d.check_available()
+    distill_pending = d.get_pending_count()
+
     if _JSON_MODE:
         _json_print(
             "status",
@@ -1075,6 +1117,10 @@ def _cmd_status():
                 "daemon_running": status["running"],
                 "daemon_pid": status.get("pid"),
                 "daemon_cycles": status.get("cycle_count", 0),
+                "distill_llm_configured": llm_cfg is not None,
+                "distill_available": distiller_ready,
+                "distill_enabled": llm_cfg.get("enabled") if llm_cfg else False,
+                "distill_pending": distill_pending,
             },
         )
         return
@@ -1086,6 +1132,16 @@ def _cmd_status():
     print(f"  1st Stratum (Active):  {p1_count} stale file(s) pending")
     print(f"  2nd Stratum (Medium):  {p2_count} memory block(s)")
     print(f"  3rd Stratum (Archive): {p3_count} shadow entr(ies)")
+    print("")
+    if llm_cfg:
+        if distiller_ready:
+            flag = "ENABLED" if llm_cfg.get("enabled") else "DISABLED"
+            print(f"  Distiller: {flag} ({llm_cfg.get('provider', '?')} / {llm_cfg.get('model', '?')})")
+        else:
+            print("  Distiller: CONFIGURED (unavailable)")
+    else:
+        print("  Distiller: NOT CONFIGURED")
+    print(f"  Pending conversations: {distill_pending}")
     print("")
     print(
         f"  Daemon: {'RUNNING (pid=' + str(status['pid']) + ')' if status['running'] else 'STOPPED'}"
@@ -1140,6 +1196,29 @@ def _cmd_config(rest: list[str]):
     # config get <key>
     if rest[0] == "get" and len(rest) >= 2:
         key = rest[1]
+        # Route llm.* keys to pi-config.json
+        if key == "llm" or key.startswith("llm."):
+            llm_cfg = _read_llm_config(config)
+            if llm_cfg is None:
+                print("LLM not configured (no pi-config.json)", file=sys.stderr)
+                sys.exit(1)
+            if key == "llm":
+                if _JSON_MODE:
+                    _json_print("config", {"key": key, "value": llm_cfg})
+                    return
+                for k, v in llm_cfg.items():
+                    print(f"  llm.{k} = {v!r}")
+                return
+            # key is llm.<subkey>
+            sub = key.split(".", 1)[1]
+            if sub not in llm_cfg:
+                print(f"Unknown config key: {key}", file=sys.stderr)
+                sys.exit(1)
+            if _JSON_MODE:
+                _json_print("config", {"key": key, "value": llm_cfg[sub]})
+                return
+            print(llm_cfg[sub])
+            return
         try:
             value = _config_get(config, key)
         except (KeyError, AttributeError):
@@ -1158,6 +1237,24 @@ def _cmd_config(rest: list[str]):
         key = rest[1]
         raw_value = " ".join(rest[2:])
         value = _parse_config_value(raw_value)
+        # Route llm.* keys to pi-config.json
+        if key == "llm" or key.startswith("llm."):
+            llm_cfg = _read_llm_config(config) or {}
+            if key == "llm":
+                if not isinstance(value, dict):
+                    print("llm value must be a JSON object", file=sys.stderr)
+                    sys.exit(1)
+                llm_cfg.clear()
+                llm_cfg.update(value)
+            else:
+                sub = key.split(".", 1)[1]
+                llm_cfg[sub] = value
+            _write_llm_config(config, llm_cfg)
+            if _JSON_MODE:
+                _json_print("config", {"key": key, "value": value, "set": True})
+                return
+            print(f"Set llm.{key.split('.', 1)[1] if '.' in key else ''} = {value!r}" if '.' in key else "Set llm config")
+            return
         # Validate top-level key
         top = key.split(".")[0]
         if not hasattr(config, top):
@@ -1210,6 +1307,90 @@ def _cmd_history(rest: list[str]):
     print(f"{'=' * 60}")
     for line in tail:
         print(f"  {line}")
+
+
+def _cmd_distiller(rest: list[str]):
+    """Handle the ``distiller`` command: show distillation state or trigger a run.
+
+    Subcommands:
+        ``strata distiller status``    Show pending count and config state.
+        ``strata distiller run``       Manually run LLM distillation.
+    """
+    config = _config()
+    from strata.distiller import Distiller
+
+    d = Distiller(config)
+    cfg = d._load_config()
+
+    # Subcommand dispatch
+    sub = rest[0] if rest else ""
+
+    if sub == "status":
+        if _JSON_MODE:
+            _json_print(
+                "distiller",
+                {
+                    "available": d.check_available(),
+                    "llm_configured": cfg is not None,
+                    "enabled": cfg["enabled"] if cfg else False,
+                    "provider": cfg["provider"] if cfg else None,
+                    "model": cfg["model"] if cfg else None,
+                    "pending": d.get_pending_count(),
+                },
+            )
+            return
+
+        print("Distiller Status")
+        print("=" * 40)
+        if cfg is None:
+            print("  LLM:         NOT CONFIGURED")
+            print("  Configure:   strata config set llm.apiKey <key>")
+        elif not d.check_available():
+            print("  LLM:         CONFIGURED (unavailable — check API key)")
+            print(f"  Provider:    {cfg.get('provider', '?')}")
+        else:
+            print(f"  LLM:         {'ENABLED' if cfg.get('enabled') else 'DISABLED'}")
+            print(f"  Provider:    {cfg.get('provider', '?')}")
+            print(f"  Model:       {cfg.get('model', '?')}")
+        print(f"  Pending:     {d.get_pending_count()} conversation(s)")
+        print()
+        print("  Tip: run 'strata distiller run' to manually trigger")
+        return
+
+    if sub == "run":
+        dry = "--dry-run" in rest or "-n" in rest
+        if dry:
+            result = d.process(dry_run=True)
+        else:
+            result = d.process()
+
+        if _JSON_MODE:
+            _json_print("distiller", result)
+            return
+
+        status = result["status"]
+        if status == "dry_run":
+            print(f"Would process {result.get('would_process', 0)} conversation(s)")
+            print("Pass --live to execute." if "--dry-run" not in rest else "")
+        elif status == "ok":
+            print(f"Processed {result['processed']} conversation(s)")
+            print(f"Wrote {result['facts_written']} fact file(s)")
+        elif status == "no_facts_extracted":
+            print(f"Processed {result['processed']} conversation(s) — no facts extracted")
+        elif status == "skipped":
+            reason = result.get("reason", "unknown")
+            print(f"Skipped: {reason}")
+            if reason == "llm_not_configured":
+                print("Run 'strata config set llm.apiKey <key>' to configure.")
+        elif status == "error":
+            print(f"Error: {result.get('reason', 'unknown')}")
+        else:
+            print(f"Result: {result}")
+        return
+
+    # No subcommand / unknown
+    print("Usage: strata distiller status|run", file=sys.stderr)
+    sys.exit(1)
 
 
 def _cmd_cost(rest: list[str]):
