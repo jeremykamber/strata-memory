@@ -1,0 +1,457 @@
+---
+// DocsLayout.astro
+// Sidebar + content layout for the Strata documentation site.
+// Warm earth tones matching the landing page design system.
+
+import Navbar from '../components/Navbar.astro';
+
+export interface Props {
+  title: string;
+  slug: string;
+}
+
+const { title, slug } = Astro.props;
+
+// Doc navigation structure  -  ordered by category
+const nav: { category: string; items: { slug: string; title: string }[] }[] = [
+  {
+    category: "Getting Started",
+    items: [
+      { slug: "index", title: "Overview" },
+      { slug: "installation", title: "Installation" },
+    ],
+  },
+  {
+    category: "Core Concepts",
+    items: [
+      { slug: "architecture", title: "Architecture" },
+      { slug: "configuration", title: "Configuration" },
+      { slug: "search", title: "Search" },
+      { slug: "tracking", title: "Tracking" },
+    ],
+  },
+  {
+    category: "CLI & Integration",
+    items: [
+      { slug: "cli-reference", title: "CLI Reference" },
+      { slug: "pi-integration", title: "Pi Integration" },
+      { slug: "how_to_make_pi_extension", title: "Pi Extension Guide" },
+    ],
+  },
+  {
+    category: "Reference",
+    items: [
+      { slug: "philosophy-mapping", title: "Philosophy Mapping" },
+      { slug: "strata_blog_post", title: "Blog Post" },
+    ],
+  },
+];
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}  -  Strata Docs</title>
+    <meta name="description" content={"Strata documentation  -  " + title} />
+    <meta name="theme-color" content="#f0e6d8" />
+    <link rel="canonical" href={`https://strata.sh/docs/${slug}/`} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" />
+  </head>
+  <body>
+    <div class="docs-root">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        <a href="/" class="docs-logo">
+          <span class="docs-logo-mark">⛰</span>
+          <span class="docs-logo-text">Strata</span>
+        </a>
+        <nav class="docs-nav">
+          {
+            nav.map((group) => (
+              <div class="docs-nav-group">
+                <h3 class="docs-nav-category">{group.category}</h3>
+                <ul class="docs-nav-list">
+                  {group.items.map((item) => {
+                    const href = item.slug === "index" ? "/docs/" : `/docs/${item.slug}/`;
+                    return (
+                      <li>
+                        <a
+                          href={href}
+                          class:list={[
+                            "docs-nav-link",
+                            { "docs-nav-link--active": slug === item.slug },
+                          ]}
+                        >
+                          {item.title}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))
+          }
+        </nav>
+      </aside>
+
+      <!-- Main content -->
+      <Navbar />
+    <div class="docs-content-wrapper">
+        <main class="docs-content">
+          <article>
+            <slot />
+          </article>
+        </main>
+
+        <footer class="docs-footer">
+          <div class="docs-footer-inner">
+            <a href="/" class="docs-footer-link">← Back to landing</a>
+            <span class="docs-footer-sep">·</span>
+            <a href="https://github.com/jeremykamber/strata-memory" class="docs-footer-link">GitHub</a>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  /* ---------- Root layout ---------- */
+  .docs-root {
+    display: flex;
+    min-height: 100vh;
+    padding-top: 3.5rem;
+    background: var(--color-bg, oklch(0.92 0.01 60));
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+    font-family: var(--font-body, 'Source Serif 4', Georgia, serif);
+    line-height: 1.7;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .docs-sidebar {
+    position: sticky;
+    top: 3.5rem;
+    width: 280px;
+    height: calc(100vh - 3.5rem);
+    overflow-y: auto;
+    flex-shrink: 0;
+    background: var(--depth-active, oklch(0.86 0.012 58));
+    border-right: 1px solid oklch(0.75 0.015 55);
+    padding: var(--space-lg, 2rem) var(--space-md, 1.5rem);
+  }
+
+  .docs-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    margin-bottom: var(--space-xl, 3rem);
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+  }
+
+  .docs-logo-mark {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .docs-logo-text {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-lg, 1.25rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .docs-logo:hover {
+    color: var(--color-accent, oklch(0.55 0.15 40));
+  }
+
+  .docs-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg, 2rem);
+  }
+
+  .docs-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .docs-nav-category {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted, oklch(0.55 0.02 55));
+    margin: 0;
+    padding-bottom: 0.25rem;
+  }
+
+  .docs-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .docs-nav-link {
+    display: block;
+    padding: 0.375rem 0.75rem;
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: 500;
+    color: var(--color-text-secondary, oklch(0.35 0.015 50));
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all var(--duration-fast, 150ms) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1));
+  }
+
+  .docs-nav-link:hover {
+    color: var(--color-accent, oklch(0.55 0.15 40));
+    background: oklch(0.82 0.01 58);
+  }
+
+  .docs-nav-link--active {
+    color: var(--color-accent, oklch(0.55 0.15 40));
+    background: oklch(0.80 0.02 58);
+    font-weight: 600;
+  }
+
+  .docs-nav-link:focus-visible {
+    outline: 2px solid var(--color-accent, oklch(0.55 0.15 40));
+    outline-offset: 2px;
+  }
+
+  /* ---------- Content area ---------- */
+  .docs-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .docs-content {
+    flex: 1;
+    padding: var(--space-xl, 3rem) var(--space-2xl, 4rem);
+    max-width: 800px;
+    width: 100%;
+  }
+
+  .docs-content h1 {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: clamp(1.75rem, 3vw + 0.5rem, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: var(--space-md, 1.5rem);
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+  }
+
+  .docs-content h2 {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-2xl, 1.953rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: var(--space-2xl, 4rem);
+    margin-bottom: var(--space-sm, 1rem);
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-border, oklch(0.80 0.015 55));
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+  }
+
+  .docs-content h3 {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-xl, 1.563rem);
+    font-weight: 600;
+    margin-top: var(--space-xl, 3rem);
+    margin-bottom: var(--space-xs, 0.75rem);
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+  }
+
+  .docs-content h4 {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-lg, 1.25rem);
+    font-weight: 600;
+    margin-top: var(--space-lg, 2rem);
+    margin-bottom: var(--space-xs, 0.75rem);
+  }
+
+  .docs-content p {
+    font-size: var(--text-base, 1rem);
+    line-height: 1.7;
+    margin-bottom: var(--space-md, 1.5rem);
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+    max-width: 70ch;
+  }
+
+  .docs-content ul,
+  .docs-content ol {
+    margin-bottom: var(--space-md, 1.5rem);
+    padding-left: 1.5rem;
+  }
+
+  .docs-content li {
+    font-size: var(--text-base, 1rem);
+    line-height: 1.7;
+    margin-bottom: 0.25rem;
+  }
+
+  /* ---------- Code blocks ---------- */
+  .docs-content code {
+    font-family: var(--font-mono, 'SF Mono', Consolas, monospace);
+    font-size: 0.875em;
+    background: oklch(0.90 0.01 55);
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    color: inherit;
+  }
+
+  .docs-content pre {
+    background: var(--terminal-bg, oklch(0.18 0.012 50));
+    color: var(--terminal-text, oklch(0.88 0.008 60));
+    padding: var(--space-md, 1.5rem);
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: var(--space-md, 1.5rem);
+    font-size: var(--text-sm, 0.875rem);
+    line-height: 1.6;
+  }
+
+  .docs-content pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  /* ---------- Tables ---------- */
+  .docs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-md, 1.5rem);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .docs-content th {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--color-border, oklch(0.80 0.015 55));
+    background: oklch(0.96 0.005 60);
+  }
+
+  .docs-content td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border, oklch(0.80 0.015 55));
+  }
+
+  .docs-content tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* ---------- Links ---------- */
+  .docs-content a {
+    color: var(--color-accent, oklch(0.55 0.15 40));
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    transition: color var(--duration-fast, 150ms) var(--ease-out-quart);
+  }
+
+  .docs-content a:hover {
+    color: var(--color-accent-hover, oklch(0.50 0.16 38));
+  }
+
+  .docs-content a:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Blockquotes ---------- */
+  .docs-content blockquote {
+    border-left: 3px solid var(--color-accent, oklch(0.55 0.15 40));
+    padding-left: var(--space-md, 1.5rem);
+    margin-left: 0;
+    margin-bottom: var(--space-md, 1.5rem);
+    color: var(--color-text-secondary, oklch(0.35 0.015 50));
+    font-style: italic;
+  }
+
+  /* ---------- Horizontal rules ---------- */
+  .docs-content hr {
+    border: none;
+    border-top: 1px solid var(--color-border, oklch(0.80 0.015 55));
+    margin: var(--space-xl, 3rem) 0;
+  }
+
+  /* ---------- Footer ---------- */
+  .docs-footer {
+    border-top: 1px solid var(--color-border, oklch(0.80 0.015 55));
+    padding: var(--space-md, 1.5rem) var(--space-2xl, 4rem);
+  }
+
+  .docs-footer-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 800px;
+  }
+
+  .docs-footer-link {
+    font-family: var(--font-body, 'Source Serif 4', Georgia, serif);
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--color-text-muted, oklch(0.55 0.02 55));
+    text-decoration: none;
+    transition: color var(--duration-fast, 150ms) var(--ease-out-quart);
+  }
+
+  .docs-footer-link:hover {
+    color: var(--color-accent, oklch(0.55 0.15 40));
+  }
+
+  .docs-footer-sep {
+    color: var(--color-text-muted, oklch(0.55 0.02 55));
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 768px) {
+    .docs-root {
+      flex-direction: column;
+    }
+
+    .docs-sidebar {
+      position: static;
+      width: 100%;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--color-border, oklch(0.80 0.015 55));
+      padding: var(--space-md, 1.5rem);
+    }
+
+    .docs-logo {
+      margin-bottom: var(--space-md, 1.5rem);
+    }
+
+    .docs-content {
+      padding: var(--space-md, 1.5rem);
+    }
+
+    .docs-footer {
+      padding: var(--space-md, 1.5rem);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .docs-nav {
+      gap: var(--space-md, 1.5rem);
+    }
+  }
+</style>

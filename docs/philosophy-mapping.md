@@ -1,4 +1,4 @@
-# Strata Blog Post — Philosophy Alignment
+# Strata Blog Post  -  Philosophy Alignment
 
 **Author:** Jeremy Kamber / Strata Contributors
 **Date:** 2026-06-08

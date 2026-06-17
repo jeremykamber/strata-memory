@@ -121,9 +121,9 @@ automatically rehydrated to active.
 
 **Usage:**
 ```bash
-strata read projects/koda/spec.md     # Active — fast path, no tracking
-strata read user/prefs.md             # Cooled — auto-promotes on 3rd read
-strata read archive-me.md             # Archive — auto-rehydrates to active
+strata read projects/koda/spec.md     # Active  -  fast path, no tracking
+strata read user/prefs.md             # Cooled  -  auto-promotes on 3rd read
+strata read archive-me.md             # Archive  -  auto-rehydrates to active
 ```
 
 **Status messages:**
@@ -137,7 +137,7 @@ strata read archive-me.md             # Archive — auto-rehydrates to active
 **Notes:**
 - Exit code 1 if file is not found in any stratum or path is a directory
 - Status messages print to stdout above the file content
-- Promotion happens transparently during the read — no separate command needed
+- Promotion happens transparently during the read  -  no separate command needed
 
 #### `strata list [path]`
 

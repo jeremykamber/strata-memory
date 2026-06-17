@@ -1,0 +1,68 @@
+---
+// src/pages/docs/[...slug].astro
+// Catch-all route for the documentation site.
+// Reads markdown from the project root's docs/ directory and renders it.
+
+import fs from 'fs';
+import path from 'path';
+import { marked } from 'marked';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+export async function getStaticPaths() {
+  const DOC_TITLES: Record<string, string> = {
+    index: "Overview",
+    installation: "Installation",
+    architecture: "Architecture",
+    configuration: "Configuration",
+    search: "Search",
+    tracking: "Tracking",
+    "cli-reference": "CLI Reference",
+    "pi-integration": "Pi Integration",
+    how_to_make_pi_extension: "Pi Extension Guide",
+    "philosophy-mapping": "Philosophy Mapping",
+    strata_blog_post: "Blog Post",
+  };
+  const docsDir = path.resolve(process.cwd(), "../docs");
+  const files = fs.readdirSync(docsDir).filter(
+    (f: string) =>
+      f.endsWith(".md") &&
+      f !== "index.md" &&
+      DOC_TITLES[f.replace(/\.md$/, "")],
+  );
+  return files.map((f: string) => ({
+    params: { slug: f.replace(/\.md$/, "") },
+    props: {},
+  }));
+}
+
+const { slug } = Astro.params;
+const docsDir = path.resolve(process.cwd(), "../docs");
+const filePath = path.join(docsDir, `${slug}.md`);
+
+let title = slug ?? "Docs";
+let htmlContent = "";
+
+try {
+  const raw = fs.readFileSync(filePath, "utf-8");
+  // Extract the first # heading as the page title
+  const headingMatch = raw.match(/^#\s+(.+)$/m);
+  if (headingMatch) {
+    title = headingMatch[1].trim();
+  }
+  htmlContent = await marked.parse(raw);
+} catch {
+  htmlContent = `<p>Document not found: <code>${slug}.md</code></p>`;
+}
+---
+
+<DocsLayout title={title} slug={slug!}>
+  <main class="docs-page">
+    <article set:html={htmlContent} />
+  </main>
+</DocsLayout>
+
+<style>
+  .docs-page {
+    width: 100%;
+  }
+</style>

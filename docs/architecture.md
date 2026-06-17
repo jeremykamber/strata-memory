@@ -110,7 +110,7 @@ The Janitor moves files **up** the strata. When a cooled file is read frequently
 
 **Trigger:** Access count >= `promotion_threshold` (default: 3).
 
-**Automatic promotion:** `strata read` on a cooled file tracks the access count. When the threshold is reached, the file is promoted inline — the content is returned, and the file is moved from `cooled/` to `active/` as part of the same operation. No separate command needed.
+**Automatic promotion:** `strata read` on a cooled file tracks the access count. When the threshold is reached, the file is promoted inline  -  the content is returned, and the file is moved from `cooled/` to `active/` as part of the same operation. No separate command needed.
 
 **Batch promotion:** `strata promote` and `strata maintenance` also promote eligible files for cases where the Janitor ran a batch cycle.
 

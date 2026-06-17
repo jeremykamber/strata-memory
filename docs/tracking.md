@@ -121,7 +121,7 @@ CYCLE:3:1:2:2026-06-08T02:30:00Z
 | evicted_count | int | Files evicted from cooled to archive in this cycle. |
 | timestamp | ISO 8601 | Time of cycle completion (UTC). |
 
-The log is appended to — never truncated. The `CostTracker` parses this file to compute aggregate metrics.
+The log is appended to  -  never truncated. The `CostTracker` parses this file to compute aggregate metrics.
 
 ## Storage Costs by Tier
 

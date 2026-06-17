@@ -1,0 +1,153 @@
+---
+// src/pages/docs/index.astro
+// Docs landing page  -  lists all documentation sections.
+
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+const sections = [
+  {
+    name: "Getting Started",
+    items: [
+      { slug: "index", title: "Overview", desc: "What Strata is and how it works" },
+      { slug: "installation", title: "Installation", desc: "Install and initialize Strata" },
+    ],
+  },
+  {
+    name: "Core Concepts",
+    items: [
+      { slug: "architecture", title: "Architecture", desc: "Three-tier memory system design" },
+      { slug: "configuration", title: "Configuration", desc: "All config fields and defaults" },
+      { slug: "search", title: "Search", desc: "Search across all three strata" },
+      { slug: "tracking", title: "Tracking", desc: "Cost tracking methodology" },
+    ],
+  },
+  {
+    name: "CLI & Integration",
+    items: [
+      { slug: "cli-reference", title: "CLI Reference", desc: "Every command, flag, and option" },
+      { slug: "pi-integration", title: "Pi Integration", desc: "Pi coding agent extension setup" },
+      { slug: "how_to_make_pi_extension", title: "Pi Extension Guide", desc: "Build your own Pi extension" },
+    ],
+  },
+  {
+    name: "Reference",
+    items: [
+      { slug: "philosophy-mapping", title: "Philosophy Mapping", desc: "Blog posts mapped to code structure" },
+      { slug: "strata_blog_post", title: "Blog Post", desc: "The original Strata blog post" },
+    ],
+  },
+];
+---
+
+<DocsLayout title="Documentation" slug="index">
+  <main class="docs-landing">
+    <h1>Documentation</h1>
+    <p class="docs-landing-subtitle">
+      Everything you need to use Strata  -  from setup to architecture to integration.
+    </p>
+
+    <div class="docs-landing-grid">
+      {sections.map((section) => (
+        <div class="docs-landing-section">
+          <h2 class="docs-landing-section-title">{section.name}</h2>
+          <ul class="docs-landing-list">
+            {section.items.map((item) => (
+              <li>
+                <a href={item.slug === "index" ? "/docs/" : `/docs/${item.slug}/`} class="docs-landing-card">
+                  <span class="docs-landing-card-title">{item.title}</span>
+                  <span class="docs-landing-card-desc">{item.desc}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </main>
+</DocsLayout>
+
+<style>
+  .docs-landing {
+    width: 100%;
+  }
+
+  .docs-landing h1 {
+    margin-bottom: 0.5rem;
+  }
+
+  .docs-landing-subtitle {
+    font-size: var(--text-lg, 1.25rem);
+    color: var(--color-text-secondary, oklch(0.35 0.015 50));
+    margin-bottom: var(--space-2xl, 4rem);
+    max-width: 60ch;
+  }
+
+  .docs-landing-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl, 4rem);
+  }
+
+  .docs-landing-section-title {
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted, oklch(0.55 0.02 55));
+    margin: 0 0 var(--space-sm, 1rem) 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border, oklch(0.80 0.015 55));
+  }
+
+  .docs-landing-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-xs, 0.75rem);
+  }
+
+  .docs-landing-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: var(--space-sm, 1rem) var(--space-md, 1.5rem);
+    background: var(--color-surface, oklch(0.96 0.008 65));
+    border: 1px solid var(--color-border, oklch(0.80 0.015 55));
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all var(--duration-fast, 150ms) var(--ease-out-quart);
+  }
+
+  .docs-landing-card:hover {
+    background: var(--color-surface-raised, oklch(0.98 0.005 70));
+    border-color: var(--color-accent, oklch(0.55 0.15 40));
+    transform: translateY(-1px);
+  }
+
+  .docs-landing-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .docs-landing-card-title {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-base, 1rem);
+    font-weight: 600;
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+  }
+
+  .docs-landing-card-desc {
+    font-family: var(--font-body, 'Source Serif 4', Georgia, serif);
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--color-text-secondary, oklch(0.35 0.015 50));
+    line-height: 1.4;
+  }
+
+  @media (max-width: 640px) {
+    .docs-landing-list {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

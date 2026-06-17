@@ -38,4 +38,4 @@ See the [AGENTS.md](../AGENTS.md) for detailed contribution rules.
 
 ## Licence
 
-Strata is released under the MIT licence. See [LICENCE](../LICENCE) for details.
+Strata is released under the MIT licence. See the [repository](https://github.com/jeremykamber/strata-memory) on GitHub for details.

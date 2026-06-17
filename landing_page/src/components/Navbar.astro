@@ -1,0 +1,186 @@
+---
+// Navbar.astro
+// Site-wide navigation: brand logo, Docs, Philosophy, GitHub CTA.
+// Warm earth tones matching the Strata design system.
+// Appears on both the landing page and docs pages.
+
+export interface Props {
+  /** Hide the GitHub CTA button (for pages where it's redundant). */
+  hideCta?: boolean;
+}
+
+const { hideCta } = Astro.props;
+---
+
+<header class="navbar" role="banner">
+  <nav class="navbar__inner" aria-label="Main navigation">
+    <!-- Brand -->
+    <a href="/" class="navbar__brand" aria-label="Strata home">
+      <svg class="navbar__logo" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="7" rx="2" fill="currentColor" opacity="0.9" />
+        <rect x="1" y="10" width="30" height="7" rx="2" fill="currentColor" opacity="0.7" />
+        <rect x="1" y="22" width="30" height="9" rx="2" fill="currentColor" opacity="0.5" />
+      </svg>
+      <span class="navbar__brand-text">Strata</span>
+    </a>
+
+    <!-- Navigation links -->
+    <div class="navbar__links">
+      <a href="/docs" class="navbar__link">Docs</a>
+      <a href="/docs/philosophy-mapping/" class="navbar__link">Philosophy</a>
+    </div>
+
+    <!-- CTA -->
+    {!hideCta && (
+      <a
+        href="https://github.com/jeremykamber/strata-memory"
+        class="navbar__cta"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <svg class="navbar__cta-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
+    )}
+  </nav>
+</header>
+
+<style>
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: oklch(0.94 0.008 60 / 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid oklch(0.80 0.015 55 / 0.5);
+    height: 3.5rem;
+  }
+
+  .navbar__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-lg, 2rem);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--space-md, 1.5rem);
+  }
+
+  /* Brand */
+  .navbar__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+    margin-right: auto;
+    transition: color var(--duration-fast, 150ms) var(--ease-out-quart);
+  }
+
+  .navbar__brand:hover {
+    color: var(--color-accent, oklch(0.55 0.15 40));
+  }
+
+  .navbar__logo {
+    display: block;
+    color: var(--color-text-primary, oklch(0.15 0.015 50));
+    flex-shrink: 0;
+  }
+
+  .navbar__brand-text {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-lg, 1.25rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  /* Navigation links */
+  .navbar__links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs, 0.5rem);
+  }
+
+  .navbar__link {
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: 500;
+    color: var(--color-text-secondary, oklch(0.35 0.015 50));
+    text-decoration: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 4px;
+    transition: all var(--duration-fast, 150ms) var(--ease-out-quart);
+    line-height: 1.4;
+  }
+
+  .navbar__link:hover {
+    color: var(--color-accent, oklch(0.55 0.15 40));
+    background: oklch(0.90 0.01 58);
+  }
+
+  .navbar__link:focus-visible {
+    outline: 2px solid var(--color-accent, oklch(0.55 0.15 40));
+    outline-offset: 2px;
+  }
+
+  /* CTA button */
+  .navbar__cta {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 1rem;
+    font-family: var(--font-display, 'Barlow', sans-serif);
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: 600;
+    color: #fff;
+    background: var(--color-accent, oklch(0.55 0.15 40));
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all var(--duration-fast, 150ms) var(--ease-out-quart);
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .navbar__cta:hover {
+    background: var(--color-accent-hover, oklch(0.50 0.16 38));
+    transform: translateY(-1px);
+    color: #fff;
+  }
+
+  .navbar__cta:focus-visible {
+    outline: 2px solid var(--color-accent, oklch(0.55 0.15 40));
+    outline-offset: 2px;
+  }
+
+  .navbar__cta-icon {
+    flex-shrink: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .navbar__inner {
+      padding: 0 var(--space-md, 1.5rem);
+      gap: var(--space-xs, 0.75rem);
+    }
+
+    .navbar__link {
+      padding: 0.375rem 0.5rem;
+      font-size: var(--text-xs, 0.75rem);
+    }
+
+    .navbar__cta {
+      padding: 0.375rem 0.75rem;
+      font-size: var(--text-xs, 0.75rem);
+    }
+
+    .navbar__cta-text--desktop {
+      display: none;
+    }
+  }
+</style>

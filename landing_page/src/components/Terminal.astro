@@ -150,7 +150,7 @@ const { lines, title = 'terminal' } = Astro.props;
             charIndex++;
             schedule(typeNext, 35 + Math.random() * 20);
           } else {
-            // Typing complete — dim cursor
+            // Typing complete  -  dim cursor
             if (cursorEl) cursorEl.classList.add('cursor-done');
             schedule(onDone, 400);
           }
@@ -181,7 +181,7 @@ const { lines, title = 'terminal' } = Astro.props;
         if (cancelled) return;
 
         if (groupIdx >= groups.length) {
-          // All commands done — pause, then loop
+          // All commands done  -  pause, then loop
           schedule(() => {
             if (cancelled) return;
             clearAll();
@@ -316,7 +316,7 @@ const { lines, title = 'terminal' } = Astro.props;
   }
 
   .line-prompt .line-content {
-    display: inline;  /* natural inline flow — cursor wraps with text */
+    display: inline;  /* natural inline flow  -  cursor wraps with text */
   }
 
   .line-output .line-content,

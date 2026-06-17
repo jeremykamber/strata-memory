@@ -26,7 +26,7 @@ Extensions are TypeScript modules that extend pi's behavior. They can subscribe 
 - External integrations (file watchers, webhooks, CI triggers)
 - Games while you wait (see `snake.ts` example)
 
-See [examples/extensions/](../examples/extensions/) for working implementations.
+See [examples/extensions/](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/) for working implementations.
 
 ## Table of Contents
 
@@ -133,7 +133,7 @@ Additional paths via `settings.json`:
 }
 ```
 
-To share extensions via npm or git as pi packages, see [packages.md](packages.md).
+To share extensions via npm or git as pi packages, see [packages.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/packages.md).
 
 ## Available Imports
 
@@ -375,7 +375,7 @@ pi.on("resources_discover", async (event, _ctx) => {
 
 ### Session Events
 
-See [Session Format](session-format.md) for session storage internals and the SessionManager API.
+See [Session Format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/session-format.md) for session storage internals and the SessionManager API.
 
 #### session_start
 
@@ -427,7 +427,7 @@ Do cleanup work in `session_shutdown`, then reestablish any in-memory state in `
 
 #### session_before_compact / session_compact
 
-Fired on compaction. See [compaction.md](compaction.md) for details.
+Fired on compaction. See [compaction.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/compaction.md) for details.
 
 ```typescript
 pi.on("session_before_compact", async (event, ctx) => {
@@ -454,7 +454,7 @@ pi.on("session_compact", async (event, ctx) => {
 
 #### session_before_tree / session_tree
 
-Fired on `/tree` navigation. See [Sessions](sessions.md) for tree navigation concepts.
+Fired on `/tree` navigation. See [Sessions](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/sessions.md) for tree navigation concepts.
 
 ```typescript
 pi.on("session_before_tree", async (event, ctx) => {
@@ -608,7 +608,7 @@ pi.on("tool_execution_end", async (event, ctx) => {
 
 #### context
 
-Fired before each LLM call. Modify messages non-destructively. See [Session Format](session-format.md) for message types.
+Fired before each LLM call. Modify messages non-destructively. See [Session Format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/session-format.md) for message types.
 
 ```typescript
 pi.on("context", async (event, ctx) => {
@@ -870,7 +870,7 @@ pi.on("input", async (event, ctx) => {
 - `transform` - modify text/images, then continue to expansion
 - `handled` - skip agent entirely (first handler to return this wins)
 
-Transforms chain across handlers. See [input-transform.ts](../examples/extensions/input-transform.ts) and [input-transform-streaming.ts](../examples/extensions/input-transform-streaming.ts) for `streamingBehavior`-aware routing.
+Transforms chain across handlers. See [input-transform.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/input-transform.ts) and [input-transform-streaming.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/input-transform-streaming.ts) for `streamingBehavior`-aware routing.
 
 ## ExtensionContext
 
@@ -894,7 +894,7 @@ Current working directory.
 
 ### ctx.sessionManager
 
-Read-only access to session state. See [Session Format](session-format.md) for the full SessionManager API and entry types.
+Read-only access to session state. See [Session Format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/session-format.md) for the full SessionManager API and entry types.
 
 For `tool_call`, this state is synchronized through the current assistant message before handlers run. In parallel tool execution mode it is still not guaranteed to include sibling tool results from the same assistant message.
 
@@ -1266,7 +1266,7 @@ Use `promptSnippet` to opt a custom tool into a one-line entry in `Available too
 
 **Important:** `promptGuidelines` bullets are appended flat to the `Guidelines` section with no tool name prefix. Each guideline must name the tool it refers to — avoid "Use this tool when..." because the LLM cannot tell which tool "this" means. Write "Use my_tool when..." instead.
 
-See [dynamic-tools.ts](../examples/extensions/dynamic-tools.ts) for a full example.
+See [dynamic-tools.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/dynamic-tools.ts) for a full example.
 
 ```typescript
 import { Type } from "typebox";
@@ -1354,7 +1354,7 @@ pi.sendUserMessage("And then summarize", { deliverAs: "followUp" });
 
 When not streaming, the message is sent immediately and triggers a new turn. When streaming without `deliverAs`, throws an error.
 
-See [send-user-message.ts](../examples/extensions/send-user-message.ts) for a complete example.
+See [send-user-message.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/send-user-message.ts) for a complete example.
 
 ### pi.appendEntry(customType, data?)
 
@@ -1483,7 +1483,7 @@ Register a custom TUI renderer for messages with your `customType`. See [Custom 
 
 ### pi.registerShortcut(shortcut, options)
 
-Register a keyboard shortcut. See [keybindings.md](keybindings.md) for the shortcut format and built-in keybindings.
+Register a keyboard shortcut. See [keybindings.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md) for the shortcut format and built-in keybindings.
 
 ```typescript
 pi.registerShortcut("ctrl+shift+p", {
@@ -1549,7 +1549,7 @@ Typical `sourceInfo.source` values:
 
 ### pi.setModel(model)
 
-Set the current model. Returns `false` if no API key is available for the model. See [models.md](models.md) for configuring custom models.
+Set the current model. Returns `false` if no API key is available for the model. See [models.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/models.md) for configuring custom models.
 
 ```typescript
 const model = ctx.modelRegistry.find("anthropic", "claude-sonnet-4-5");
@@ -1647,7 +1647,7 @@ pi.registerProvider("corporate-ai", {
 - `oauth` - OAuth provider config for `/login` support. When provided, the provider appears in the login menu.
 - `streamSimple` - Custom streaming implementation for non-standard APIs.
 
-See [custom-provider.md](custom-provider.md) for advanced topics: custom streaming APIs, OAuth details, model definition reference.
+See [custom-provider.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/custom-provider.md) for advanced topics: custom streaming APIs, OAuth details, model definition reference.
 
 ### pi.unregisterProvider(name)
 
@@ -1801,7 +1801,7 @@ pi.registerTool({
 
 **Signaling errors:** To mark a tool execution as failed (sets `isError: true` on the result and reports it to the LLM), throw an error from `execute`. Returning a value never sets the error flag regardless of what properties you include in the return object.
 
-**Early termination:** Return `terminate: true` from `execute()` to hint that the automatic follow-up LLM call should be skipped after the current tool batch. This only takes effect when every finalized tool result in that batch is terminating. See [examples/extensions/structured-output.ts](../examples/extensions/structured-output.ts) for a minimal example where the agent ends on a final structured-output tool call.
+**Early termination:** Return `terminate: true` from `execute()` to hint that the automatic follow-up LLM call should be skipped after the current tool batch. This only takes effect when every finalized tool result in that batch is terminating. See [examples/extensions/structured-output.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/structured-output.ts) for a minimal example where the agent ends on a final structured-output tool call.
 
 ```typescript
 // Correct: throw to signal an error
@@ -1877,7 +1877,7 @@ Alternatively, use `--no-builtin-tools` to start without any built-in tools whil
 pi --no-builtin-tools -e ./my-extension.ts
 ```
 
-See [examples/extensions/tool-override.ts](../examples/extensions/tool-override.ts) for a complete example that overrides `read` with logging and access control.
+See [examples/extensions/tool-override.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/tool-override.ts) for a complete example that overrides `read` with logging and access control.
 
 **Rendering:** Built-in renderer inheritance is resolved per slot. Execution override and rendering override are independent. If your override omits `renderCall`, the built-in `renderCall` is used. If your override omits `renderResult`, the built-in `renderResult` is used. If your override omits both, the built-in renderer is used automatically (syntax highlighting, diffs, etc.). This lets you wrap built-in tools for logging or access control without reimplementing the UI.
 
@@ -1941,7 +1941,7 @@ const bashTool = createBashTool(cwd, {
 });
 ```
 
-See [examples/extensions/ssh.ts](../examples/extensions/ssh.ts) for a complete SSH example with `--ssh` flag.
+See [examples/extensions/ssh.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/ssh.ts) for a complete SSH example with `--ssh` flag.
 
 ### Output Truncation
 
@@ -1993,7 +1993,7 @@ async execute(toolCallId, params, signal, onUpdate, ctx) {
 - Always inform the LLM when output is truncated and where to find the full version
 - Document the truncation limits in your tool's description
 
-See [examples/extensions/truncated-tool.ts](../examples/extensions/truncated-tool.ts) for a complete example wrapping `rg` (ripgrep) with proper truncation.
+See [examples/extensions/truncated-tool.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/truncated-tool.ts) for a complete example wrapping `rg` (ripgrep) with proper truncation.
 
 ### Multiple Tools
 
@@ -2015,7 +2015,7 @@ export default function (pi: ExtensionAPI) {
 
 ### Custom Rendering
 
-Tools can provide `renderCall` and `renderResult` for custom TUI display. See [tui.md](tui.md) for the full component API and [tool-execution.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/modes/interactive/components/tool-execution.ts) for how tool rows are composed.
+Tools can provide `renderCall` and `renderResult` for custom TUI display. See [tui.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/tui.md) for the full component API and [tool-execution.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/coding-agent/src/modes/interactive/components/tool-execution.ts) for how tool rows are composed.
 
 By default, tool output is wrapped in a `Box` that handles padding and background. A defined `renderCall` or `renderResult` must return a `Component`. If a slot renderer is not defined, `tool-execution.ts` uses fallback rendering for that slot.
 
@@ -2116,7 +2116,7 @@ Use namespaced keybinding ids:
 - Coding-agent ids use the `app.*` namespace, for example `app.tools.expand`, `app.editor.external`, `app.session.rename`
 - Shared TUI ids use the `tui.*` namespace, for example `tui.select.confirm`, `tui.select.cancel`, `tui.input.tab`
 
-For the exhaustive list of keybinding ids and defaults, see [keybindings.md](keybindings.md). `keybindings.json` uses those same namespaced ids.
+For the exhaustive list of keybinding ids and defaults, see [keybindings.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md). `keybindings.json` uses those same namespaced ids.
 
 Custom editors and `ctx.ui.custom()` components receive `keybindings: KeybindingsManager` as an injected argument. They should use that injected manager directly instead of calling `getKeybindings()` or `setKeybindings()`.
 
@@ -2142,7 +2142,7 @@ If a slot renderer is not defined or throws:
 
 Extensions can interact with users via `ctx.ui` methods and customize how messages/tools render.
 
-**For custom components, see [tui.md](tui.md)** which has copy-paste patterns for:
+**For custom components, see [tui.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/tui.md)** which has copy-paste patterns for:
 - Selection dialogs (SelectList)
 - Async operations with cancel (BorderedLoader)
 - Settings toggles (SettingsList)
@@ -2220,7 +2220,7 @@ if (confirmed) {
 }
 ```
 
-See [examples/extensions/timed-confirm.ts](../examples/extensions/timed-confirm.ts) for complete examples.
+See [examples/extensions/timed-confirm.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/timed-confirm.ts) for complete examples.
 
 ### Widgets, Status, and Footer
 
@@ -2363,7 +2363,7 @@ pi.on("session_start", (_event, ctx) => {
 });
 ```
 
-See [github-issue-autocomplete.ts](../examples/extensions/github-issue-autocomplete.ts) for a complete example that preloads the latest open GitHub issues with `gh issue list` and filters them locally for fast `#...` completion. It requires GitHub CLI (`gh`) and a GitHub repository checkout.
+See [github-issue-autocomplete.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/github-issue-autocomplete.ts) for a complete example that preloads the latest open GitHub issues with `gh issue list` and filters them locally for fast `#...` completion. It requires GitHub CLI (`gh`) and a GitHub repository checkout.
 
 ### Custom Components
 
@@ -2395,7 +2395,7 @@ The callback receives:
 - `keybindings` - App keybinding manager (for checking shortcuts)
 - `done(value)` - Call to close component and return value
 
-See [tui.md](tui.md) for the full component API.
+See [tui.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/tui.md) for the full component API.
 
 #### Overlay Mode (Experimental)
 
@@ -2428,7 +2428,7 @@ const result = await ctx.ui.custom<string | null>(
 
 A focused visible overlay can reclaim input after temporary non-overlay custom UI closes. If you intentionally want another component to keep input while the overlay stays visible, call `handle.unfocus({ target })`. Passing `{ target: null }` releases the overlay without focusing another component.
 
-See [tui.md](tui.md) for the full `OverlayOptions` and `OverlayHandle` API and [overlay-qa-tests.ts](../examples/extensions/overlay-qa-tests.ts) for examples.
+See [tui.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/tui.md) for the full `OverlayOptions` and `OverlayHandle` API and [overlay-qa-tests.ts](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/overlay-qa-tests.ts) for examples.
 
 ### Custom Editor
 
@@ -2479,7 +2479,7 @@ ctx.ui.setEditorComponent((tui, theme, keybindings) =>
 );
 ```
 
-See [tui.md](tui.md) Pattern 7 for a complete example with mode indicator.
+See [tui.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/tui.md) Pattern 7 for a complete example with mode indicator.
 
 ### Message Rendering
 
@@ -2514,7 +2514,7 @@ pi.sendMessage({
 
 ### Theme Colors
 
-All render functions receive a `theme` object. See [themes.md](themes.md) for creating custom themes and the full color palette.
+All render functions receive a `theme` object. See [themes.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/themes.md) for creating custom themes and the full color palette.
 
 ```typescript
 // Foreground colors
@@ -2556,7 +2556,7 @@ const highlighted = highlightCode(code, lang, theme);
 | Mode | `ctx.mode` | `ctx.hasUI` | Notes |
 |------|------------|-------------|-------|
 | Interactive | `"tui"` | `true` | Full TUI with terminal rendering |
-| RPC (`--mode rpc`) | `"rpc"` | `true` | Dialogs and notifications via JSON protocol; `custom()` returns `undefined`. See [rpc.md](rpc.md) |
+| RPC (`--mode rpc`) | `"rpc"` | `true` | Dialogs and notifications via JSON protocol; `custom()` returns `undefined`. See [rpc.md](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/rpc.md) |
 | JSON (`--mode json`) | `"json"` | `false` | Event stream to stdout; UI methods are no-ops |
 | Print (`-p`) | `"print"` | `false` | Extensions run but can't prompt |
 
@@ -2564,7 +2564,7 @@ Use `ctx.mode === "tui"` before TUI-specific features (`custom()`, component fac
 
 ## Examples Reference
 
-All examples in [examples/extensions/](../examples/extensions/).
+All examples in [examples/extensions/](https://github.com/earendil-works/pi-coding-agent/tree/main/examples/extensions/).
 
 | Example | Description | Key APIs |
 |---------|-------------|----------|

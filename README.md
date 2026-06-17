@@ -61,7 +61,7 @@ This creates an environment where information naturally settles into deeper, che
 
 The Janitor moves data between the layers. It runs on a schedule or whenever you call it. It relies entirely on simple rules; there are no LLM calls, no text compression, and no token spend.
 
-### 1st Stratum — Active (the surface layer)
+### 1st Stratum  -  Active (the surface layer)
 
 This functions as the agent's working memory. You get plain markdown files inside a standard directory tree. You won't find a database or a vector index here.
 
@@ -73,9 +73,9 @@ Write structured markdown with clear headings. The index grabs the first `# head
 
 **Transition trigger:** The Janitor checks the modification time. If a file sits untouched past its decay threshold (the default is 14 days for projects, 60 for entities, and 7 for tasks), it becomes eligible for migration.
 
-**Moving back up (Promotion):** The Janitor also moves in the opposite direction. When a cooled file is accessed 3 or more times (the `promotion_threshold`), it gets promoted back to active/. The file has proven useful again — it resurfaces to the working tier where the agent can edit it directly. This prevents frequently-referenced context from getting buried by age-based decay.
+**Moving back up (Promotion):** The Janitor also moves in the opposite direction. When a cooled file is accessed 3 or more times (the `promotion_threshold`), it gets promoted back to active/. The file has proven useful again  -  it resurfaces to the working tier where the agent can edit it directly. This prevents frequently-referenced context from getting buried by age-based decay.
 
-### 2nd Stratum — Cooled (the middle layer)
+### 2nd Stratum  -  Cooled (the middle layer)
 
 The Janitor copies aged-out files from `active/` to `cooled/`. It stays a standard markdown file on your disk. The agent can search and read it; direct writes are blocked.
 
@@ -83,7 +83,7 @@ The Janitor copies aged-out files from `active/` to `cooled/`. It stays a standa
 
 **Transition trigger:** A cooled file faces eviction when it meets two specific conditions. It must sit untouched for `lru_days` (default is 90). The access count must also be at or below `lru_min_access_count` (default is 1). A JSON sidecar file logs every read and search hit to track this access.
 
-### 3rd Stratum — Archive (the deep layer)
+### 3rd Stratum  -  Archive (the deep layer)
 
 Untouched cooled files eventually drop into `archive/`. The Janitor saves the full content as JSON in flat storage. A minimal entry goes into the Shadow Index (a SQLite FTS5 database) with just the keywords, a 200-character preview, and the file path. You still avoid vectors and embeddings here.
 
@@ -98,7 +98,7 @@ There is a massive difference between throwing an item in the trash and packing 
 The Janitor runs entirely on algorithms. It checks the time instead of analyzing text.
 
 * **Migration (1st → 2nd):** Copies the file from `active/` to `cooled/`, deletes the original, and starts the access tracking. File age triggers this step.
-* **Promotion (2nd → 1st):** When a cooled file is read 3+ times (configurable via `promotion_threshold`), it is automatically promoted back to `active/`. The file proved useful again — it resurfaces to the working tier.
+* **Promotion (2nd → 1st):** When a cooled file is read 3+ times (configurable via `promotion_threshold`), it is automatically promoted back to `active/`. The file proved useful again  -  it resurfaces to the working tier.
 * **Eviction (2nd → 3rd):** Reads the file content, saves it as JSON to `archive/`, creates the FTS5 entry in `shadow.db`, and deletes the cooled copy. The LRU logic triggers this step.
 * **Rehydration (3rd → 1st or 3rd → 2nd):** Reads the archived JSON, writes the content back to `active/` or `cooled/` at the original path, and removes the shadow entry. Triggered automatically when you `strata read` an archived file, or manually via `strata rehydrate <id> --target=active|cooled`.
 
@@ -155,7 +155,7 @@ strata search "oauth2 payments"
 # → [1] [ACTIVE] · score=1.50 · projects/kynd/requirements.md
 #       Kynd Platform Stack: React + Go + PostgreSQL Features: OAuth2...
 # → [2] [ARCHIVE] · score=0.50 · archive:strata_3/abc123.json
-#       [in archive — archived file can be rehydrated]
+#       [in archive  -  archived file can be rehydrated]
 
 # JSON output
 strata query "oauth2"
@@ -189,7 +189,7 @@ strata pi-install
 # Then run /reload in Pi
 
 # 2. Enable LLM fact extraction (secure key prompt)
-strata config set llm.apiKey        # Prompts securely — won't echo
+strata config set llm.apiKey        # Prompts securely  -  won't echo
 strata config set llm.provider openrouter
 strata config set llm.model openrouter/free
 strata config set llm.enabled true
@@ -200,7 +200,7 @@ strata serve
 
 Every Pi prompt is automatically saved as a transcript. The daemon periodically
 sends new transcripts to the LLM and writes extracted facts to
-`pi/facts/` — searchable with `strata search`.
+`pi/facts/`  -  searchable with `strata search`.
 
 ```bash
 # Check distillation state
@@ -535,13 +535,13 @@ You bypass SDKs, APIs, and database drivers. You just use the filesystem (which 
 
 ```text
 ~/.strata/                    # Or ./strata_data/ for local projects
-├── active/                   # 1st Stratum — working memory
+├── active/                   # 1st Stratum  -  working memory
 │   ├── index.md              # Auto-generated master map
 │   ├── projects/
 │   ├── entities/
 │   └── gtd/
-├── cooled/                   # 2nd Stratum — aged-out files
-├── archive/                  # 3rd Stratum — cold JSON storage
+├── cooled/                   # 2nd Stratum  -  aged-out files
+├── archive/                  # 3rd Stratum  -  cold JSON storage
 ├── shadow.db                 # Shadow Index (SQLite FTS5)
 ├── strata.log                # Daemon activity log
 ├── strata.pid                # Daemon PID file
@@ -558,7 +558,7 @@ You bypass SDKs, APIs, and database drivers. You just use the filesystem (which 
 | **Karpathy's LLM Wiki** | Plain Markdown | No tiers (active graph) | High (compiles/links notes) | Semantic + keyword |
 | **OpenClaw** | Markdown files + SQLite | No active decay | Low (turn summarization) | QMD hybrid / built-in |
 | **OpenBrain** | Supabase (Postgres) | No active decay | Low (RAG extraction) | pgvector semantic + keyword |
-| **Strata** | Filesystem + SQLite | **Yes (bidirectional — Algorithmic Janitor)** | **Zero** | FTS5 + optional QMD |
+| **Strata** | Filesystem + SQLite | **Yes (bidirectional  -  Algorithmic Janitor)** | **Zero** | FTS5 + optional QMD |
 
 ## What Strata Doesn't Do
 

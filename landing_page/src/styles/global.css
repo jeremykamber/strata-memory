@@ -1,5 +1,5 @@
 /* ============================================================
-   Strata — Design Tokens & Base Styles
+   Strata  -  Design Tokens & Base Styles
    Warm earth neutrals, Restrained color strategy.
    OKLCH color space. WCAG AA compliant.
    ============================================================ */
@@ -185,6 +185,11 @@ a:focus-visible {
 }
 
 /* ---------- Depth sections (full-page cross-section) ---------- */
+/* Navbar offset */
+main {
+  padding-top: 3.5rem;
+}
+
 .section-depth-surface,
 .section-depth-active,
 .section-depth-cooled,
