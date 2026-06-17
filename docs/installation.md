@@ -1,6 +1,14 @@
 # Installation
 
-Install Strata from source, from PyPI (when available), or set up optional extras.
+Install Strata with a one-liner, from source, or from PyPI (when published).
+
+## Quick Install (Recommended)
+
+```bash
+pip install git+https://github.com/jeremykamber/strata-memory.git
+```
+
+This installs the `strata` CLI globally and makes the `strata` Python package importable. Zero pip dependencies. Nothing to clone, no extra steps.
 
 ## Requirements
 
@@ -8,9 +16,9 @@ Install Strata from source, from PyPI (when available), or set up optional extra
 - **Node.js** (optional, for QMD hybrid search)
 - **OS**: macOS and Linux fully supported. Windows not yet tested.
 
-## From Source (Current)
+## From Source
 
-Clone the repository and install in editable mode:
+If you prefer to clone the repository and develop locally:
 
 ```bash
 git clone https://github.com/jeremykamber/strata-memory.git
@@ -18,7 +26,7 @@ cd strata-memory
 pip install -e .
 ```
 
-This installs the `strata` CLI globally and makes the `strata` Python package importable. Zero pip dependencies. Works anywhere Python 3.9+ runs.
+Editable mode (`-e`) lets you modify the package and see changes immediately. Useful for contributors or custom builds.
 
 ## From PyPI (When Published)
 
@@ -81,6 +89,9 @@ See [Search](search.md) for details on search backends and their tradeoffs.
 ## Upgrading
 
 ```bash
+# From git (recommended)
+pip install --upgrade git+https://github.com/jeremykamber/strata-memory.git
+
 # From source
 cd strata-memory
 git pull
