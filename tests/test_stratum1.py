@@ -1,8 +1,4 @@
-from datetime import datetime, timezone
-
-
 class TestStratum1Storage:
-
     def test_write_and_read(self, stratum_1):
         path = "projects/test.md"
         content = "# Test Project\nThis is a test."
@@ -16,6 +12,7 @@ class TestStratum1Storage:
 
     def test_read_nonexistent(self, stratum_1):
         import pytest
+
         with pytest.raises(FileNotFoundError):
             stratum_1.read("nonexistent.md")
 
@@ -34,13 +31,12 @@ class TestStratum1Storage:
         entries = stratum_1.list_dir()
         names = {e["name"] for e in entries}
         assert "projects" in names
-        assert "entities" in names
-        assert "gtd" in names
 
     def test_delete_file(self, stratum_1):
         stratum_1.write("projects/tmp.md", "delete me")
         assert stratum_1.delete("projects/tmp.md") is True
         import pytest
+
         with pytest.raises(FileNotFoundError):
             stratum_1.read("projects/tmp.md")
 
@@ -54,6 +50,7 @@ class TestStratum1Storage:
 
     def test_path_traversal_blocked(self, stratum_1):
         import pytest
+
         with pytest.raises(ValueError):
             stratum_1.read("../etc/passwd")
         with pytest.raises(ValueError):

@@ -24,11 +24,11 @@ Controls how many days a file can sit untouched in the active stratum before the
 
 Default thresholds by directory:
 
-| Directory | Threshold | Rationale |
+| Path prefix | Threshold | Rationale |
 |---|---|---|
-| `projects/` | 14 days | Active initiatives. Two weeks without updates means they have cooled off. |
-| `entities/` | 60 days | People, companies, tools. Context that stays relevant longer. |
-| `gtd/` | 7 days | Tasks and quick notes. One week and they are stale. |
+| `projects` | 14 days | Active initiatives. Two weeks without updates means they have cooled off. |
+| `entities` | 60 days | People, companies, tools. Context that stays relevant longer. |
+| `gtd` | 7 days | Tasks and quick notes. One week and they are stale. |
 | `pi/conversations/` | 7 days | Raw conversation transcripts. Quick to accumulate, quick to cool. |
 | `pi/` (facts, memos) | 30 days | Distilled facts and memos under `pi/`. One month without access. |
 | Everything else | 30 days | Default. One month without access. |

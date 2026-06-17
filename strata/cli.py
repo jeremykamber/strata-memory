@@ -599,7 +599,7 @@ def _cmd_add(rest: list[str]):
         strata add projects/kynd/notes.md "Some content here"
         echo "content" | strata add projects/kynd/notes.md
         strata add --file /path/to/file.md projects/kynd/notes.md
-        strata add --text "Quick memory note"    # auto-routed to gtd/quick-notes.md
+        strata add --text "Quick memory note"    # auto-routed to quick-note-<ts>.md
     """
     config = _config()
 
@@ -630,7 +630,7 @@ def _cmd_add(rest: list[str]):
     with Strata(config) as s:
         if not rest:
             if file_content is not None:
-                path = "gtd/quick-note.md"
+                path = f"quick-note-{time.monotonic_ns()}.md"
                 s.write_active(path, file_content)
                 written_path = str(s.s1._root / path)
                 if _JSON_MODE:
@@ -649,7 +649,7 @@ def _cmd_add(rest: list[str]):
                 print("No content provided. Pipe content or pass path + content.")
                 print("  echo 'my note' | strata add projects/notes.md")
                 return
-            path = "gtd/quick-note.md"
+            path = f"quick-note-{time.monotonic_ns()}.md"
             s.write_active(path, content)
             written_path = str(s.s1._root / path)
             if _JSON_MODE:
@@ -661,7 +661,7 @@ def _cmd_add(rest: list[str]):
             return
 
         if rest[0] == "--text" and len(rest) >= 2:
-            path = f"gtd/quick-note-{int(time.time())}.md"
+            path = f"quick-note-{time.monotonic_ns()}.md"
             content = " ".join(rest[1:])
             s.write_active(path, content)
             written_path = str(s.s1._root / path)

@@ -8,9 +8,7 @@ Strata organises memory across three tiers -- active, cooled, and archive -- ins
 ~/.strata/                    # Or ./strata_data/ for project-local
 ├── active/                   # 1st Stratum -- working memory
 │   ├── index.md              # Auto-generated master map
-│   ├── projects/             # Current initiatives
-│   ├── entities/             # People, companies, tools
-│   └── gtd/                  # Tasks and quick notes
+│   └── ...                   # No preset folders -- AI organises organically
 ├── cooled/                   # 2nd Stratum -- aged-out files
 ├── archive/                  # 3rd Stratum -- cold JSON storage
 ├── shadow.db                 # Shadow Index (SQLite FTS5)
@@ -34,6 +32,7 @@ An auto-generated `index.md` serves as the master map. It lists every file in th
 **Agent rule:** Full read/write access. This is your workspace.
 
 **Characteristics:**
+
 - Fastest access (~1 ms per read)
 - No indexing overhead -- the `index.md` is regenerated after every write
 - Path-based navigation (no search needed for known files)
@@ -48,6 +47,7 @@ When a file has not been modified for longer than its decay threshold, the Janit
 **Moving back up (Promotion):** The Janitor also moves files in the opposite direction. When a cooled file is accessed 3 or more times (configurable via `promotion_threshold`), it gets promoted back to active/. The file has proven useful again -- it's restored to the working tier where the agent can read and edit it directly.
 
 **Characteristics:**
+
 - Same storage medium as active (markdown files)
 - Searchable via filesystem grep or QMD
 - Access tracking via a JSON sidecar file (`stratum_2_access.json`)
@@ -60,6 +60,7 @@ When a cooled file has not been accessed for longer than the LRU window, the Jan
 **Agent rule:** Cannot write here. Archived files can be rehydrated back to active/ or cooled/ using `strata rehydrate <id> --target=active|cooled`. The agent can choose whether to restore the file for editing (active) or for reference (cooled).
 
 **Characteristics:**
+
 - Coldest storage tier
 - Keyword search via SQLite FTS5 shadow index
 - Rehydration restores the file to `active/` for editing
@@ -86,7 +87,7 @@ The Janitor is the only process that moves data between strata. It runs on a sch
 
 1. Scan `active/` for files matching `active_file_patterns`
 2. For each file, calculate its age in days since last modification
-3. Look up the decay threshold for the file's top-level directory (e.g., `projects/` -> 14 days)
+3. Look up the decay threshold for the file's top-level directory (e.g., a file under `projects/` matches `"projects": 14`)
 4. If age >= threshold, copy the file to `cooled/` and delete from `active/`
 5. Log the migration
 
