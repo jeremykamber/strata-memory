@@ -1251,9 +1251,7 @@ def _cmd_config(rest: list[str]):
         elif len(rest) < 3:
             if _JSON_MODE:
                 _json_error("config", "Usage: strata config set <key> <value>")
-            print(
-                "Usage: strata config set <key> <value>", file=sys.stderr
-            )
+            print("Usage: strata config set <key> <value>", file=sys.stderr)
             sys.exit(1)
         else:
             raw_value = " ".join(rest[2:])
