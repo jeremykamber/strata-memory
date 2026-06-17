@@ -1,0 +1,47 @@
+# Strata Janitor daemon — systemd user service
+#
+# Installs as a per-user systemd service. The daemon runs the Janitor
+# lifecycle (migration + eviction) on a 15-minute interval, automatically
+# moving stale memories between strata.
+#
+# Install:
+#   cp contrib/strata.service ~/.config/systemd/user/strata.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now strata
+#
+# Or use: strata install-service
+#
+# View status:
+#   systemctl --user status strata
+#   journalctl --user -u strata -f
+#
+# Stop:
+#   systemctl --user stop strata
+#
+# Uninstall:
+#   systemctl --user disable --now strata
+#   rm ~/.config/systemd/user/strata.service
+#   systemctl --user daemon-reload
+
+[Unit]
+Description=Strata Janitor Daemon — automatic memory lifecycle management
+Documentation=https://github.com/jeremykamber/strata-memory
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/strata serve --live
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectHome=read-only
+ProtectSystem=strict
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

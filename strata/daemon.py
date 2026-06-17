@@ -7,7 +7,6 @@ checking daemon status and stopping the daemon from the CLI.
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import signal
@@ -53,8 +52,12 @@ class StrataDaemon:
         """
         self.config = config or StrataConfig(base_dir=detect_base_dir())
         self.interval = interval_seconds
-        self._log_path = Path(log_file) if log_file else self.config.base_dir / "strata.log"
-        self._pid_path = Path(pid_file) if pid_file else self.config.base_dir / "strata.pid"
+        self._log_path = (
+            Path(log_file) if log_file else self.config.base_dir / "strata.log"
+        )
+        self._pid_path = (
+            Path(pid_file) if pid_file else self.config.base_dir / "strata.pid"
+        )
         self.dry_run_first = dry_run_first
         self._running = False
         self._cycle_count = 0
@@ -76,12 +79,18 @@ class StrataDaemon:
         self._strata.s1.ensure_dirs()
         self._strata.s3.ensure_dirs()
 
-        self._log("info", f"Strata daemon started (interval={self.interval}s, pid={os.getpid()})")
+        self._log(
+            "info",
+            f"Strata daemon started (interval={self.interval}s, pid={os.getpid()})",
+        )
         self._log("info", f"  Base dir:   {self.config.base_dir.resolve()}")
         self._log("info", f"  Active:     {self.config.active_path().resolve()}")
         self._log("info", f"  Cooled:     {self.config.cooled_path().resolve()}")
         self._log("info", f"  Decay:      {self.config.decay_thresholds}")
-        self._log("info", f"  LRU:        {self.config.lru_days}d / {self.config.lru_min_access_count} accesses")
+        self._log(
+            "info",
+            f"  LRU:        {self.config.lru_days}d / {self.config.lru_min_access_count} accesses",
+        )
 
         first_cycle = True
         while self._running:
@@ -116,14 +125,34 @@ class StrataDaemon:
 
     def _run_cycle(self, dry_run: bool = False) -> dict:
         label = "DRY RUN" if dry_run else "LIVE"
-        self._log("info", f"[Cycle {self._cycle_count + 1}] Starting maintenance ({label})")
+        self._log(
+            "info", f"[Cycle {self._cycle_count + 1}] Starting maintenance ({label})"
+        )
 
         try:
             result = self._strata.run_maintenance(dry_run=dry_run)
+            distilled = result.get("distilled", {})
             migrated = result.get("total_migrated", len(result.get("migrated", [])))
             evicted = result.get("total_evicted", len(result.get("evicted", [])))
 
-            self._log("info", f"[Cycle {self._cycle_count + 1}] Migrated: {migrated}, Evicted: {evicted}")
+            distill_status = distilled.get("status", "skipped")
+            distill_count = distilled.get("processed", 0)
+            if distill_status == "ok":
+                facts = distilled.get("facts_written", 0)
+                self._log(
+                    "info",
+                    f"[Cycle {self._cycle_count + 1}] Distilled: {distill_count} conversations ({facts} facts written)",
+                )
+            elif distill_status == "dry_run" and distilled.get("would_process", 0) > 0:
+                self._log(
+                    "info",
+                    f"[Cycle {self._cycle_count + 1}] Would distill: {distilled['would_process']} conversations",
+                )
+
+            self._log(
+                "info",
+                f"[Cycle {self._cycle_count + 1}] Migrated: {migrated}, Evicted: {evicted}",
+            )
 
             if dry_run and (migrated > 0 or evicted > 0):
                 details = []
@@ -175,17 +204,21 @@ class StrataDaemon:
                     pass
 
         fh = _SafeFileHandler(str(self._log_path), encoding="utf-8")
-        fh.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        ))
+        fh.setFormatter(
+            logging.Formatter(
+                "%(asctime)s [%(levelname)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
         logger.addHandler(fh)
 
         sh = _SafeStreamHandler(sys.stderr)
-        sh.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(message)s",
-            datefmt="%H:%M:%S",
-        ))
+        sh.setFormatter(
+            logging.Formatter(
+                "%(asctime)s [%(levelname)s] %(message)s",
+                datefmt="%H:%M:%S",
+            )
+        )
         logger.addHandler(sh)
         self._logger = logger
 

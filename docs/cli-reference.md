@@ -110,19 +110,34 @@ strata add --file /path/to/local/file.md projects/notes.md  # Read from file
 
 #### `strata read <path>`
 
-Read a file from the 1st Stratum.
+Read a file from any stratum. Cascades active → cooled → archive.
 
-**Purpose:** Print the full content of a file in the active stratum.
+**Purpose:** Print the full content of a file. Searches the 1st Stratum
+first, then falls back to the 2nd (cooled) and 3rd (archive). When
+reading from cooled, access is tracked and the file is automatically
+promoted back to active once the access count reaches the promotion
+threshold (default: 3). When reading from archive, the file is
+automatically rehydrated to active.
 
 **Usage:**
 ```bash
-strata read projects/koda/spec.md
-strata read index.md
+strata read projects/koda/spec.md     # Active — fast path, no tracking
+strata read user/prefs.md             # Cooled — auto-promotes on 3rd read
+strata read archive-me.md             # Archive — auto-rehydrates to active
 ```
 
+**Status messages:**
+| Output | Meaning |
+|--------|---------|
+| *(no message)* | Read from active (1st Stratum) |
+| `→ Read from cooled (access 1/3)` | Read from cooled; access tracked |
+| `⬆ Promoted from cooled (accessed 3 times)` | Reached threshold; moved to active |
+| `⬆ Restored from archive to 1st Stratum (active)` | Archived file rehydrated to active |
+
 **Notes:**
-- Exit code 1 if file is not found or path is a directory
-- Direct stratum 1 access only (use `strata search` for other strata)
+- Exit code 1 if file is not found in any stratum or path is a directory
+- Status messages print to stdout above the file content
+- Promotion happens transparently during the read — no separate command needed
 
 #### `strata list [path]`
 
@@ -183,7 +198,7 @@ strata search "postgresql pgvector"
 
   [2] [ARCHIVE] · score=0.25 · archive:stratum_3_abc123.json
        # Koda Database Schema...PostgreSQL...
-       [in archive -- query strata forget <id> to rehydrate]
+       [in archive -- use strata rehydrate <id> to restore]
 ```
 
 **Notes:**
@@ -225,6 +240,24 @@ strata migrate --dry-run    # Preview without making changes
 - Dry run output lists files that would be migrated
 - Exit code 1 on errors
 
+#### `strata promote`
+
+Move hot cooled files back to active.
+
+**Purpose:** Scan the 2nd Stratum for frequently-accessed files and move them back to the 1st Stratum. The inverse of migration -- if a cooled file has been accessed 3 or more times (configurable via `promotion_threshold`), it gets promoted back to the working tier.
+
+**Usage:**
+```bash
+strata promote              # Execute promotion
+strata promote --dry-run    # Preview without making changes
+```
+
+**Notes:**
+- Access count threshold is configurable via `promotion_threshold` in `strata.json`
+- Promoted files are removed from cooled/ and their access tracking is reset
+- The index is regenerated after promotion
+- Dry run shows which files would be promoted and their access counts
+
 #### `strata evict`
 
 Move cold files from cooled to archive.
@@ -246,15 +279,40 @@ strata evict --dry-run    # Preview without making changes
 
 Run full lifecycle cycle.
 
-**Purpose:** Execute migrate and evict in sequence. One command for complete maintenance.
+**Purpose:** Execute promote, migrate, and evict in sequence. One command for complete maintenance.
 
 **Usage:**
 ```bash
-strata maintenance              # Execute both
-strata maintenance --dry-run    # Preview both
+strata maintenance              # Execute all three
+strata maintenance --dry-run    # Preview all
 ```
 
-**Output:** JSON with `migrated` and `evicted` arrays, plus totals.
+**Output:** JSON with `promoted`, `migrated`, and `evicted` arrays, plus totals.
+
+**Execution order:** Promote (2nd->1st) → Migrate (1st->2nd) → Evict (2nd->3rd). This order ensures a promoted file isn't immediately re-migrated in the same cycle.
+
+#### `strata rehydrate <shadow_id>`
+
+Restore an archived file from the 3rd Stratum to active or cooled.
+
+**Purpose:** Reverses an eviction. Takes a shadow index entry (from `strata search` results) and restores the full file content to either active/ (for editing) or cooled/ (for reference).
+
+**Usage:**
+```bash
+strata rehydrate <shadow_id>
+strata rehydrate <shadow_id> --target=cooled
+```
+
+**Options:**
+| Option | Default | Description |
+|---|---|---|
+| `--target=active\|cooled` | `active` | Target tier: `active` (1st, editable) or `cooled` (2nd, query-only). |
+
+**Notes:**
+- The shadow ID comes from search results (the `id` or `memory_id` field in metadata)
+- Rehydrating to active/ removes the shadow index entry
+- Rehydrating to cooled/ initializes access tracking (starts at 0)
+- Exit code 1 if shadow entry not found or archive file unreadable
 
 #### `strata forget <path>`
 
@@ -359,6 +417,54 @@ Restart daemon.
 strata restart
 strata restart --interval=600
 ```
+
+#### `strata install-service`
+
+Install systemd user service for persistent daemon.
+
+**Purpose:** Install a systemd user unit that starts the Janitor daemon automatically on boot and restarts it on failure. Recommended for production deployments.
+
+**Usage:**
+```bash
+strata install-service
+```
+
+**Post-install:**
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now strata
+systemctl --user status strata
+journalctl --user -u strata -f
+```
+
+**Notes:**
+- Copies `contrib/strata.service` to `~/.config/systemd/user/strata.service`
+- Uses `strata serve --live` as the exec command (bypasses initial dry run)
+- Service runs with security hardening: `NoNewPrivileges=true`, `ProtectHome=read-only`, `ProtectSystem=strict`
+- Logs to journald, not `strata.log`
+- Requires systemd -- does not work on macOS or non-systemd Linux
+
+#### `strata uninstall-service`
+
+Remove systemd user service.
+
+**Purpose:** Remove the previously installed systemd unit file.
+
+**Usage:**
+```bash
+strata uninstall-service
+```
+
+**Pre-uninstall:**
+```bash
+systemctl --user disable --now strata
+strata uninstall-service
+systemctl --user daemon-reload
+```
+
+**Notes:**
+- Deletes `~/.config/systemd/user/strata.service`
+- Does NOT stop a running service -- stop it first with `systemctl --user stop strata`
 
 #### `strata history`
 

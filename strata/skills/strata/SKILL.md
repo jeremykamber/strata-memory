@@ -42,13 +42,18 @@ strata status                         # System state
 
 ### Lifecycle
 - `strata migrate` — Move stale active/ files to cooled/
+- `strata promote` — Move hot cooled/ files (accessed 3+ times) back to active/
 - `strata evict` — Move cold cooled/ files to archive/
-- `strata maintenance` — Both in one command
+- `strata maintenance` — Full lifecycle: promote → migrate → evict
+- `strata rehydrate <id> [--target=active|cooled]` — Restore archived file
+- `strata forget <path>` — Archive a specific cooled file
 
 ### Daemon
 - `strata serve [--interval=N]` — Start automatic Janitor
 - `strata stop` — Stop daemon
 - `strata status` — Show state + daemon health
+- `strata install-service` — Install systemd service
+- `strata history` — View daemon log
 
 ### Config
 - `strata config` — Show thresholds, paths
@@ -67,8 +72,25 @@ When active, `strata search` uses BM25 + vector search. No LLM calls.
 
 - **Migration** (1st→2nd): Triggered by file age. Default: 14d for projects, 60d for entities, 7d for gtd. Configurable.
 - **Eviction** (2nd→3rd): Triggered by LRU. Default: 90 days since last access. Files go to JSON in archive/ + keyword entry in shadow.db.
-- **Re-hydration** (3rd→1st): When query finds archived content, file is restored to active/ for editing.
+- **Promotion** (2nd→1st): When a cooled file is accessed 3+ times (configurable via `promotion_threshold`), the Janitor moves it back to active/. The file proved useful again — it gets a second chance at the surface.
+- **Re-hydration** (3rd→1st or 3rd→2nd): Archived files can be restored to active/ (editable) or cooled/ (query-only) using `strata rehydrate <id> --target=active|cooled`.
 - **No LLM calls** for any lifecycle operation. Zero-effort maintenance.
+
+### Promotion & Re-hydration
+
+```bash
+# Check which cooled files have been accessed enough to promote
+strata promote --dry-run
+
+# Execute promotion
+strata promote
+
+# Restore an archived file to active (editable)
+strata rehydrate <shadow_id> --target=active
+
+# Restore to cooled (query-only, avoids re-eviction risk)
+strata rehydrate <shadow_id> --target=cooled
+```
 
 ## Directory Layout
 

@@ -73,6 +73,8 @@ Write structured markdown with clear headings. The index grabs the first `# head
 
 **Transition trigger:** The Janitor checks the modification time. If a file sits untouched past its decay threshold (the default is 14 days for projects, 60 for entities, and 7 for tasks), it becomes eligible for migration.
 
+**Moving back up (Promotion):** The Janitor also moves in the opposite direction. When a cooled file is accessed 3 or more times (the `promotion_threshold`), it gets promoted back to active/. The file has proven useful again — it resurfaces to the working tier where the agent can edit it directly. This prevents frequently-referenced context from getting buried by age-based decay.
+
 ### 2nd Stratum — Cooled (the middle layer)
 
 The Janitor copies aged-out files from `active/` to `cooled/`. It stays a standard markdown file on your disk. The agent can search and read it; direct writes are blocked.
@@ -96,8 +98,9 @@ There is a massive difference between throwing an item in the trash and packing 
 The Janitor runs entirely on algorithms. It checks the time instead of analyzing text.
 
 * **Migration (1st → 2nd):** Copies the file from `active/` to `cooled/`, deletes the original, and starts the access tracking. File age triggers this step.
+* **Promotion (2nd → 1st):** When a cooled file is read 3+ times (configurable via `promotion_threshold`), it is automatically promoted back to `active/`. The file proved useful again — it resurfaces to the working tier.
 * **Eviction (2nd → 3rd):** Reads the file content, saves it as JSON to `archive/`, creates the FTS5 entry in `shadow.db`, and deletes the cooled copy. The LRU logic triggers this step.
-* **Rehydration (3rd → 1st):** Reads the archived JSON, writes the content back to `active/` at the original path, and removes the shadow entry. A successful search match in the archive triggers this step.
+* **Rehydration (3rd → 1st or 3rd → 2nd):** Reads the archived JSON, writes the content back to `active/` or `cooled/` at the original path, and removes the shadow entry. Triggered automatically when you `strata read` an archived file, or manually via `strata rehydrate <id> --target=active|cooled`.
 
 You avoid all LLM calls and token spend. The Janitor just looks at the clock.
 
@@ -164,15 +167,50 @@ strata query "oauth2"
 ```bash
 # Preview first
 strata migrate --dry-run
+strata promote --dry-run
 strata evict --dry-run
 
 # Execute
-strata maintenance
+strata maintenance           # Full cycle: promote → migrate → evict
 
 # Or background daemon (every 15 min by default)
 strata serve &
 
 ```
+
+### Agent Memory (Pi Extension)
+
+Strata ships with a zero-dependency Pi extension that auto-captures every
+conversation and optionally extracts knowledge via a small LLM.
+
+```bash
+# 1. Install the extension
+strata pi-install
+# Then run /reload in Pi
+
+# 2. Enable LLM fact extraction (secure key prompt)
+strata config set llm.apiKey        # Prompts securely — won't echo
+strata config set llm.provider openrouter
+strata config set llm.model openrouter/free
+strata config set llm.enabled true
+
+# 3. Background daemon handles lifecyle + distillation
+strata serve
+```
+
+Every Pi prompt is automatically saved as a transcript. The daemon periodically
+sends new transcripts to the LLM and writes extracted facts to
+`pi/facts/` — searchable with `strata search`.
+
+```bash
+# Check distillation state
+strata distiller status
+
+# Manually trigger extraction
+strata distiller run
+```
+
+See [`docs/pi-integration.md`](docs/pi-integration.md) for full documentation.
 
 ## Python API
 
@@ -205,15 +243,16 @@ with Strata() as s:
 
 ### Function-Calling Tools
 
-Strata exposes five OpenAI-compatible function-calling tools:
+Strata exposes six OpenAI-compatible function-calling tools:
 
 | Tool | Purpose |
 | --- | --- |
-| `strata_read_active` | Read a file from active memory |
+| `strata_read_active` | Read a file from active memory (falls back to cooled/archive) |
 | `strata_write_active` | Write a file to active memory |
 | `strata_list_active` | List files in active memory |
 | `strata_query` | Search across all three tiers |
 | `strata_forget` | Archive a cooled file to cold storage |
+| `strata_rehydrate` | Restore an archived file to active or cooled |
 
 ```python
 # Get tool schemas for any LLM harness
@@ -247,7 +286,7 @@ SETUP
 
 READING / WRITING (1st Stratum only)
   strata add <path> [content]    Write content (or pipe, or --text)
-  strata read <path>             Read a 1st Stratum file
+  strata read <path>             Read from any stratum (auto-promotes cooled)
   strata list [path]             List files and directories
   strata list-stratum-2          List 2nd Stratum (cooled) files
   strata index                   Regenerate index.md
@@ -258,8 +297,10 @@ SEARCHING (all three strata)
 
 LIFECYCLE
   strata migrate [--dry-run]     Move stale files active/ → cooled/
+  strata promote [--dry-run]     Move hot cooled files back to active/
   strata evict [--dry-run]       Move cold files cooled/ → archive/
-  strata maintenance [--dry-run] Both at once
+  strata maintenance [--dry-run] Full cycle: promote → migrate → evict
+  strata rehydrate <id>          Restore archived file to active or cooled
   strata forget <path>           Archive a specific cooled file
   strata cost                    Show estimated Janitor savings
 
@@ -267,6 +308,8 @@ DAEMON
   strata serve [--interval=N]    Start background Janitor daemon
   strata stop                    Stop daemon
   strata restart                 Restart daemon
+  strata install-service         Install systemd service (auto-start on boot)
+  strata uninstall-service       Remove systemd service
   strata history [--lines=N]     Show daemon activity log
 
 AGENT INTEGRATION
@@ -309,9 +352,29 @@ strata config get lru_days
 
 ```
 
+### Environment Variables
+
+| Variable | Overrides | Description |
+|---|---|---|
+| `$STRATA_HOME` | `base_dir` | Forces the data directory to this path. Highest priority override. |
+
+When `$STRATA_HOME` is set, `strata init` and all other commands use it as the root:
+
+```bash
+export STRATA_HOME=/custom/path
+strata init            # Initializes at /custom/path
+strata add note.md "# Hello"  # Writes to /custom/path/active/note.md
+```
+
+Resolution order for `base_dir`: `$STRATA_HOME` > `./strata_data/` (project-local) > `~/.strata/` (global fallback).
+
 ## Daemon Mode
 
-The daemon automates the Janitor operations. It runs silently in the background and loops through the migration and eviction processes. The first cycle defaults to a dry run unless you supply the `--live` flag:
+The daemon automates the Janitor operations. It runs silently in the background and loops through the migration and eviction processes. The first cycle defaults to a dry run unless you supply the `--live` flag.
+
+Without the daemon, your memories stay in the active stratum forever. The Janitor never runs. You lose the benefit of automatic tiered decay. If you want Strata to actually cycle memories between tiers, the daemon must be running.
+
+### Run as a background process
 
 ```bash
 strata serve &
@@ -325,9 +388,51 @@ strata status
 strata history
 # → 2026-06-09 02:00:00 [Cycle 1] Migrated: 3, Evicted: 0
 
+# Stop when needed
 strata stop
-
 ```
+
+This runs until you stop it or reboot. Good for development and short-lived sessions.
+
+### Run as a systemd service (recommended for production)
+
+Persists across reboots, auto-restarts on failure, logs to journald:
+
+```bash
+# Install the service (copies unit file to ~/.config/systemd/user/)
+strata install-service
+
+# Enable and start now
+systemctl --user daemon-reload
+systemctl --user enable --now strata
+
+# Check status
+systemctl --user status strata
+
+# Tail logs
+journalctl --user -u strata -f
+
+# Stop
+systemctl --user stop strata
+
+# Uninstall
+systemctl --user disable --now strata
+strata uninstall-service
+systemctl --user daemon-reload
+```
+
+The service runs with security hardening (`NoNewPrivileges=true`, `ProtectHome=read-only`, `ProtectSystem=strict`). It logs to journald instead of `strata.log`.
+
+### Daemon vs manual lifecycle
+
+You don't need the daemon at all. You can run lifecycle explicitly:
+
+```bash
+strata maintenance          # Run both migration and eviction now
+strata maintenance --dry-run  # Preview what would happen
+```
+
+But the daemon is the only way to get fully automatic tiered memory. Without it, stale files accumulate in the active stratum indefinitely.
 
 ## Agent Integration
 
@@ -453,7 +558,7 @@ You bypass SDKs, APIs, and database drivers. You just use the filesystem (which 
 | **Karpathy's LLM Wiki** | Plain Markdown | No tiers (active graph) | High (compiles/links notes) | Semantic + keyword |
 | **OpenClaw** | Markdown files + SQLite | No active decay | Low (turn summarization) | QMD hybrid / built-in |
 | **OpenBrain** | Supabase (Postgres) | No active decay | Low (RAG extraction) | pgvector semantic + keyword |
-| **Strata** | Filesystem + SQLite | **Yes (Algorithmic Janitor)** | **Zero** | FTS5 + optional QMD |
+| **Strata** | Filesystem + SQLite | **Yes (bidirectional — Algorithmic Janitor)** | **Zero** | FTS5 + optional QMD |
 
 ## What Strata Doesn't Do
 
@@ -467,7 +572,7 @@ The underlying philosophy is extremely simple. Information naturally decays over
 
 ---
 
-**Version:** 0.1.0 (in beta)
+**Version:** 0.2.0 (in beta)
 
 **License:** MIT
 

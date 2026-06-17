@@ -6,7 +6,6 @@ from strata.config import StrataConfig
 
 
 class TestStrataIntegration:
-
     def test_full_lifecycle(self, tmp_base):
         config = StrataConfig(
             base_dir=tmp_base,
@@ -16,8 +15,14 @@ class TestStrataIntegration:
         )
         strata = Strata(config)
 
-        strata.write_active("projects/kynd/requirements.md", "# Kynd Requirements\n\n- User auth via OAuth2\n- Dashboard with real-time updates\n- Payment processing via Stripe")
-        strata.write_active("entities/joe.md", "# Joe Smith\n\nRole: Software Engineer\nSkills: React, Go, PostgreSQL")
+        strata.write_active(
+            "projects/kynd/requirements.md",
+            "# Kynd Requirements\n\n- User auth via OAuth2\n- Dashboard with real-time updates\n- Payment processing via Stripe",
+        )
+        strata.write_active(
+            "entities/joe.md",
+            "# Joe Smith\n\nRole: Software Engineer\nSkills: React, Go, PostgreSQL",
+        )
 
         entries = strata.list_active("projects")
         assert any(e["name"] == "kynd" for e in entries)
@@ -56,9 +61,10 @@ class TestStrataIntegration:
     def test_tool_execution(self, tmp_base):
         config = StrataConfig(base_dir=tmp_base)
         with Strata(config) as s:
-            result = s.tools.execute("strata_write_active", {
-                "path": "projects/test.md", "content": "# Tool test"
-            })
+            result = s.tools.execute(
+                "strata_write_active",
+                {"path": "projects/test.md", "content": "# Tool test"},
+            )
             assert result["status"] == "written"
 
             result = s.tools.execute("strata_read_active", {"path": "projects/test.md"})
@@ -121,4 +127,4 @@ class TestStrataIntegration:
         assert "import type { ExtensionAPI }" in content
         assert "export default function" in content
         assert 'pi.on("before_agent_start"' in content
-        assert 'pi.on("turn_end"' in content
+        assert 'pi.on("agent_end"' in content

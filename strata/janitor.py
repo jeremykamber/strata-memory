@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import os
 import shutil
 import time
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Optional
 
 from strata.config import StrataConfig
 from strata.storage import Stratum1Storage, Stratum2Storage, Stratum3Storage
@@ -57,7 +53,13 @@ class Janitor:
             target = self.s2._root / rel_path
 
             if dry_run:
-                results.append({"path": rel_path, "status": "would_migrate", "age_days": entry["age_days"]})
+                results.append(
+                    {
+                        "path": rel_path,
+                        "status": "would_migrate",
+                        "age_days": entry["age_days"],
+                    }
+                )
                 continue
 
             try:
@@ -65,7 +67,13 @@ class Janitor:
                 shutil.copy2(str(source), str(target))
                 source.unlink()
                 self.s2.init_access_tracking(rel_path)
-                results.append({"path": rel_path, "status": "migrated", "age_days": entry["age_days"]})
+                results.append(
+                    {
+                        "path": rel_path,
+                        "status": "migrated",
+                        "age_days": entry["age_days"],
+                    }
+                )
             except Exception as exc:
                 results.append({"path": rel_path, "status": "error", "error": str(exc)})
 
@@ -91,7 +99,13 @@ class Janitor:
             source = self.s2._root / rel_path
 
             if dry_run:
-                results.append({"path": rel_path, "status": "would_evict", "age_days": entry["age_days"]})
+                results.append(
+                    {
+                        "path": rel_path,
+                        "status": "would_evict",
+                        "age_days": entry["age_days"],
+                    }
+                )
                 continue
 
             try:
@@ -99,22 +113,88 @@ class Janitor:
                 archive_path = self.s3.archive_file(source, rel_path, tags=tags)
                 source.unlink()
                 self.s2.remove_access_tracking(rel_path)
-                results.append({"path": rel_path, "status": "evicted", "archive_path": archive_path})
+                results.append(
+                    {
+                        "path": rel_path,
+                        "status": "evicted",
+                        "archive_path": archive_path,
+                    }
+                )
             except Exception as exc:
                 results.append({"path": rel_path, "status": "error", "error": str(exc)})
 
         return results
 
-    def rehydrate(self, shadow_entry: dict) -> Optional[dict]:
-        """Restore an archived file back to the 1st Stratum (active).
+    def promote_2_to_1(self, dry_run: bool = False) -> list[dict]:
+        """Promote frequently-accessed cooled files back to active.
 
-        Reads the archived content from the 3rd Stratum, writes it to
-        the 1st Stratum at its original path, and removes the shadow
-        index entry.
+                Scans cooled files that have access tracking data. If a file's
+                access count meets or exceeds ``promotion_threshold``, it gets
+                moved back to the 1st Stratum (active) so the agent can
+                read and write it directly again.
+
+                Args:
+                    dry_run: If ``True``, preview promotions without moving.
+
+        n        Returns:
+                    A list of result dicts with keys: path, status, access_count.
+        """
+        threshold = self.config.promotion_threshold
+        access_data = self.s2._get_access_data()
+        results = []
+
+        for rel_path, entry in access_data.items():
+            if entry.get("access_count", 0) < threshold:
+                continue
+
+            source = self.s2._root / rel_path
+            if not source.exists():
+                continue
+
+            if dry_run:
+                results.append(
+                    {
+                        "path": rel_path,
+                        "status": "would_promote",
+                        "access_count": entry["access_count"],
+                        "threshold": threshold,
+                    }
+                )
+                continue
+
+            try:
+                content = source.read_text(encoding="utf-8")
+                target = self.s1._root / rel_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+                source.unlink()
+                self.s2.remove_access_tracking(rel_path)
+                results.append(
+                    {
+                        "path": rel_path,
+                        "status": "promoted",
+                        "access_count": entry["access_count"],
+                    }
+                )
+            except Exception as exc:
+                results.append({"path": rel_path, "status": "error", "error": str(exc)})
+
+        if results:
+            self.s1.generate_index()
+        return results
+
+    def rehydrate(self, shadow_entry: dict, target_tier: str = "active") -> dict | None:
+        """Restore an archived file back to the 1st or 2nd Stratum.
+
+        Reads the archived content from the 3rd Stratum and writes it
+        to the selected target tier. Removes the shadow index entry on
+        success.
 
         Args:
             shadow_entry: A dict from the shadow index containing at
                 least ``id``, ``archive_path``, and metadata.
+            target_tier: Target stratum — ``"active"`` (1st, default) or
+                ``"cooled"`` (2nd).
 
         Returns:
             The rehydrated data dict, or ``None`` if the archive file
@@ -126,12 +206,47 @@ class Janitor:
 
         original_path = data.get("original_path", "restored.md")
         content = data.get("content", "")
-        target = self.s1._root / original_path
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
+
+        if target_tier == "cooled":
+            target = self.s2._root / original_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+            self.s2.init_access_tracking(original_path)
+        else:
+            target = self.s1._root / original_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+            self.s1.generate_index()
 
         self.s3.remove_shadow_entry(shadow_entry.get("id", ""))
         return data
+
+    def run_maintenance(self, dry_run: bool = False) -> dict:
+        """Run the full lifecycle: promote, migrate, evict.
+
+        Executes in this order:
+        1. Promote: move heavily-accessed cooled files back to active
+        2. Migrate: move stale active files to cooled
+        3. Evict:  move old cooled files to archive
+
+        Args:
+            dry_run: If ``True``, preview all operations without changes.
+
+        Returns:
+            A dict with ``promoted``, ``migrated``, ``evicted`` arrays
+            and totals.
+        """
+        promoted = self.promote_2_to_1(dry_run=dry_run)
+        migrated = self.migrate_1_to_2(dry_run=dry_run)
+        evicted = self.evict_2_to_3(dry_run=dry_run)
+        return {
+            "promoted": promoted,
+            "migrated": migrated,
+            "evicted": evicted,
+            "total_promoted": len(promoted),
+            "total_migrated": len(migrated),
+            "total_evicted": len(evicted),
+        }
 
     def _get_lru_candidates(self) -> list[dict]:
         """Find files in the cooled directory eligible for LRU eviction.
@@ -159,13 +274,18 @@ class Janitor:
                 access_count = entry["access_count"]
             age_days = int((now - last_accessed) // 86400)
             lru_days = self.config.get_lru_days(rel)
-            if age_days >= lru_days and access_count <= self.config.lru_min_access_count:
-                candidates.append({
-                    "path": rel,
-                    "age_days": age_days,
-                    "access_count": access_count,
-                    "last_accessed": last_accessed,
-                })
+            if (
+                age_days >= lru_days
+                and access_count <= self.config.lru_min_access_count
+            ):
+                candidates.append(
+                    {
+                        "path": rel,
+                        "age_days": age_days,
+                        "access_count": access_count,
+                        "last_accessed": last_accessed,
+                    }
+                )
         return candidates
 
     @staticmethod
@@ -180,6 +300,3 @@ class Janitor:
             name = name.replace("_", " ").replace("-", " ").title()
             tags.append(name)
         return tags
-
-
-

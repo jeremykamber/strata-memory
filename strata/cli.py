@@ -24,6 +24,8 @@ Usage:
     strata qmd-setup               Configure QMD collections (requires Node.js)
     strata qmd-embed               Generate QMD vector embeddings
     strata qmd-status              Show QMD index status
+    strata distiller status       Show distillation status and pending conversations
+    strata distiller run           Manually trigger LLM distillation
     strata skill install           Install Strata skill for AI coding assistants (interactive)
     strata skill install --global  Install globally to all agents (non-interactive)
     strata pi-install [--force]   Install Strata Pi extension (~/.pi/agent/extensions/)
@@ -33,13 +35,13 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import shutil
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
-from typing import Optional
 
 from strata import Strata
 from strata.config import StrataConfig, detect_base_dir
@@ -47,8 +49,8 @@ from strata.daemon import StrataDaemon, get_daemon_status
 from strata.mcp_server import MCPServer
 
 # ── Global state for JSON mode ──────────────────────────────────────────────────
-_JSON_MODE = False          # Set to True via --json / --agent flag
-_START_TIME = 0.0           # monotonic start of main() for duration_ms
+_JSON_MODE = False  # Set to True via --json / --agent flag
+_START_TIME = 0.0  # monotonic start of main() for duration_ms
 
 
 def _config(**kwargs) -> StrataConfig:
@@ -68,7 +70,7 @@ def _config(**kwargs) -> StrataConfig:
     return config
 
 
-def main(argv: Optional[list[str]] = None):
+def main(argv: list[str] | None = None):
     """Entry point for the Strata CLI.
 
     Parses command-line arguments, detects global flags (``--json``,
@@ -168,8 +170,23 @@ def main(argv: Optional[list[str]] = None):
     elif command == "pi-install":
         _cmd_pi_install(args[1:])
 
+    elif command == "distiller":
+        _cmd_distiller(args[1:])
+
     elif command == "skill":
         _cmd_skill(args[1:])
+
+    elif command == "promote":
+        _cmd_lifecycle("promote", args[1:])
+
+    elif command == "rehydrate":
+        _cmd_rehydrate(args[1:])
+
+    elif command == "install-service":
+        _cmd_install_service()
+
+    elif command == "uninstall-service":
+        _cmd_uninstall_service()
 
     elif command == "cost":
         _cmd_cost(args[1:])
@@ -182,50 +199,93 @@ def main(argv: Optional[list[str]] = None):
 
 def _print_usage():
     """Panel-grouped help organised by category."""
+
     def _fmt_cmd(cmd: str) -> str:
         return f"strata {cmd}" if not cmd.startswith("--") else cmd
 
     groups = [
-        ("SETUP", [
-            (_fmt_cmd("init"), "Initialize directory structure"),
-            (_fmt_cmd("config [get/set]"), "Show or modify configuration"),
-            (_fmt_cmd("status"), "Show system state"),
-        ]),
-        ("READING/WRITING", [
-            (_fmt_cmd("add <path> [content]"), "Write content to 1st Stratum (or stdin)"),
-            (_fmt_cmd("read <path>"), "Read a 1st Stratum file"),
-            (_fmt_cmd("list [path]"), "List 1st Stratum files and directories"),
-            (_fmt_cmd("list-stratum-2"), "List 2nd Stratum (cooled) files"),
-            (_fmt_cmd("index"), "Regenerate index.md"),
-        ]),
-        ("SEARCHING", [
-            (_fmt_cmd("search <query>"), "Search across all memory tiers"),
-            (_fmt_cmd("query <text>"), "Search across all memory tiers (JSON output)"),
-        ]),
-        ("LIFECYCLE", [
-            (_fmt_cmd("migrate"), "Run 1st -> 2nd Stratum migration"),
-            (_fmt_cmd("evict"), "Run 2nd -> 3rd Stratum eviction"),
-            (_fmt_cmd("maintenance"), "Run full lifecycle cycle"),
-            (_fmt_cmd("forget <path>"), "Archive a cooled file to 3rd Stratum"),
-            (_fmt_cmd("cost"), "Show estimated cost savings from Janitor"),
-        ]),
-        ("DAEMON", [
-            (_fmt_cmd("serve [--interval=N]"), "Start background Janitor daemon"),
-            (_fmt_cmd("stop"), "Stop running daemon"),
-            (_fmt_cmd("restart"), "Restart daemon"),
-            (_fmt_cmd("history [--lines=N]"), "Show Janitor daemon log"),
-        ]),
-        ("AGENT INTEGRATION", [
-            (_fmt_cmd("mcp"), "Start MCP protocol server (stdio)"),
-            (_fmt_cmd("skill install"), "Install Strata skill for AI coding assistants"),
-            (_fmt_cmd("pi-install [--force]"), "Install Strata Pi extension"),
-            (_fmt_cmd("--agent-help"), "Show agent usage guide"),
-        ]),
-        ("QMD", [
-            (_fmt_cmd("qmd-setup"), "Configure QMD collections (requires Node.js)"),
-            (_fmt_cmd("qmd-embed"), "Generate QMD vector embeddings"),
-            (_fmt_cmd("qmd-status"), "Show QMD index status"),
-        ]),
+        (
+            "SETUP",
+            [
+                (_fmt_cmd("init"), "Initialize directory structure"),
+                (_fmt_cmd("config [get/set]"), "Show or modify configuration"),
+                (_fmt_cmd("status"), "Show system state"),
+            ],
+        ),
+        (
+            "READING/WRITING",
+            [
+                (
+                    _fmt_cmd("add <path> [content]"),
+                    "Write content to 1st Stratum (or stdin)",
+                ),
+                (_fmt_cmd("read <path>"), "Read a 1st Stratum file"),
+                (_fmt_cmd("list [path]"), "List 1st Stratum files and directories"),
+                (_fmt_cmd("list-stratum-2"), "List 2nd Stratum (cooled) files"),
+                (_fmt_cmd("index"), "Regenerate index.md"),
+            ],
+        ),
+        (
+            "SEARCHING",
+            [
+                (_fmt_cmd("search <query>"), "Search across all memory tiers"),
+                (
+                    _fmt_cmd("query <text>"),
+                    "Search across all memory tiers (JSON output)",
+                ),
+            ],
+        ),
+        (
+            "LIFECYCLE",
+            [
+                (_fmt_cmd("migrate"), "Run 1st -> 2nd Stratum migration"),
+                (_fmt_cmd("promote"), "Move hot cooled files back to active"),
+                (_fmt_cmd("evict"), "Run 2nd -> 3rd Stratum eviction"),
+                (_fmt_cmd("maintenance"), "Run full lifecycle cycle"),
+                (_fmt_cmd("forget <path>"), "Archive a cooled file to 3rd Stratum"),
+                (
+                    _fmt_cmd("rehydrate <id> [--target=active|cooled]"),
+                    "Restore archived file to active or cooled",
+                ),
+                (_fmt_cmd("cost"), "Show estimated cost savings from Janitor"),
+            ],
+        ),
+        (
+            "DAEMON",
+            [
+                (_fmt_cmd("serve [--interval=N]"), "Start background Janitor daemon"),
+                (_fmt_cmd("stop"), "Stop running daemon"),
+                (_fmt_cmd("restart"), "Restart daemon"),
+                (_fmt_cmd("install-service"), "Install systemd service"),
+                (_fmt_cmd("uninstall-service"), "Uninstall systemd service"),
+                (_fmt_cmd("history [--lines=N]"), "Show Janitor daemon log"),
+                (
+                    _fmt_cmd("distiller status"),
+                    "Show distillation state and pending conversations",
+                ),
+                (_fmt_cmd("distiller run"), "Manually trigger LLM distillation"),
+            ],
+        ),
+        (
+            "AGENT INTEGRATION",
+            [
+                (_fmt_cmd("mcp"), "Start MCP protocol server (stdio)"),
+                (
+                    _fmt_cmd("skill install"),
+                    "Install Strata skill for AI coding assistants",
+                ),
+                (_fmt_cmd("pi-install [--force]"), "Install Strata Pi extension"),
+                (_fmt_cmd("--agent-help"), "Show agent usage guide"),
+            ],
+        ),
+        (
+            "QMD",
+            [
+                (_fmt_cmd("qmd-setup"), "Configure QMD collections (requires Node.js)"),
+                (_fmt_cmd("qmd-embed"), "Generate QMD vector embeddings"),
+                (_fmt_cmd("qmd-status"), "Show QMD index status"),
+            ],
+        ),
     ]
     print("Strata — Tiered Memory System")
     print()
@@ -245,6 +305,7 @@ def _spinner(msg="Processing"):
     stop_event = threading.Event()
     start = time.monotonic()
     chars = r"-\|/"
+
     def _spin():
         idx = 0
         while not stop_event.is_set():
@@ -252,6 +313,7 @@ def _spinner(msg="Processing"):
             sys.stdout.flush()
             idx = (idx + 1) % len(chars)
             stop_event.wait(0.1)
+
     t = threading.Thread(target=_spin, daemon=True)
     t.start()
     try:
@@ -267,14 +329,24 @@ def _spinner(msg="Processing"):
 def _json_print(command: str, data):
     """Print success JSON with duration_ms."""
     elapsed = (time.monotonic() - _START_TIME) * 1000
-    result = {"status": "success", "command": command, "data": data, "duration_ms": round(elapsed, 1)}
+    result = {
+        "status": "success",
+        "command": command,
+        "data": data,
+        "duration_ms": round(elapsed, 1),
+    }
     print(json.dumps(result))
 
 
 def _json_error(command: str, message: str):
     """Print error JSON and exit."""
     elapsed = (time.monotonic() - _START_TIME) * 1000
-    result = {"status": "error", "command": command, "message": message, "duration_ms": round(elapsed, 1)}
+    result = {
+        "status": "error",
+        "command": command,
+        "message": message,
+        "duration_ms": round(elapsed, 1),
+    }
     print(json.dumps(result))
     sys.exit(1)
 
@@ -325,6 +397,34 @@ def _parse_config_value(raw: str):
     return raw
 
 
+def _llm_config_path(config: StrataConfig) -> Path:
+    """Return the path to the LLM config file (pi-config.json)."""
+    return config.base_dir / "pi-config.json"
+
+
+def _read_llm_config(config: StrataConfig) -> dict | None:
+    """Read the LLM config from pi-config.json. Returns None if missing."""
+    path = _llm_config_path(config)
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text())
+        return data.get("llm")
+    except (json.JSONDecodeError, KeyError):
+        return None
+
+
+def _write_llm_config(config: StrataConfig, llm_cfg: dict) -> None:
+    """Write the LLM config dict to pi-config.json, preserving other keys."""
+    path = _llm_config_path(config)
+    existing = {}
+    if path.exists():
+        with contextlib.suppress(json.JSONDecodeError):
+            existing = json.loads(path.read_text())
+    existing["llm"] = llm_cfg
+    path.write_text(json.dumps(existing, indent=2) + "\n")
+
+
 def _config_to_dict(config: StrataConfig) -> dict:
     """Serialise config as a plain dict for JSON output."""
     return {
@@ -345,7 +445,7 @@ def _config_to_dict(config: StrataConfig) -> dict:
     }
 
 
-def _with_strata(fn, config: Optional[StrataConfig] = None):
+def _with_strata(fn, config: StrataConfig | None = None):
     """Open Strata, call fn, close."""
     c = config or _config()
     with Strata(c) as s:
@@ -387,17 +487,23 @@ def _try_install_qmd(config: StrataConfig) -> None:
         if result.returncode == 0:
             print("✓ QMD installed as search backend")
         else:
-            print("⚠ QMD auto-install failed. Install manually: npm install -g @tobilu/qmd")
+            print(
+                "⚠ QMD auto-install failed. Install manually: npm install -g @tobilu/qmd"
+            )
             config.search_backend = "fts5"
     except (subprocess.TimeoutExpired, FileNotFoundError):
-        print("⚠ QMD auto-install failed (npx not available). Install manually: npm install -g @tobilu/qmd")
+        print(
+            "⚠ QMD auto-install failed (npx not available). Install manually: npm install -g @tobilu/qmd"
+        )
         config.search_backend = "fts5"
 
 
 def _qmd_reranker_prompt(config: StrataConfig) -> None:
     """Prompt for LLM reranker provider URL."""
     try:
-        print("LLM reranker provider URL (e.g., openai://gpt-4o-mini, ollama://llama3):")
+        print(
+            "LLM reranker provider URL (e.g., openai://gpt-4o-mini, ollama://llama3):"
+        )
         reranker = input().strip()
         if reranker:
             config.qmd_reranker = reranker
@@ -412,26 +518,29 @@ def _save_strata_config(config: StrataConfig) -> None:
     # Load existing data to preserve any fields not explicitly managed
     data = {}
     if config_path.exists():
-        try:
+        with contextlib.suppress(json.JSONDecodeError, OSError):
             data = json.loads(config_path.read_text())
-        except (json.JSONDecodeError, OSError):
-            pass
-    data.update({
-        "search_backend": config.search_backend,
-        "qmd_reranker": config.qmd_reranker,
-        "lru_days": config.lru_days,
-        "lru_min_access_count": config.lru_min_access_count,
-        "decay_thresholds": config.decay_thresholds,
-        "active_file_patterns": config.active_file_patterns,
-    })
+    data.update(
+        {
+            "search_backend": config.search_backend,
+            "qmd_reranker": config.qmd_reranker,
+            "lru_days": config.lru_days,
+            "lru_min_access_count": config.lru_min_access_count,
+            "decay_thresholds": config.decay_thresholds,
+            "active_file_patterns": config.active_file_patterns,
+        }
+    )
     config_path.write_text(json.dumps(data, indent=2))
 
 
 def _cmd_init(rest: list[str] | None = None):
     """Handle the ``init`` command: create directory structure.
 
-    Supports ``--global`` / ``-g`` for ``~/.strata/`` and
-    ``--local`` / ``-l`` for ``./strata_data/``.
+    Resolution order for the base directory:
+    1. ``$STRATA_HOME`` environment variable (always wins)
+    2. ``--global`` / ``-g`` flag sets ``~/.strata/``
+    3. ``--local`` / ``-l`` flag or default sets ``./strata_data/``
+
     If not ``--non-interactive``, runs QMD search backend onboarding.
 
     Args:
@@ -439,7 +548,10 @@ def _cmd_init(rest: list[str] | None = None):
     """
     explicit = rest or []
     non_interactive = "--non-interactive" in explicit
-    if "--global" in explicit or "-g" in explicit:
+    env_home = os.environ.get("STRATA_HOME")
+    if env_home:
+        base_dir = Path(env_home)
+    elif "--global" in explicit or "-g" in explicit:
         base_dir = Path.home() / ".strata"
     elif "--local" in explicit or "-l" in explicit:
         base_dir = Path("./strata_data")
@@ -451,13 +563,33 @@ def _cmd_init(rest: list[str] | None = None):
         s.s2.ensure_dirs()
         s.s3.ensure_dirs()
     kind = "global" if base_dir == Path.home() / ".strata" else "local"
-    print(f"Initialized {kind} Strata at {config.base_dir.resolve()}")
-    print("Start the daemon: strata serve")
 
     if not non_interactive:
         _qmd_onboarding(config)
 
     _save_strata_config(config)
+
+    # ── Post-init onboarding guide ──────────────────────────────────────────
+    print()
+    print(f"\u2713 Initialized {kind} Strata at {config.base_dir.resolve()}")
+    print()
+    print("  Next steps:")
+    print()
+    print("  1. Write your first memory:")
+    print('     strata add hello.md "# Hello from Strata"')
+    print()
+    print("  2. Search across all three tiers:")
+    print('     strata search "hello"')
+    print()
+    print("  3. Start the Janitor daemon for automatic memory lifecycle:")
+    print("     strata serve          # foreground (Ctrl+C to stop)")
+    print("     strata serve &        # background process")
+    print("     strata install-service  # systemd service (persistent)")
+    print()
+    print("  4. Install the agent skill (for AI coding assistants):")
+    print("     strata skill install --global")
+    print()
+    print("  Commands at a glance: strata --help")
 
 
 def _cmd_add(rest: list[str]):
@@ -502,7 +634,10 @@ def _cmd_add(rest: list[str]):
                 s.write_active(path, file_content)
                 written_path = str(s.s1._root / path)
                 if _JSON_MODE:
-                    _json_print("add", {"path": path, "file": str(s.s1._root / path), "written": True})
+                    _json_print(
+                        "add",
+                        {"path": path, "file": str(s.s1._root / path), "written": True},
+                    )
                     return
                 print(f"Written to: {written_path}")
                 return
@@ -518,7 +653,9 @@ def _cmd_add(rest: list[str]):
             s.write_active(path, content)
             written_path = str(s.s1._root / path)
             if _JSON_MODE:
-                _json_print("add", {"path": path, "file": written_path, "written": True})
+                _json_print(
+                    "add", {"path": path, "file": written_path, "written": True}
+                )
                 return
             print(f"Written to: {written_path}")
             return
@@ -529,7 +666,9 @@ def _cmd_add(rest: list[str]):
             s.write_active(path, content)
             written_path = str(s.s1._root / path)
             if _JSON_MODE:
-                _json_print("add", {"path": path, "file": written_path, "written": True})
+                _json_print(
+                    "add", {"path": path, "file": written_path, "written": True}
+                )
                 return
             print(f"Written to: {written_path}")
             return
@@ -600,7 +739,11 @@ def _print_search_results(results: list[dict]):
         print("No results found.")
         return
     for i, r in enumerate(results, 1):
-        tier_tag = {"stratum_1": "ACTIVE", "stratum_2": "MEDIUM", "stratum_3": "ARCHIVE"}.get(r["tier"], r["tier"])
+        tier_tag = {
+            "stratum_1": "ACTIVE",
+            "stratum_2": "MEDIUM",
+            "stratum_3": "ARCHIVE",
+        }.get(r["tier"], r["tier"])
         source = r.get("source", "?")
         content = r.get("content", "")
         score = r.get("score", 0)
@@ -614,11 +757,16 @@ def _print_search_results(results: list[dict]):
             print(f"       {preview}...")
 
         if r["tier"] == "stratum_3" and meta.get("_needs_rehydration"):
-            print(f"       [in archive \u2014 query strata forget <id> to rehydrate]")
+            print("       [in archive \u2014 use strata rehydrate <id> to restore]")
 
 
 def _cmd_read(rest: list[str]):
     """Handle the ``read`` command: print a file's contents.
+
+    Reads from any stratum (active -> cooled -> archive). When reading
+    from the 2nd Stratum, access is tracked and the file may be
+    automatically promoted back to active. When reading from the 3rd
+    Stratum, the file is automatically rehydrated to active.
 
     Args:
         rest: Remaining arguments (expects ``<path>``).
@@ -629,8 +777,19 @@ def _cmd_read(rest: list[str]):
     config = _config()
     with Strata(config) as s:
         try:
-            content = s.read_active(rest[0])
-            print(content)
+            result = s.read(rest[0])
+            source = result.get("source", "active")
+            if result.get("promoted"):
+                count = result.get("access_count", 0)
+                print(f"\u2b06 Promoted from cooled (accessed {count} times)\n")
+            elif result.get("rehydrated"):
+                print("\u2b06 Restored from archive to 1st Stratum (active)\n")
+            elif source == "cooled":
+                count = result.get("access_count", 0)
+                print(
+                    f"\u2192 Read from cooled (access {count}/{s.config.promotion_threshold})\n"
+                )
+            print(result["content"])
         except FileNotFoundError:
             print(f"File not found: {rest[0]}")
             sys.exit(1)
@@ -687,13 +846,77 @@ def _cmd_forget(rest: list[str]):
         print(f"Archived to: {archive_path}")
 
 
+def _cmd_rehydrate(rest: list[str]):
+    """Handle the ``rehydrate`` command: restore archived file.
+
+    Usage:
+        strata rehydrate <shadow_id> [--target=active|cooled]
+
+    The shadow ID comes from search results (``archive:id`` field).
+    By default restores to active/; use ``--target=cooled`` to restore
+    to the cooled stratum instead.
+    """
+    if not rest:
+        print("Usage: strata rehydrate <shadow_id> [--target=active|cooled]")
+        return
+
+    target_tier = "active"
+    shadow_id = None
+    for arg in rest:
+        if arg.startswith("--target="):
+            target_tier = arg.split("=", 1)[1]
+            if target_tier not in ("active", "cooled"):
+                print(
+                    f"Invalid target: {target_tier} (use --target=active or --target=cooled)",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+        elif not arg.startswith("--"):
+            shadow_id = arg
+
+    if not shadow_id:
+        print(
+            "Usage: strata rehydrate <shadow_id> [--target=active|cooled]",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    config = _config()
+    with Strata(config) as s:
+        # Find shadow entry by id
+        try:
+            conn = s.s3._connect_shadow()
+            row = conn.execute(
+                "SELECT * FROM shadow_index WHERE id = ? OR original_path = ?",
+                (shadow_id, shadow_id),
+            ).fetchone()
+        except Exception:
+            row = None
+
+        if not row:
+            print(f"Shadow entry not found: {shadow_id}", file=sys.stderr)
+            sys.exit(1)
+
+        entry = dict(row)
+        result = s.rehydrate(entry, target_tier=target_tier)
+        if result is None:
+            print(f"Could not read archive file for: {shadow_id}", file=sys.stderr)
+            sys.exit(1)
+
+        tier_name = {
+            "active": "1st Stratum (active)",
+            "cooled": "2nd Stratum (cooled)",
+        }.get(target_tier, target_tier)
+        print(f"Restored to {tier_name}: {result.get('original_path', '?')}")
+
+
 def _cmd_lifecycle(command: str, rest: list[str]):
     """Handle lifecycle commands: ``migrate``, ``evict``, ``maintenance``.
 
     Supports the ``--dry-run`` flag to preview changes.
 
     Args:
-        command: ``"migrate"``, ``"evict"``, or ``"maintenance"``.
+        command: ``"migrate"``, ``"promote"``, ``"evict"``, or ``"maintenance"``.
         rest: Remaining arguments (e.g. ``--dry-run``).
     """
     dry_run = "--dry-run" in rest
@@ -705,15 +928,32 @@ def _cmd_lifecycle(command: str, rest: list[str]):
             with _spinner("Migrating"):
                 results = s.migrate(dry_run=dry_run)
             if _JSON_MODE:
-                _json_print("migrate", {"files": results, "count": len(results), "dry_run": dry_run})
+                _json_print(
+                    "migrate",
+                    {"files": results, "count": len(results), "dry_run": dry_run},
+                )
                 return
             print(json.dumps(results, indent=2))
             print(f"\nMigrated: {len(results)} files")
+        elif command == "promote":
+            with _spinner("Promoting"):
+                results = s.promote(dry_run=dry_run)
+            if _JSON_MODE:
+                _json_print(
+                    "promote",
+                    {"files": results, "count": len(results), "dry_run": dry_run},
+                )
+                return
+            print(json.dumps(results, indent=2))
+            print(f"\nPromoted: {len(results)} files")
         elif command == "evict":
             with _spinner("Evicting"):
                 results = s.evict(dry_run=dry_run)
             if _JSON_MODE:
-                _json_print("evict", {"memories": results, "count": len(results), "dry_run": dry_run})
+                _json_print(
+                    "evict",
+                    {"memories": results, "count": len(results), "dry_run": dry_run},
+                )
                 return
             print(json.dumps(results, indent=2))
             print(f"\nEvicted: {len(results)} memories")
@@ -724,8 +964,15 @@ def _cmd_lifecycle(command: str, rest: list[str]):
                 _json_print("maintenance", result)
                 return
             print(json.dumps(result, indent=2))
-            print(f"\nMigrated: {result.get('total_migrated') or len(result.get('migrated', []))}")
-            print(f"Evicted:  {result.get('total_evicted') or len(result.get('evicted', []))}")
+            print(
+                f"\nPromoted: {result.get('total_promoted') or len(result.get('promoted', []))}"
+            )
+            print(
+                f"Migrated: {result.get('total_migrated') or len(result.get('migrated', []))}"
+            )
+            print(
+                f"Evicted:  {result.get('total_evicted') or len(result.get('evicted', []))}"
+            )
 
 
 def _cmd_serve(rest: list[str]):
@@ -746,13 +993,17 @@ def _cmd_serve(rest: list[str]):
         elif arg == "--help":
             print("Usage: strata serve [--interval=SECONDS] [--live]")
             print("  --interval=N   Seconds between maintenance cycles (default: 900)")
-            print("  --live         Skip initial dry-run, go straight to live operations")
+            print(
+                "  --live         Skip initial dry-run, go straight to live operations"
+            )
             return
 
     config = _config()
     status = get_daemon_status(config)
     if status["running"]:
-        print(f"Daemon is already running (pid={status['pid']}). Use 'strata stop' first or 'strata restart'.")
+        print(
+            f"Daemon is already running (pid={status['pid']}). Use 'strata stop' first or 'strata restart'."
+        )
         return
 
     daemon = StrataDaemon(
@@ -760,7 +1011,9 @@ def _cmd_serve(rest: list[str]):
         interval_seconds=interval,
         dry_run_first=dry_run_first,
     )
-    print(f"Starting Strata daemon (interval={interval}s, dry_run_first={dry_run_first})")
+    print(
+        f"Starting Strata daemon (interval={interval}s, dry_run_first={dry_run_first})"
+    )
     print(f"  Log:  {daemon._log_path.resolve()}")
     print(f"  PID:  {daemon._pid_path.resolve()}")
     print("Press Ctrl+C to stop.")
@@ -770,9 +1023,72 @@ def _cmd_serve(rest: list[str]):
 def _cmd_stop():
     """Handle the ``stop`` command: stop a running daemon."""
     from strata.daemon import stop_daemon
+
     config = _config()
     result = stop_daemon(config)
     print(result["message"])
+
+
+def _cmd_install_service():
+    """Handle the ``install-service`` command: install systemd user service.
+
+    Copies the bundled ``contrib/strata.service`` to
+    ``~/.config/systemd/user/strata.service`` and enables it.
+    """
+    import shutil
+
+    systemd_dir = Path.home() / ".config" / "systemd" / "user"
+    systemd_dir.mkdir(parents=True, exist_ok=True)
+    target = systemd_dir / "strata.service"
+
+    # Locate the bundled service file
+    dev = Path(__file__).resolve().parent.parent / "contrib" / "strata.service"
+    if dev.is_file():
+        src = dev
+    else:
+        try:
+            import importlib.resources as rsrc
+
+            ref = rsrc.files("strata") / "contrib" / "strata.service"
+            with rsrc.as_file(ref) as p:
+                src = p.resolve()
+        except Exception:
+            print(
+                "Error: could not locate strata.service bundle. Check your installation.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    try:
+        shutil.copy2(src, target)
+    except OSError as e:
+        print(f"Error: failed to install service: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"\u2713 Installed systemd service to {target}")
+    print()
+    print("  Enable and start:")
+    print("    systemctl --user daemon-reload")
+    print("    systemctl --user enable --now strata")
+    print()
+    print("  Check status:")
+    print("    systemctl --user status strata")
+    print("    journalctl --user -u strata -f")
+
+
+def _cmd_uninstall_service():
+    """Handle the ``uninstall-service`` command: remove systemd user service."""
+    target = Path.home() / ".config" / "systemd" / "user" / "strata.service"
+    if not target.exists():
+        print("No systemd service installed at {target}")
+        return
+    try:
+        target.unlink()
+    except OSError as e:
+        print(f"Error: failed to remove service: {e}", file=sys.stderr)
+        sys.exit(1)
+    print(f"\u2713 Removed {target}")
+    print("  Run: systemctl --user daemon-reload")
 
 
 def _cmd_status():
@@ -785,33 +1101,61 @@ def _cmd_status():
         p3_count = s.s3.get_shadow_count()
         active_root = config.active_path().resolve()
 
+    from strata.distiller import Distiller
+
+    d = Distiller(config)
+    llm_cfg = d._load_config()
+    distiller_ready = d.check_available()
+    distill_pending = d.get_pending_count()
+
     if _JSON_MODE:
-        _json_print("status", {
-            "base_dir": str(config.base_dir.resolve()),
-            "active_root": str(active_root),
-            "stratum_1_stale": p1_count,
-            "stratum_2_blocks": p2_count,
-            "stratum_3_shadows": p3_count,
-            "daemon_running": status["running"],
-            "daemon_pid": status.get("pid"),
-            "daemon_cycles": status.get("cycle_count", 0),
-        })
+        _json_print(
+            "status",
+            {
+                "base_dir": str(config.base_dir.resolve()),
+                "active_root": str(active_root),
+                "stratum_1_stale": p1_count,
+                "stratum_2_blocks": p2_count,
+                "stratum_3_shadows": p3_count,
+                "daemon_running": status["running"],
+                "daemon_pid": status.get("pid"),
+                "daemon_cycles": status.get("cycle_count", 0),
+                "distill_llm_configured": llm_cfg is not None,
+                "distill_available": distiller_ready,
+                "distill_enabled": llm_cfg.get("enabled") if llm_cfg else False,
+                "distill_pending": distill_pending,
+            },
+        )
         return
 
-    print(f"Strata Memory System \u2014 Status")
+    print("Strata Memory System \u2014 Status")
     print(f"  Base directory: {config.base_dir.resolve()}")
     print(f"  Active root:    {active_root}")
-    print(f"")
+    print("")
     print(f"  1st Stratum (Active):  {p1_count} stale file(s) pending")
     print(f"  2nd Stratum (Medium):  {p2_count} memory block(s)")
     print(f"  3rd Stratum (Archive): {p3_count} shadow entr(ies)")
-    print(f"")
-    print(f"  Daemon: {'RUNNING (pid=' + str(status['pid']) + ')' if status['running'] else 'STOPPED'}")
+    print("")
+    if llm_cfg:
+        if distiller_ready:
+            flag = "ENABLED" if llm_cfg.get("enabled") else "DISABLED"
+            print(
+                f"  Distiller: {flag} ({llm_cfg.get('provider', '?')} / {llm_cfg.get('model', '?')})"
+            )
+        else:
+            print("  Distiller: CONFIGURED (unavailable)")
+    else:
+        print("  Distiller: NOT CONFIGURED")
+    print(f"  Pending conversations: {distill_pending}")
+    print("")
+    print(
+        f"  Daemon: {'RUNNING (pid=' + str(status['pid']) + ')' if status['running'] else 'STOPPED'}"
+    )
 
     if status["running"]:
         print(f"  Cycles completed: {status['cycle_count']}")
         if status["log_lines"]:
-            print(f"  Recent log:")
+            print("  Recent log:")
             for line in status["log_lines"][-5:]:
                 print(f"    {line}")
 
@@ -834,7 +1178,7 @@ def _cmd_config(rest: list[str]):
         if _JSON_MODE:
             _json_print("config", _config_to_dict(config))
             return
-        print(f"strata Configuration")
+        print("strata Configuration")
         print(f"{'=' * 40}")
         print(f"  base_dir:           {config.base_dir.resolve()}")
         print(f"  active_dir:         {config.active_dir}")
@@ -842,12 +1186,14 @@ def _cmd_config(rest: list[str]):
         print(f"  qmd_enabled:        {config.qmd_enabled}")
         print(f"  stratum_3_archive:     {config.stratum_3_archive}")
         print(f"  stratum_3_shadow_db:   {config.stratum_3_shadow_db}")
-        print(f"")
-        print(f"  Decay thresholds:")
+        print("")
+        print("  Decay thresholds:")
         for pattern, days in sorted(config.decay_thresholds.items()):
             print(f"    /{pattern}:  {days} days")
-        print(f"")
-        print(f"  LRU eviction:       {config.lru_days} days, \u2264{config.lru_min_access_count} access(es)")
+        print("")
+        print(
+            f"  LRU eviction:       {config.lru_days} days, \u2264{config.lru_min_access_count} access(es)"
+        )
         print(f"  QMD enabled:        {config.qmd_enabled}")
         print(f"  File patterns:      {', '.join(config.active_file_patterns)}")
         return
@@ -855,6 +1201,29 @@ def _cmd_config(rest: list[str]):
     # config get <key>
     if rest[0] == "get" and len(rest) >= 2:
         key = rest[1]
+        # Route llm.* keys to pi-config.json
+        if key == "llm" or key.startswith("llm."):
+            llm_cfg = _read_llm_config(config)
+            if llm_cfg is None:
+                print("LLM not configured (no pi-config.json)", file=sys.stderr)
+                sys.exit(1)
+            if key == "llm":
+                if _JSON_MODE:
+                    _json_print("config", {"key": key, "value": llm_cfg})
+                    return
+                for k, v in llm_cfg.items():
+                    print(f"  llm.{k} = {v!r}")
+                return
+            # key is llm.<subkey>
+            sub = key.split(".", 1)[1]
+            if sub not in llm_cfg:
+                print(f"Unknown config key: {key}", file=sys.stderr)
+                sys.exit(1)
+            if _JSON_MODE:
+                _json_print("config", {"key": key, "value": llm_cfg[sub]})
+                return
+            print(llm_cfg[sub])
+            return
         try:
             value = _config_get(config, key)
         except (KeyError, AttributeError):
@@ -869,10 +1238,48 @@ def _cmd_config(rest: list[str]):
         return
 
     # config set <key> <value>
-    if rest[0] == "set" and len(rest) >= 3:
+    if rest[0] == "set" and len(rest) >= 2:
         key = rest[1]
-        raw_value = " ".join(rest[2:])
+        # If setting llm.apiKey with no value, prompt securely
+        if len(rest) == 2 and key.endswith("apiKey"):
+            import getpass
+
+            raw_value = getpass.getpass("Enter API key: ")
+            if not raw_value:
+                print("No key provided, aborting.", file=sys.stderr)
+                sys.exit(1)
+        elif len(rest) < 3:
+            if _JSON_MODE:
+                _json_error("config", "Usage: strata config set <key> <value>")
+            print(
+                "Usage: strata config set <key> <value>", file=sys.stderr
+            )
+            sys.exit(1)
+        else:
+            raw_value = " ".join(rest[2:])
         value = _parse_config_value(raw_value)
+        # Route llm.* keys to pi-config.json
+        if key == "llm" or key.startswith("llm."):
+            llm_cfg = _read_llm_config(config) or {}
+            if key == "llm":
+                if not isinstance(value, dict):
+                    print("llm value must be a JSON object", file=sys.stderr)
+                    sys.exit(1)
+                llm_cfg.clear()
+                llm_cfg.update(value)
+            else:
+                sub = key.split(".", 1)[1]
+                llm_cfg[sub] = value
+            _write_llm_config(config, llm_cfg)
+            if _JSON_MODE:
+                _json_print("config", {"key": key, "value": value, "set": True})
+                return
+            print(
+                f"Set llm.{key.split('.', 1)[1] if '.' in key else ''} = {value!r}"
+                if "." in key
+                else "Set llm config"
+            )
+            return
         # Validate top-level key
         top = key.split(".")[0]
         if not hasattr(config, top):
@@ -927,6 +1334,92 @@ def _cmd_history(rest: list[str]):
         print(f"  {line}")
 
 
+def _cmd_distiller(rest: list[str]):
+    """Handle the ``distiller`` command: show distillation state or trigger a run.
+
+    Subcommands:
+        ``strata distiller status``    Show pending count and config state.
+        ``strata distiller run``       Manually run LLM distillation.
+    """
+    config = _config()
+    from strata.distiller import Distiller
+
+    d = Distiller(config)
+    cfg = d._load_config()
+
+    # Subcommand dispatch
+    sub = rest[0] if rest else ""
+
+    if sub == "status":
+        if _JSON_MODE:
+            _json_print(
+                "distiller",
+                {
+                    "available": d.check_available(),
+                    "llm_configured": cfg is not None,
+                    "enabled": cfg["enabled"] if cfg else False,
+                    "provider": cfg["provider"] if cfg else None,
+                    "model": cfg["model"] if cfg else None,
+                    "pending": d.get_pending_count(),
+                },
+            )
+            return
+
+        print("Distiller Status")
+        print("=" * 40)
+        if cfg is None:
+            print("  LLM:         NOT CONFIGURED")
+            print("  Configure:   strata config set llm.apiKey <key>")
+        elif not d.check_available():
+            print("  LLM:         CONFIGURED (unavailable — check API key)")
+            print(f"  Provider:    {cfg.get('provider', '?')}")
+        else:
+            print(f"  LLM:         {'ENABLED' if cfg.get('enabled') else 'DISABLED'}")
+            print(f"  Provider:    {cfg.get('provider', '?')}")
+            print(f"  Model:       {cfg.get('model', '?')}")
+        print(f"  Pending:     {d.get_pending_count()} conversation(s)")
+        print()
+        print("  Tip: run 'strata distiller run' to manually trigger")
+        return
+
+    if sub == "run":
+        dry = "--dry-run" in rest or "-n" in rest
+        if dry:
+            result = d.process(dry_run=True)
+        else:
+            result = d.process()
+
+        if _JSON_MODE:
+            _json_print("distiller", result)
+            return
+
+        status = result["status"]
+        if status == "dry_run":
+            print(f"Would process {result.get('would_process', 0)} conversation(s)")
+            print("Pass --live to execute." if "--dry-run" not in rest else "")
+        elif status == "ok":
+            print(f"Processed {result['processed']} conversation(s)")
+            print(f"Wrote {result['facts_written']} fact file(s)")
+        elif status == "no_facts_extracted":
+            print(
+                f"Processed {result['processed']} conversation(s) — no facts extracted"
+            )
+        elif status == "skipped":
+            reason = result.get("reason", "unknown")
+            print(f"Skipped: {reason}")
+            if reason == "llm_not_configured":
+                print("Run 'strata config set llm.apiKey <key>' to configure.")
+        elif status == "error":
+            print(f"Error: {result.get('reason', 'unknown')}")
+        else:
+            print(f"Result: {result}")
+        return
+
+    # No subcommand / unknown
+    print("Usage: strata distiller status|run", file=sys.stderr)
+    sys.exit(1)
+
+
 def _cmd_cost(rest: list[str]):
     """Show estimated cost savings from Janitor automation."""
     config = _config()
@@ -957,8 +1450,12 @@ def _cmd_cost(rest: list[str]):
     print(f"  Tokens saved:      {summary['tokens_saved_estimate']['value']:,} tokens")
     print(f"  Savings range:     {summary['tokens_saved_range']['value']}")
     print()
-    print(f"  Methodology: {summary.get('tokens_saved_estimate', {}).get('methodology', '')}")
-    print(f"  Disclaimer: {summary.get('tokens_saved_estimate', {}).get('disclaimer', '')}")
+    print(
+        f"  Methodology: {summary.get('tokens_saved_estimate', {}).get('methodology', '')}"
+    )
+    print(
+        f"  Disclaimer: {summary.get('tokens_saved_estimate', {}).get('disclaimer', '')}"
+    )
 
 
 def _cmd_index():
@@ -986,7 +1483,7 @@ def _cmd_mcp():
 # ── Skill Install ──────────────────────────────────────────────────────────────
 
 
-def _find_skill_dir() -> Optional[Path]:
+def _find_skill_dir() -> Path | None:
     """Locate the bundled strata skill directory for AI agents.
 
     Resolution order:
@@ -1001,7 +1498,8 @@ def _find_skill_dir() -> Optional[Path]:
     # Installed package: use importlib.resources
     try:
         import importlib.resources as rsrc
-        ref = rsrc.files("strata").joinpath("skills", "strata")
+
+        ref = rsrc.files("strata") / "skills" / "strata"
         with rsrc.as_file(ref) as path:
             if path.is_dir():
                 return path.resolve()
@@ -1014,7 +1512,7 @@ def _find_skill_dir() -> Optional[Path]:
 # ── Pi Extension Install ─────────────────────────────────────────────────────
 
 
-def _find_pi_skill_dir() -> Optional[Path]:
+def _find_pi_skill_dir() -> Path | None:
     """Locate the bundled Strata Pi extension file.
 
     Resolution order:
@@ -1029,7 +1527,8 @@ def _find_pi_skill_dir() -> Optional[Path]:
     # Installed package: use importlib.resources
     try:
         import importlib.resources as rsrc
-        ref = rsrc.files("strata").joinpath("skills", "pi", "strata.ts")
+
+        ref = rsrc.files("strata") / "skills" / "pi" / "strata.ts"
         with rsrc.as_file(ref) as path:
             if path.is_file():
                 return path.resolve()
@@ -1049,11 +1548,17 @@ def _cmd_pi_install(rest: list[str]):
     pi_config = Path.home() / ".pi"
 
     if not pi_config.is_dir():
-        print("Warning: Pi config not found at ~/.pi/. Have you run Pi yet?", file=sys.stderr)
+        print(
+            "Warning: Pi config not found at ~/.pi/. Have you run Pi yet?",
+            file=sys.stderr,
+        )
 
     src = _find_pi_skill_dir()
     if src is None:
-        print("Error: Strata Pi extension not found. Reinstall strata-memory.", file=sys.stderr)
+        print(
+            "Error: Strata Pi extension not found. Reinstall strata-memory.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     try:
@@ -1121,11 +1626,16 @@ def _cmd_skill_install(rest: list[str]):
     """
     skill_dir = _find_skill_dir()
     if skill_dir is None:
-        print("Error: Strata skill not found. Reinstall strata-memory.", file=sys.stderr)
+        print(
+            "Error: Strata skill not found. Reinstall strata-memory.", file=sys.stderr
+        )
         sys.exit(1)
 
     if not shutil.which("npx"):
-        print("Error: 'npx' not found. Install Node.js from https://nodejs.org/", file=sys.stderr)
+        print(
+            "Error: 'npx' not found. Install Node.js from https://nodejs.org/",
+            file=sys.stderr,
+        )
         print("Then run: strata skill install", file=sys.stderr)
         sys.exit(1)
 
@@ -1145,7 +1655,10 @@ def _cmd_skill_install(rest: list[str]):
     result = subprocess.run(cmd)
 
     if result.returncode != 0:
-        print(f"Error: Skill installation failed (exit code {result.returncode})", file=sys.stderr)
+        print(
+            f"Error: Skill installation failed (exit code {result.returncode})",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     print()
@@ -1157,6 +1670,7 @@ def _cmd_qmd_setup():
     """Configure QMD collections for all Strata directories."""
     config = _config()
     from strata.storage import QmdWrapper
+
     qmd = QmdWrapper(config)
     if not qmd.check_available():
         print("QMD is not installed. Install it with: npm install -g @tobilu/qmd")
@@ -1171,6 +1685,7 @@ def _cmd_qmd_embed():
     """Generate QMD vector embeddings."""
     config = _config()
     from strata.storage import QmdWrapper
+
     qmd = QmdWrapper(config)
     if not qmd.check_available():
         print("QMD is not installed. Install it with: npm install -g @tobilu/qmd")
@@ -1184,6 +1699,7 @@ def _cmd_qmd_status():
     """Show QMD index status."""
     config = _config()
     from strata.storage import QmdWrapper
+
     qmd = QmdWrapper(config)
     if not qmd.check_available():
         print("QMD is not installed.")

@@ -11,6 +11,7 @@ Strata is a CLI-first, zero-dependency tiered memory system for AI agents. It st
 - **Optional:** openai, anthropic (for API integrations), QMD/Node.js (for hybrid search)
 - **CLI entry point:** `strata.cli:main`
 - **Package name:** `strata-memory`
+- **Project tracker:** GitHub
 
 ## Architecture: Three Strata
 
@@ -60,7 +61,7 @@ Writing (1st Stratum only):
   strata add --text "quick note"        Quick write (auto-routed to gtd/)
 
 Reading:
-  strata read <path>                    Read a file from active/
+  strata read <path>                    Read from any stratum (cascades active → cooled → archive)
   strata list [path]                    List files/directories in active/
   strata list-stratum-2                 List files in cooled/
 
@@ -70,8 +71,10 @@ Searching (all three layers):
 
 Lifecycle:
   strata migrate                        Move stale files active/ -> cooled/
+  strata promote                        Promote hot cooled files back to active/
   strata evict                          Move cold files cooled/ -> archive/
-  strata maintenance                    Both at once
+  strata maintenance                    Full cycle: promote → migrate → evict
+  strata rehydrate <id>                 Restore archived file to active or cooled
   strata forget <path>                  Archive a specific cooled file to 3rd Stratum
   strata index                          Regenerate index.md
 
@@ -131,13 +134,16 @@ from strata import Strata
 
 strata = Strata()                     # Auto-detects base directory
 strata.write_active("path/doc.md", "# Content")
-strata.read_active("path/doc.md")
+strata.read("path/doc.md")          # Reads from any stratum (cascade)
+strata.read_active("path/doc.md")    # Read from 1st Stratum only
 strata.list_active("path")
 strata.query("search text")           # Searches all 3 strata
 strata.migrate(dry_run=True)          # Preview migration
 strata.migrate()                      # Execute migration
+strata.promote()                      # Promote hot cooled files
 strata.evict()                        # Execute eviction
-strata.run_maintenance()              # migrate + evict
+strata.rehydrate(entry, "active")     # Restore archived file
+strata.run_maintenance()              # promote + migrate + evict
 strata.generate_index()               # Regenerate index.md
 ```
 

@@ -46,18 +46,27 @@ class StrataConfig:
     stratum_3_archive: str = "archive"
     stratum_3_shadow_db: str = "stratum_3_shadow.db"
 
-    decay_thresholds: dict = field(default_factory=lambda: {
-        "projects": 14,
-        "entities": 60,
-        "gtd": 7,
-        "*": 30,
-    })
+    decay_thresholds: dict = field(
+        default_factory=lambda: {
+            "projects": 14,
+            "entities": 60,
+            "gtd": 7,
+            "pi/conversations": 7,
+            "pi": 30,
+            "*": 30,
+        }
+    )
 
     lru_days: int = 90
     lru_min_access_count: int = 1
     lru_decay_thresholds: dict = field(default_factory=lambda: {"*": 90})
 
-    active_file_patterns: list = field(default_factory=lambda: ["*.md", "*.txt", "*.json", "*.yaml", "*.yml"])
+    promotion_threshold: int = 3
+    rehydration_target: str = "active"
+
+    active_file_patterns: list = field(
+        default_factory=lambda: ["*.md", "*.txt", "*.json", "*.yaml", "*.yml"]
+    )
 
     qmd_enabled: bool = False
     qmd_collection_prefix: str = "strata_"
@@ -101,8 +110,9 @@ class StrataConfig:
     def get_decay_days(self, path: str) -> int:
         """Return the decay threshold in days for the given path.
 
-        Uses the first path component as a key into ``decay_thresholds``,
-        falling back to the ``"*"`` default.
+        Matches progressively longer path prefixes against
+        ``decay_thresholds``, so ``"pi/conversations"`` takes
+        priority over ``"pi"``. Falls back to ``"*"``.
 
         Args:
             path: Relative file or directory path.
@@ -112,8 +122,11 @@ class StrataConfig:
         """
         rel = path.strip("/")
         parts = rel.split("/")
-        if parts and parts[0] in self.decay_thresholds:
-            return self.decay_thresholds[parts[0]]
+        # Check progressively longer prefixes: "pi" -> "pi/conversations"
+        for i in range(len(parts), 0, -1):
+            key = "/".join(parts[:i])
+            if key in self.decay_thresholds:
+                return self.decay_thresholds[key]
         return self.decay_thresholds.get("*", 30)
 
     def get_lru_days(self, path: str) -> int:

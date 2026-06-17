@@ -12,7 +12,7 @@ import json
 import sys
 from typing import Optional
 
-from strata import Strata
+from strata import Strata, __version__
 from strata.config import StrataConfig, detect_base_dir
 
 
@@ -94,11 +94,15 @@ class MCPServer:
         tools = []
         for s in schemas:
             fn = s["function"]
-            tools.append({
-                "name": fn["name"],
-                "description": fn.get("description", ""),
-                "inputSchema": fn.get("parameters", {"type": "object", "properties": {}}),
-            })
+            tools.append(
+                {
+                    "name": fn["name"],
+                    "description": fn.get("description", ""),
+                    "inputSchema": fn.get(
+                        "parameters", {"type": "object", "properties": {}}
+                    ),
+                }
+            )
         return tools
 
     def _handle_request(self, raw: str) -> Optional[str]:
@@ -114,17 +118,20 @@ class MCPServer:
 
         if method == "initialize":
             self._initialized = True
-            return rpc_result(req_id, {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {
-                    "tools": {},
-                    "resources": {},
+            return rpc_result(
+                req_id,
+                {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {},
+                        "resources": {},
+                    },
+                    "serverInfo": {
+                        "name": "strata-memory",
+                        "version": __version__,
+                    },
                 },
-                "serverInfo": {
-                    "name": "strata-memory",
-                    "version": "0.1.0",
-                },
-            })
+            )
 
         if method == "notifications/initialized":
             return None
@@ -175,10 +182,13 @@ class MCPServer:
             content.append({"type": "text", "text": text})
             return rpc_result(req_id, {"content": content})
         except Exception as exc:
-            return rpc_result(req_id, {
-                "isError": True,
-                "content": [{"type": "text", "text": str(exc)}],
-            })
+            return rpc_result(
+                req_id,
+                {
+                    "isError": True,
+                    "content": [{"type": "text", "text": str(exc)}],
+                },
+            )
 
     def run_stdio(self):
         """Run the MCP server over stdio (line-delimited JSON)."""
