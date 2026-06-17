@@ -1,6 +1,6 @@
-# Strata Memory System — Agent Guide
+# Strata Memory System  -  Agent Guide
 
-This document is for AI agents working on the Strata codebase. It describes the architecture, conventions, and rules for contributing.
+This document is for AI agents working on the Strata codebase. It covers the architecture, conventions, and rules you'll need to contribute.
 
 ## Project Overview
 
@@ -19,9 +19,9 @@ Strata stores data in a base directory (auto-detected: `./strata_data/` for proj
 
 ```
 <base>/
-  active/           1st Stratum — working memory (agent reads/writes)
-  cooled/           2nd Stratum — aged-out files (agent queries only)
-  archive/          3rd Stratum — cold JSON storage + shadow index
+  active/           1st Stratum  -  working memory (agent reads/writes)
+  cooled/           2nd Stratum  -  aged-out files (agent queries only)
+  archive/          3rd Stratum  -  cold JSON storage + shadow index
   shadow.db         SQLite FTS5 shadow index
   strata.log        Daemon activity log
   strata.pid        Daemon PID file
@@ -29,23 +29,23 @@ Strata stores data in a base directory (auto-detected: `./strata_data/` for proj
 
 ### 1st Stratum (`active/`)
 
-Full read/write access. Plain markdown files on disk, no database. An auto-generated `index.md` maps all files with their first heading as description. Agent workflow: read `index.md` first, navigate to files by path.
+Full read/write access. Plain markdown files on disk, no database. An auto-generated `index.md` maps every file with its first heading as description. Agent workflow: read `index.md` first, then navigate to files by path. Simple stuff.
 
 ### 2nd Stratum (`cooled/`)
 
-Read-only for agents. Files moved here by the Janitor when they exceed their decay threshold (defaults: projects=14d, entities=60d, gtd=7d, *=30d). Still plain markdown on disk. Accessible via `strata search`.
+Read-only for agents. Files land here when the Janitor decides they've overstayed their welcome in active/ (default thresholds: projects=14d, entities=60d, gtd=7d, *=30d). Still plain markdown on disk. Accessible via `strata search`.
 
 ### 3rd Stratum (`archive/`)
 
-Cold storage. Evicted from cooled/ after LRU threshold (default: 90 days since last access, access count <= 1). Full content saved as JSON. A Shadow Index (SQLite FTS5) keeps archived files keyword-searchable. Archived files can be rehydrated back to active/.
+Cold storage. Evicted from cooled/ when they hit the LRU threshold (default: 90 days since last access, access count <= 1). Full content gets saved as JSON. A Shadow Index (SQLite FTS5) keeps archived files keyword-searchable. Archived files can be rehydrated back to active/ if they prove useful again.
 
 ### The Janitor
 
-The Janitor is the lifecycle manager. It moves data between strata using algorithmic triggers (file age, access count). No LLM calls. Runs on demand or via daemon (`strata serve`, default 15-min interval). First cycle is always a dry run.
+The Janitor is the lifecycle manager. It moves data between strata using algorithmic triggers  -  file age and access count. No LLM calls anywhere. Runs on demand or via daemon (`strata serve`, default 15-min interval). First cycle is always a dry run, because nobody trusts a janitor that doesn't test the mop first.
 
 ### The Shadow Index
 
-A SQLite FTS5 database (`shadow.db`) that stores keywords, a 200-char preview, and file paths for archived memories. Enables search across all three strata without needing to scan the archive directory.
+A SQLite FTS5 database (`shadow.db`) that stores keywords, a 200-char preview, and file paths for archived memories. Lets you search across all three strata without scanning the archive directory manually.
 
 ## CLI Reference
 
@@ -125,7 +125,7 @@ class StrataConfig:
     qmd_collection_prefix: str = "strata_"
 ```
 
-Config is overridable via `$STRATA_HOME` env var (forces base directory).
+Config can be overridden via `$STRATA_HOME` env var (forces base directory).
 
 ## Python API
 
@@ -192,10 +192,10 @@ skills/             ConWey-compatible agent skills
 
 Agent-facing documentation lives in:
 
-- **README.md** — Full project documentation, CLI reference, install guide, Python API
-- **AGENTS.md** (this file) — Concise guide for AI agents working ON this project
-- **docs/** — Extended documentation (architecture, installation, CLI reference, configuration, Pi integration, search, tracking, blog posts, extension guides)
-- **strata/cli.py** docstring — Inline CLI reference (also printed by `strata` with no args)
+- **README.md**  -  Full project documentation, CLI reference, install guide, Python API
+- **AGENTS.md** (this file)  -  Concise guide for AI agents working ON this project
+- **docs/**  -  Extended documentation (architecture, installation, CLI reference, configuration, Pi integration, search, tracking, blog posts, extension guides)
+- **strata/cli.py** docstring  -  Inline CLI reference (also printed by `strata` with no args)
 
 ## Contribution Rules
 

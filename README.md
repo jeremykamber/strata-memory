@@ -1,6 +1,6 @@
 # Strata
 
-**Tiered memory for AI agents.** One install, one `strata init`, and you have a three-layer memory system. It bypasses API keys, vector databases, and background LLM janitors that burn tokens on every query.
+**Tiered memory for AI agents, minus the hype.** One install, one `strata init`, and bam  -  you've got a three-layer memory system. No API keys, no vector databases, no background LLM janitors quietly torching tokens on every query.
 
 ```bash
 pip install git+[https://github.com/jeremykamber/strata-memory.git](https://github.com/jeremykamber/strata-memory.git)
@@ -11,17 +11,17 @@ strata search "oauth2 payments"
 
 ```
 
-I named it after rock layers. Each stratum represents a different depth of memory. Active items sit at the surface where your agent grabs them fast; old items settle into deeper layers over time. Information decays on purpose. That is a deliberate design choice. A system that remembers every single detail is functionally identical to a system that remembers nothing at all. The signal gets drowned out by the noise. Perfect recall is an anchor.
+I named it after rock layers (creative, I know). Each stratum represents a different depth of memory. Active items sit at the surface where your agent can grab them fast; old items settle into deeper layers over time. And here's the thing  -  information decays on purpose. That's not a bug, it's the whole point. A system that remembers everything is functionally identical to a system that remembers nothing. The signal drowns in the noise. Perfect recall? It's an anchor.
 
 ---
 
 ## The Problem
 
-Most memory systems treat every piece of data identically. A passing thought from five minutes ago and a core architectural decision from six months ago get the exact same storage, retrieval, and fidelity. That wastes resources in two major ways.
+Most memory systems treat every piece of data like it matters equally. A passing thought from five minutes ago gets the same VIP treatment as a core architectural decision from six months ago. Same storage, same retrieval, same fidelity. That's a problem  -  in two big ways.
 
-First, vector search degrades as the document count rises. Eventually every document becomes semantically similar to every other document. You end up digging through your own haystack to find a needle that should have been on your desk.
+First, vector search degrades as your document count rises. Eventually every document starts looking semantically similar to every other document. You end up digging through your own haystack for a needle that should've been sitting right there on your desk.
 
-Second, developers try to solve this by running an LLM-powered background process on every query. Every single read, write, or search triggers an API call to clean and prioritize those memories. Your API credits disappear quickly. The LLM then has to judge incoming data against potentially hundreds of existing memories; this gets harder and more expensive the more you use the system.
+Second, developers try to fix this by running an LLM-powered background process on every query. Every single read, write, or search triggers an API call to clean and prioritize memories. Your API credits disappear faster than pizza at a hackathon. And the LLM has to judge incoming data against potentially hundreds of existing memories  -  which gets harder and more expensive the more you use the system.
 
 Human memory works through compression and neglect. We actively remember what we use, and we forget what we ignore. Our brains push old conversations to the background (eventually letting them fade out completely). Autonomous systems need this exact mechanic to function long-term. Structured decay beats throwing more compute at the problem.
 
@@ -29,9 +29,9 @@ Human memory works through compression and neglect. We actively remember what we
 
 Two specific choices define the architecture.
 
-**Active memory remains physically separated from long-term storage.** The agent only interacts with a small subset of memories at any given moment. It never gets bogged down by old context it stopped touching weeks ago.
+**Active memory stays physically separated from long-term storage.** The agent only ever interacts with a small subset of memories at any given moment. It never gets bogged down by old context it stopped touching weeks ago.
 
-**The migration trigger is algorithmic.** File age and access recency dictate what shifts between the tiers. There is no LLM getting paid to guess if a file is old. That job belongs to simple system timestamps.
+**The migration trigger is algorithmic.** File age and access recency dictate what shifts between tiers. There's no LLM getting paid by the token to guess if a file is old. That job belongs to simple system timestamps  -  which are free, fast, and don't hallucinate.
 
 This creates an environment where information naturally settles into deeper, cheaper storage. You avoid spending tokens to decide what matters.
 
@@ -59,50 +59,50 @@ This creates an environment where information naturally settles into deeper, che
 
 ```
 
-The Janitor moves data between the layers. It runs on a schedule or whenever you call it. It relies entirely on simple rules; there are no LLM calls, no text compression, and no token spend.
+The Janitor moves data between the layers. It runs on a schedule or whenever you call it. It relies entirely on simple rules  -  no LLM calls, no text compression, no token spend. Just timestamps and elbow grease.
 
 ### 1st Stratum  -  Active (the surface layer)
 
-This functions as the agent's working memory. You get plain markdown files inside a standard directory tree. You won't find a database or a vector index here.
+This is your agent's working memory. Plain markdown files in a standard directory tree. No database, no vector index, no fuss.
 
-The agent reads `active/index.md` first. This auto-generated map lists every file and uses the first heading as the description. The agent looks at the map, picks a path, and reads the target file directly. You bypass vector search and embedding noise completely; things are exactly where you put them.
+The agent reads `active/index.md` first. This auto-generated map lists every file and uses the first heading as a description. The agent checks the map, picks a path, and reads the target file directly. You bypass vector search and embedding noise completely  -  things are exactly where you put them.
 
-Write structured markdown with clear headings. The index grabs the first `# heading` to use as the file's description.
+Write structured markdown with clear headings. The index grabs the first `# heading` and uses it as the file's description.
 
-**Agent rule:** Full read/write access. This acts as the main workspace.
+**Agent rule:** Full read/write access. This is the main workspace.
 
-**Transition trigger:** The Janitor checks the modification time. If a file sits untouched past its decay threshold (the default is 14 days for projects, 60 for entities, and 7 for tasks), it becomes eligible for migration.
+**Transition trigger:** The Janitor checks the modification time. If a file sits untouched past its decay threshold (default is 14 days for projects, 60 for entities, and 7 for tasks), it's eligible for migration.
 
-**Moving back up (Promotion):** The Janitor also moves in the opposite direction. When a cooled file is accessed 3 or more times (the `promotion_threshold`), it gets promoted back to active/. The file has proven useful again  -  it resurfaces to the working tier where the agent can edit it directly. This prevents frequently-referenced context from getting buried by age-based decay.
+**Moving back up (Promotion):** The Janitor also moves in reverse. When a cooled file gets accessed 3 or more times (the `promotion_threshold`), it gets promoted back to active/. The file proved useful again  -  so it resurfaces to the working tier where the agent can edit it directly. This keeps frequently-referenced context from getting buried by age-based decay.
 
 ### 2nd Stratum  -  Cooled (the middle layer)
 
-The Janitor copies aged-out files from `active/` to `cooled/`. It stays a standard markdown file on your disk. The agent can search and read it; direct writes are blocked.
+The Janitor copies aged-out files from `active/` to `cooled/`. They stay as standard markdown files on your disk. The agent can search and read them  -  direct writes are blocked.
 
-**Agent rule:** Read-only access through `strata search`. Queries return the results directly. Editing the file requires rehydration back to the active tier.
+**Agent rule:** Read-only access through `strata search`. Queries return the results directly. Editing a file means rehydrating it back to the active tier first.
 
-**Transition trigger:** A cooled file faces eviction when it meets two specific conditions. It must sit untouched for `lru_days` (default is 90). The access count must also be at or below `lru_min_access_count` (default is 1). A JSON sidecar file logs every read and search hit to track this access.
+**Transition trigger:** A cooled file faces eviction when it meets two conditions. It must sit untouched for `lru_days` (default is 90). The access count also needs to be at or below `lru_min_access_count` (default is 1). A JSON sidecar file logs every read and search hit to track this access.
 
 ### 3rd Stratum  -  Archive (the deep layer)
 
-Untouched cooled files eventually drop into `archive/`. The Janitor saves the full content as JSON in flat storage. A minimal entry goes into the Shadow Index (a SQLite FTS5 database) with just the keywords, a 200-character preview, and the file path. You still avoid vectors and embeddings here.
+Untouched cooled files eventually drop into `archive/`. The Janitor saves the full content as JSON in flat storage. A minimal entry goes into the Shadow Index (a SQLite FTS5 database) with just keywords, a 200-character preview, and the file path. Still no vectors, no embeddings.
 
-A million archived entries cost less than a megabyte of disk space.
+A million archived entries cost less than a megabyte of disk space. Yes, really.
 
-If a future search matches an archived entry, the file rehydrates. The Janitor reads the JSON, writes it back into the active tier, and deletes the shadow entry. The memory resurfaces simply because it proved useful again.
+If a future search matches an archived entry, the file gets rehydrated. The Janitor reads the JSON, writes it back to the active tier, and deletes the shadow entry. The memory resurfaces simply because it proved useful again.
 
-There is a massive difference between throwing an item in the trash and packing it in a labeled box in your basement.
+There's a massive difference between throwing something in the trash and packing it in a labeled box in your basement. Strata does the latter.
 
 ### The Janitor (lifecycle manager)
 
-The Janitor runs entirely on algorithms. It checks the time instead of analyzing text.
+The Janitor runs entirely on algorithms. It checks the clock instead of analyzing text.
 
-* **Migration (1st → 2nd):** Copies the file from `active/` to `cooled/`, deletes the original, and starts the access tracking. File age triggers this step.
-* **Promotion (2nd → 1st):** When a cooled file is read 3+ times (configurable via `promotion_threshold`), it is automatically promoted back to `active/`. The file proved useful again  -  it resurfaces to the working tier.
-* **Eviction (2nd → 3rd):** Reads the file content, saves it as JSON to `archive/`, creates the FTS5 entry in `shadow.db`, and deletes the cooled copy. The LRU logic triggers this step.
+* **Migration (1st → 2nd):** Copies the file from `active/` to `cooled/`, deletes the original, and starts access tracking. File age triggers this step.
+* **Promotion (2nd → 1st):** When a cooled file gets read 3+ times (configurable via `promotion_threshold`), it's automatically promoted back to `active/`. The file proved useful again  -  it resurfaces to the working tier.
+* **Eviction (2nd → 3rd):** Reads the file content, saves it as JSON to `archive/`, creates the FTS5 entry in `shadow.db`, and deletes the cooled copy. LRU logic triggers this step.
 * **Rehydration (3rd → 1st or 3rd → 2nd):** Reads the archived JSON, writes the content back to `active/` or `cooled/` at the original path, and removes the shadow entry. Triggered automatically when you `strata read` an archived file, or manually via `strata rehydrate <id> --target=active|cooled`.
 
-You avoid all LLM calls and token spend. The Janitor just looks at the clock.
+Zero LLM calls. Zero token spend. The Janitor just looks at the clock.
 
 ## Quick Start
 
@@ -113,7 +113,7 @@ pip install git+[https://github.com/jeremykamber/strata-memory.git](https://gith
 
 ```
 
-This requires zero pip dependencies. It works on Python 3.9 and newer.
+Zero pip dependencies. Works on Python 3.9 and newer.
 
 ### Initialize
 
@@ -180,8 +180,7 @@ strata serve &
 
 ### Agent Memory (Pi Extension)
 
-Strata ships with a zero-dependency Pi extension that auto-captures every
-conversation and optionally extracts knowledge via a small LLM.
+Strata ships with a zero-dependency Pi extension that auto-captures every conversation and optionally extracts knowledge via a small LLM.
 
 ```bash
 # 1. Install the extension
@@ -198,9 +197,7 @@ strata config set llm.enabled true
 strata serve
 ```
 
-Every Pi prompt is automatically saved as a transcript. The daemon periodically
-sends new transcripts to the LLM and writes extracted facts to
-`pi/facts/`  -  searchable with `strata search`.
+Every Pi prompt gets automatically saved as a transcript. The daemon periodically sends new transcripts to the LLM and writes extracted facts to `pi/facts/`  -  searchable with `strata search`.
 
 ```bash
 # Check distillation state
@@ -210,7 +207,7 @@ strata distiller status
 strata distiller run
 ```
 
-See [`docs/pi-integration.md`](docs/pi-integration.md) for full documentation.
+See [`docs/pi-integration.md`](docs/pi-integration.md) for the full breakdown.
 
 ## Python API
 
@@ -263,11 +260,11 @@ result = strata.tools.execute("strata_query", {"query": "kynd"})
 
 ```
 
-This works with OpenAI, Anthropic, OpenClaw, or any harness supporting function calling.
+This plays nice with OpenAI, Anthropic, OpenClaw, or any harness that supports function calling.
 
 ### MCP Server
 
-Strata ships with an MCP (Model Context Protocol) server for agents speaking JSON-RPC 2.0 over stdio:
+Strata also ships with an MCP (Model Context Protocol) server for agents speaking JSON-RPC 2.0 over stdio:
 
 ```bash
 strata mcp
@@ -343,7 +340,7 @@ config = StrataConfig(
 
 ```
 
-The config persists to `strata.json` in the base directory. You can alter it at runtime:
+The config persists to `strata.json` in the base directory. You can tweak it at runtime:
 
 ```bash
 strata config set decay_thresholds.gtd 14
@@ -370,9 +367,9 @@ Resolution order for `base_dir`: `$STRATA_HOME` > `./strata_data/` (project-loca
 
 ## Daemon Mode
 
-The daemon automates the Janitor operations. It runs silently in the background and loops through the migration and eviction processes. The first cycle defaults to a dry run unless you supply the `--live` flag.
+The daemon automates the Janitor operations. It runs silently in the background and loops through migration and eviction. The first cycle defaults to a dry run unless you pass `--live`.
 
-Without the daemon, your memories stay in the active stratum forever. The Janitor never runs. You lose the benefit of automatic tiered decay. If you want Strata to actually cycle memories between tiers, the daemon must be running.
+Without the daemon, your memories stay in the active stratum forever. The Janitor never runs. You lose the whole benefit of automatic tiered decay. If you want Strata to actually cycle memories between tiers, the daemon needs to be running.
 
 ### Run as a background process
 
@@ -392,7 +389,7 @@ strata history
 strata stop
 ```
 
-This runs until you stop it or reboot. Good for development and short-lived sessions.
+This runs until you stop it or reboot. Solid for development and short-lived sessions.
 
 ### Run as a systemd service (recommended for production)
 
@@ -425,18 +422,18 @@ The service runs with security hardening (`NoNewPrivileges=true`, `ProtectHome=r
 
 ### Daemon vs manual lifecycle
 
-You don't need the daemon at all. You can run lifecycle explicitly:
+You don't actually need the daemon at all. You can run lifecycle stuff explicitly:
 
 ```bash
 strata maintenance          # Run both migration and eviction now
 strata maintenance --dry-run  # Preview what would happen
 ```
 
-But the daemon is the only way to get fully automatic tiered memory. Without it, stale files accumulate in the active stratum indefinitely.
+But the daemon is the only way to get fully automatic tiered memory. Without it, stale files pile up in the active stratum indefinitely.
 
 ## Agent Integration
 
-You have four ways to connect Strata to an AI agent:
+You've got four ways to connect Strata to an AI agent:
 
 ### 1. CLI (recommended)
 
@@ -473,7 +470,7 @@ strata mcp
 
 ### Skill Install
 
-Strata includes a skill specifically for AI coding assistants. Once installed, your agent automatically understands the commands and the architecture.
+Strata includes a skill specifically for AI coding assistants. Once it's installed, your agent automatically understands the commands and the architecture.
 
 ```bash
 # Interactive
@@ -484,7 +481,7 @@ strata skill install --global
 
 ```
 
-This works across 55+ agent formats (including OpenCode, Claude Code, Pi, Cursor, Codex, and Windsurf). You will need Node.js for the `npx skills add` command.
+This works across 55+ agent formats (including OpenCode, Claude Code, Pi, Cursor, Codex, and Windsurf). You'll need Node.js for the `npx skills add` command.
 
 ### Pi Extension
 
@@ -497,15 +494,15 @@ strata pi-install
 
 ## Search Backends
 
-Strata provides three search modes. You choose one during initialization or swap it later.
+Strata provides three search modes. You pick one during init or swap it later.
 
 ### 1. FTS5 Keyword Search (default)
 
-The system gracefully handles missing dependencies. If you skip installing QMD, the search drops back to filesystem grep across `active/` and `cooled/`; it also runs SQLite FTS5 queries against the Shadow Index to find archived files. You need zero external dependencies. It works wherever Python runs.
+The system gracefully handles missing dependencies. If you skip installing QMD, search drops back to filesystem grep across `active/` and `cooled/`, plus SQLite FTS5 queries against the Shadow Index for archived files. Zero external dependencies. Works wherever Python runs.
 
 ### 2. QMD Hybrid Search (optional, recommended)
 
-[QMD](https://github.com/tobi/qmd) by Tobias Lütke introduces BM25 full-text and vector search. You still avoid LLM calls completely. The vectors generate locally on your machine:
+[QMD](https://github.com/tobi/qmd) by Tobias Lütke brings BM25 full-text and vector search. Still no LLM calls anywhere in sight. Vectors generate locally on your machine:
 
 ```bash
 npm install -g @tobilu/qmd
@@ -517,19 +514,19 @@ strata search "..."  # Now uses hybrid search
 
 ### 3. QMD with LLM Rerankers (optional)
 
-You can plug a reranker provider (OpenAI, Ollama, etc.) into QMD for better relevance scoring. This represents the only search path that actually touches an LLM. It remains entirely optional.
+You can plug a reranker provider (OpenAI, Ollama, etc.) into QMD for better relevance scoring. This is the only search path that actually touches an LLM. Entirely optional  -  you won't miss it unless you're chasing those last few relevance points.
 
 ## Why Files
 
-Every single memory in Strata exists as a plain file on your disk. It avoids database rows; it avoids graph nodes. Everything is just a standard `.md` file.
+Every single memory in Strata exists as a plain file on your disk. No database rows, no graph nodes. Just standard `.md` files.
 
-Files provide the most agent-native format available today.
+Files are the most agent-native format available right now.
 
-* You can run `cat`, `vim`, or `grep` against them.
+* You can `cat`, `vim`, or `grep` them.
 * Piping them into standard unix tools works flawlessly.
-* Git handles the version control perfectly.
+* Git handles version control like a champ.
 
-You bypass SDKs, APIs, and database drivers. You just use the filesystem (which every operating system has supported since 1971).
+No SDKs. No APIs. No database drivers. You just use the filesystem  -  which every operating system has supported since 1971, give or take.
 
 ## Project Structure
 
@@ -563,12 +560,12 @@ You bypass SDKs, APIs, and database drivers. You just use the filesystem (which 
 ## What Strata Doesn't Do
 
 * **No LLM calls during lifecycle management.** The Janitor watches timestamps instead of evaluating semantics. You pay nothing in token costs.
-* **Vector databases are strictly optional.** The search defaults to standard grep and FTS5. You can add vectors later using QMD.
-* **Graph databases are excluded.** Relationship context lives strictly in the directory structure.
-* **External API keys aren't needed.** You rely entirely on local resources.
-* **Distributed consensus isn't part of the design.** You get a single filesystem for a single agent. It functions as a memory space rather than a production database.
+* **Vector databases are strictly optional.** Search defaults to grep and FTS5. Add vectors later with QMD if you really want them.
+* **Graph databases are excluded.** Relationship context lives in the directory structure. That's it.
+* **No external API keys needed.** Everything runs locally.
+* **Distributed consensus isn't part of the design.** You get a single filesystem for a single agent. It's a memory space, not a production database.
 
-The underlying philosophy is extremely simple. Information naturally decays over time. You shouldn't fight that reality; you should build around it. The mechanism of forgetting actually makes memory useful. The real question is how to store each piece of information at the fidelity it deserves, for precisely the duration it remains relevant.
+The underlying philosophy is brutally simple. Information naturally decays over time. Don't fight it  -  build around it. Forgetting is what makes memory useful. The real question is how to store each piece of information at the fidelity it deserves, for exactly as long as it's relevant.
 
 ---
 

@@ -1,17 +1,17 @@
 # CLI Reference
 
-The `strata` CLI is the primary interface for agents and users. This page documents every command, its arguments, options, and expected behaviour.
+The `strata` CLI is your one-stop shop for everything memory-related  -  whether you're a carbon-based lifeform or a silicon-based agent running on tokens. This page documents every command, its arguments, options, and what you can expect it to do. We're thorough, but not humorless.
 
 ## Global Flags
 
-These flags can be used with any command:
+These flags work with any command. Consider them the universal remote for Strata.
 
 | Flag | Description |
 |---|---|
 | `--json` | Output results as JSON (for scripting). Applies to all commands. |
 | `--agent` | Alias for `--json`. Same behaviour. |
 
-When `--json` or `--agent` is active, all output is a single JSON object with `status`, `command`, `data`, and `duration_ms` fields. Error output follows the same format with `status: "error"` and exits with code 1.
+When `--json` or `--agent` is active, all output becomes a single JSON object with `status`, `command`, `data`, and `duration_ms` fields. Errors follow the same format with `status: "error"` and exit code 1. Your scripts will thank you.
 
 ## Commands
 
@@ -21,9 +21,10 @@ When `--json` or `--agent` is active, all output is a single JSON object with `s
 
 Create a new Strata data directory.
 
-**Purpose:** Initialise the directory structure for all three strata. Creates `active/`, `cooled/`, and `archive/` directories, sets up default subdirectories (`projects/`, `entities/`, `gtd/`), generates the initial `index.md`, and prompts for search backend selection.
+**Purpose:** Bootstraps the directory structure for all three strata  -  no existential questions asked. Creates `active/`, `cooled/`, and `archive/` directories, sets up sensible defaults (`projects/`, `entities/`, `gtd/`), generates your first `index.md`, and gently asks which search backend you'd like.
 
 **Usage:**
+
 ```bash
 strata init                    # Creates ./strata_data/ (project-local, default)
 strata init --local            # Explicit project-local (same as default)
@@ -32,7 +33,8 @@ strata init --non-interactive  # Skip QMD onboarding prompts
 ```
 
 **Notes:**
-- Interactive by default -- prompts to choose search backend (QMD hybrid, QMD + reranker, or FTS5 keyword)
+
+- Interactive by default  -  prompts to choose search backend (QMD hybrid, QMD + reranker, or FTS5 keyword)
 - If QMD is selected, attempted auto-install via `npx` with 30s timeout
 - Configuration is persisted to `strata.json`
 
@@ -40,9 +42,10 @@ strata init --non-interactive  # Skip QMD onboarding prompts
 
 View or modify configuration.
 
-**Purpose:** Show the current configuration or modify individual settings at runtime.
+**Purpose:** Peek under the hood or tweak settings without digging through config files. Show everything, grab a single value, or set something new  -  all from the command line.
 
 **Usage:**
+
 ```bash
 strata config                          # Show all configuration
 strata config get <key>                # Get a specific value
@@ -50,6 +53,7 @@ strata config set <key> <value>        # Set a specific value
 ```
 
 **Examples:**
+
 ```bash
 strata config get decay_thresholds.projects
 # Output: 14
@@ -60,6 +64,7 @@ strata config set search_backend fts5
 ```
 
 **Notes:**
+
 - Keys support dotted paths for nested fields (e.g., `decay_thresholds.projects`)
 - Values are auto-parsed: integers, floats, booleans, JSON, or plain strings
 - Changes persist to `strata.json` immediately
@@ -69,14 +74,16 @@ strata config set search_backend fts5
 
 Show system state.
 
-**Purpose:** Display the current state of the Strata system -- file counts per stratum, daemon status, and base directory location.
+**Purpose:** Displays the current health of your Strata system at a glance  -  how many files live in each tier, whether the daemon's awake, and where your base directory lives. It's like a dashboard, but without the JavaScript framework.
 
 **Usage:**
+
 ```bash
 strata status
 ```
 
 **Output includes:**
+
 - Base directory path
 - 1st Stratum stale file count (files pending migration)
 - 2nd Stratum block count
@@ -90,9 +97,10 @@ strata status
 
 Write content to the 1st Stratum.
 
-**Purpose:** Create or overwrite a file in the active stratum. Multi-line content is supported. The `index.md` is regenerated after each write.
+**Purpose:** Create or overwrite a file in the active stratum. Works with inline text, piped input, or files from disk. The `index.md` regenerates automatically after each write, so you don't have to think about it.
 
 **Usage:**
+
 ```bash
 strata add projects/koda/requirements.md "# Koda Platform\nOAuth2 + payments"
 echo "# Quick note" | strata add gtd/note.md
@@ -103,6 +111,7 @@ strata add --file /path/to/local/file.md projects/notes.md  # Read from file
 **Priority:** Inline text argument > `--file` content > stdin. If only one positional argument is given and stdin is a pipe, content is read from stdin.
 
 **Notes:**
+
 - Creates parent directories automatically
 - Path traversal is blocked (paths must resolve within `active/`)
 - Regenerates `index.md` after writing
@@ -112,14 +121,10 @@ strata add --file /path/to/local/file.md projects/notes.md  # Read from file
 
 Read a file from any stratum. Cascades active → cooled → archive.
 
-**Purpose:** Print the full content of a file. Searches the 1st Stratum
-first, then falls back to the 2nd (cooled) and 3rd (archive). When
-reading from cooled, access is tracked and the file is automatically
-promoted back to active once the access count reaches the promotion
-threshold (default: 3). When reading from archive, the file is
-automatically rehydrated to active.
+**Purpose:** Print the full content of a file, no matter where it's hiding. Searches the 1st Stratum first, then falls back to the 2nd (cooled), and finally the 3rd (archive). When reading from cooled, we track access counts and automatically promote the file back to active once it hits the threshold (default: 3). When reading from archive, the file gets rehydrated to active on the spot. It's like a rescue service, but for markdown.
 
 **Usage:**
+
 ```bash
 strata read projects/koda/spec.md     # Active  -  fast path, no tracking
 strata read user/prefs.md             # Cooled  -  auto-promotes on 3rd read
@@ -127,6 +132,7 @@ strata read archive-me.md             # Archive  -  auto-rehydrates to active
 ```
 
 **Status messages:**
+
 | Output | Meaning |
 |--------|---------|
 | *(no message)* | Read from active (1st Stratum) |
@@ -135,6 +141,7 @@ strata read archive-me.md             # Archive  -  auto-rehydrates to active
 | `⬆ Restored from archive to 1st Stratum (active)` | Archived file rehydrated to active |
 
 **Notes:**
+
 - Exit code 1 if file is not found in any stratum or path is a directory
 - Status messages print to stdout above the file content
 - Promotion happens transparently during the read  -  no separate command needed
@@ -143,9 +150,10 @@ strata read archive-me.md             # Archive  -  auto-rehydrates to active
 
 List files and directories in the 1st Stratum.
 
-**Purpose:** Discover available context. Shows files and directories with type and size.
+**Purpose:** See what's in your active memory. Shows files and directories with type and size  -  handy when you've forgotten what you've saved.
 
 **Usage:**
+
 ```bash
 strata list                 # List active root
 strata list projects        # List projects subdirectory
@@ -157,9 +165,10 @@ strata list projects        # List projects subdirectory
 
 List 2nd Stratum (cooled) files.
 
-**Purpose:** See what files have been migrated to the cooled stratum. Shows path, size, and last modification date.
+**Purpose:** Peek at what's been migrated to the cooled tier. Shows path, size, and last modification date  -  the cold storage equivalent of flipping through a filing cabinet.
 
 **Usage:**
+
 ```bash
 strata list-stratum-2
 ```
@@ -168,9 +177,10 @@ strata list-stratum-2
 
 Regenerate the 1st Stratum `index.md`.
 
-**Purpose:** Rebuild the master map of all active files. Normally regenerated automatically after every `strata add`, but this command provides manual regeneration.
+**Purpose:** Rebuild the master map of all active files. Normally this happens automatically after every `strata add`, but sometimes you want to do it yourself  -  maybe for the satisfaction of seeing the cursor spin.
 
 **Usage:**
+
 ```bash
 strata index
 ```
@@ -183,15 +193,17 @@ strata index
 
 Search across all memory tiers.
 
-**Purpose:** Human-readable search across active/, cooled/, and archive/ strata.
+**Purpose:** Human-readable search across active/, cooled/, and archive/  -  because you know you wrote that thing somewhere, you just don't remember where.
 
 **Usage:**
+
 ```bash
 strata search "koda oauth2"
 strata search "postgresql pgvector"
 ```
 
 **Output format:**
+
 ```
   [1] [ACTIVE] · score=1.50 · projects/koda/requirements.md
        # Koda Platform...OAuth2 + payments...
@@ -202,6 +214,7 @@ strata search "postgresql pgvector"
 ```
 
 **Notes:**
+
 - Results are ranked by relevance score
 - Tier tags: `ACTIVE` (stratum_1), `MEDIUM` (stratum_2), `ARCHIVE` (stratum_3)
 - Middle dot (`·`) separator between fields
@@ -212,9 +225,10 @@ strata search "postgresql pgvector"
 
 Search across all memory tiers (JSON output).
 
-**Purpose:** Same search as `strata search` but outputs raw JSON for scripting.
+**Purpose:** Same search as `strata search`, but outputs raw JSON. Perfect for when you're scripting and don't want to parse human-friendly text.
 
 **Usage:**
+
 ```bash
 strata query "koda oauth2"
 ```
@@ -227,15 +241,17 @@ strata query "koda oauth2"
 
 Move stale files from active to cooled.
 
-**Purpose:** Scan the 1st Stratum for files older than their decay threshold and move them to the 2nd Stratum. Files remain as markdown.
+**Purpose:** Scans the 1st Stratum for files past their prime (older than their decay threshold) and moves them to the 2nd Stratum. Files stay as markdown  -  no magic conversion, just a change of address.
 
 **Usage:**
+
 ```bash
 strata migrate              # Execute migration
 strata migrate --dry-run    # Preview without making changes
 ```
 
 **Notes:**
+
 - Shows a spinner animation during execution (suppressed in piped output or JSON mode)
 - Dry run output lists files that would be migrated
 - Exit code 1 on errors
@@ -244,15 +260,17 @@ strata migrate --dry-run    # Preview without making changes
 
 Move hot cooled files back to active.
 
-**Purpose:** Scan the 2nd Stratum for frequently-accessed files and move them back to the 1st Stratum. The inverse of migration -- if a cooled file has been accessed 3 or more times (configurable via `promotion_threshold`), it gets promoted back to the working tier.
+**Purpose:** Scans the 2nd Stratum for files that are getting a lot of attention and moves them back to the 1st Stratum. It's the inverse of migration  -  if a cooled file has been accessed 3 or more times (configurable via `promotion_threshold`), it gets bumped back to the working tier. Think of it as a demotion reversal.
 
 **Usage:**
+
 ```bash
 strata promote              # Execute promotion
 strata promote --dry-run    # Preview without making changes
 ```
 
 **Notes:**
+
 - Access count threshold is configurable via `promotion_threshold` in `strata.json`
 - Promoted files are removed from cooled/ and their access tracking is reset
 - The index is regenerated after promotion
@@ -262,15 +280,17 @@ strata promote --dry-run    # Preview without making changes
 
 Move cold files from cooled to archive.
 
-**Purpose:** Scan the 2nd Stratum for files exceeding LRU thresholds and evict them to the 3rd Stratum. Creates JSON blob + shadow index entry.
+**Purpose:** Scans the 2nd Stratum for files that have overstayed their welcome (exceeding LRU thresholds) and evicts them to the 3rd Stratum. Creates a JSON blob and a shadow index entry so they're not truly gone  -  just... hibernating.
 
 **Usage:**
+
 ```bash
 strata evict              # Execute eviction
 strata evict --dry-run    # Preview without making changes
 ```
 
 **Notes:**
+
 - Shows a spinner animation
 - Dry run output lists memories that would be evicted
 - Exit code 1 on errors
@@ -279,9 +299,10 @@ strata evict --dry-run    # Preview without making changes
 
 Run full lifecycle cycle.
 
-**Purpose:** Execute promote, migrate, and evict in sequence. One command for complete maintenance.
+**Purpose:** Runs promote, migrate, and evict in sequence, because clicking three buttons is for people with too much time on their hands. One command, full maintenance.
 
 **Usage:**
+
 ```bash
 strata maintenance              # Execute all three
 strata maintenance --dry-run    # Preview all
@@ -289,26 +310,29 @@ strata maintenance --dry-run    # Preview all
 
 **Output:** JSON with `promoted`, `migrated`, and `evicted` arrays, plus totals.
 
-**Execution order:** Promote (2nd->1st) → Migrate (1st->2nd) → Evict (2nd->3rd). This order ensures a promoted file isn't immediately re-migrated in the same cycle.
+**Execution order:** Promote (2nd->1st) → Migrate (1st->2nd) → Evict (2nd->3rd). This order ensures a promoted file isn't immediately re-migrated in the same cycle. The Janitor's not a fan of circular logic.
 
 #### `strata rehydrate <shadow_id>`
 
 Restore an archived file from the 3rd Stratum to active or cooled.
 
-**Purpose:** Reverses an eviction. Takes a shadow index entry (from `strata search` results) and restores the full file content to either active/ (for editing) or cooled/ (for reference).
+**Purpose:** Reverses an eviction. Takes a shadow index entry (the one you saw in `strata search` results) and restores the full file content to either active/ (if you want to edit it) or cooled/ (if you just need to reference it). Consider it a pardon from cold storage.
 
 **Usage:**
+
 ```bash
 strata rehydrate <shadow_id>
 strata rehydrate <shadow_id> --target=cooled
 ```
 
 **Options:**
+
 | Option | Default | Description |
 |---|---|---|
 | `--target=active\|cooled` | `active` | Target tier: `active` (1st, editable) or `cooled` (2nd, query-only). |
 
 **Notes:**
+
 - The shadow ID comes from search results (the `id` or `memory_id` field in metadata)
 - Rehydrating to active/ removes the shadow index entry
 - Rehydrating to cooled/ initializes access tracking (starts at 0)
@@ -318,14 +342,16 @@ strata rehydrate <shadow_id> --target=cooled
 
 Archive a specific cooled file immediately.
 
-**Purpose:** Explicitly archive a file from the 2nd Stratum to the 3rd Stratum. Like an "archive now" button for a specific file.
+**Purpose:** Explicitly archive a file from the 2nd Stratum to the 3rd Stratum. It's like an "archive now" button for a specific file  -  no waiting for the Janitor's next cycle.
 
 **Usage:**
+
 ```bash
 strata forget projects/old-idea.md
 ```
 
 **Notes:**
+
 - File path must exist in `cooled/`
 - Uses the first path segment as tags
 - Exit code 1 if file not found in 2nd Stratum
@@ -334,14 +360,16 @@ strata forget projects/old-idea.md
 
 Show estimated cost savings from Janitor automation.
 
-**Purpose:** Display metrics on daemon activity and estimated token savings from automated lifecycle management.
+**Purpose:** Display metrics on daemon activity and estimated token savings from automated lifecycle management. Because who doesn't like seeing how much they've saved?
 
 **Usage:**
+
 ```bash
 strata cost
 ```
 
 **Output:**
+
 ```
 Strata Cost Savings (Estimated)
 ========================================
@@ -364,9 +392,10 @@ See [Tracking](tracking.md) for detailed methodology.
 
 Start background Janitor daemon.
 
-**Purpose:** Start a background process that runs `strata maintenance` on a schedule. The daemon handles lifecycle automatically -- no manual intervention needed.
+**Purpose:** Fires up a background process that runs `strata maintenance` on a schedule. The daemon handles lifecycle automatically  -  you kick back and watch your memory tiers stay tidy all on their own.
 
 **Usage:**
+
 ```bash
 strata serve                        # Default: 900s interval, first cycle dry run
 strata serve --interval=300         # Every 5 minutes
@@ -374,33 +403,39 @@ strata serve --live                 # Skip initial dry run, go straight to live
 ```
 
 **Options:**
+
 | Option | Default | Description |
 |---|---|---|
 | `--interval=SECONDS` | `900` | Seconds between maintenance cycles. |
 | `--live` | (dry run first) | Skip initial dry run, execute live immediately. |
 
 **Notes:**
+
 - Checks for existing daemon PID before starting (prevents duplicates)
 - Logs to `strata.log` and stderr
 - PID file at `strata.pid`
-- Blocking -- runs until interrupted (Ctrl+C)
+- Blocking  -  runs until interrupted (Ctrl+C)
 
 #### `strata daemon`
 
 Alias for `strata serve`.
 
+**Purpose:** Some people prefer to type fewer letters. We get it.
+
 #### `strata stop`
 
 Stop running daemon.
 
-**Purpose:** Send SIGTERM to the running daemon process and wait for graceful shutdown.
+**Purpose:** Sends SIGTERM to the running daemon and waits for it to wind down gracefully. Like asking someone nicely to stop what they're doing and finish their sentence before leaving.
 
 **Usage:**
+
 ```bash
 strata stop
 ```
 
 **Notes:**
+
 - Reads PID from `strata.pid`
 - Waits up to 5 seconds for graceful shutdown
 - Cleans up PID file on success
@@ -410,9 +445,10 @@ strata stop
 
 Restart daemon.
 
-**Purpose:** Stop the running daemon and start a new one with the same arguments.
+**Purpose:** Stops the running daemon and starts a fresh one with the same (or new) arguments. A gentle "have you tried turning it off and on again?"
 
 **Usage:**
+
 ```bash
 strata restart
 strata restart --interval=600
@@ -422,14 +458,16 @@ strata restart --interval=600
 
 Install systemd user service for persistent daemon.
 
-**Purpose:** Install a systemd user unit that starts the Janitor daemon automatically on boot and restarts it on failure. Recommended for production deployments.
+**Purpose:** Installs a systemd user unit that starts the Janitor daemon automatically on boot and restarts it on failure. Production deployments, this one's for you.
 
 **Usage:**
+
 ```bash
 strata install-service
 ```
 
 **Post-install:**
+
 ```bash
 systemctl --user daemon-reload
 systemctl --user enable --now strata
@@ -438,24 +476,27 @@ journalctl --user -u strata -f
 ```
 
 **Notes:**
+
 - Copies `contrib/strata.service` to `~/.config/systemd/user/strata.service`
 - Uses `strata serve --live` as the exec command (bypasses initial dry run)
 - Service runs with security hardening: `NoNewPrivileges=true`, `ProtectHome=read-only`, `ProtectSystem=strict`
 - Logs to journald, not `strata.log`
-- Requires systemd -- does not work on macOS or non-systemd Linux
+- Requires systemd  -  does not work on macOS or non-systemd Linux
 
 #### `strata uninstall-service`
 
 Remove systemd user service.
 
-**Purpose:** Remove the previously installed systemd unit file.
+**Purpose:** Removes the previously installed systemd unit file. Cleanup is a virtue.
 
 **Usage:**
+
 ```bash
 strata uninstall-service
 ```
 
 **Pre-uninstall:**
+
 ```bash
 systemctl --user disable --now strata
 strata uninstall-service
@@ -463,22 +504,25 @@ systemctl --user daemon-reload
 ```
 
 **Notes:**
+
 - Deletes `~/.config/systemd/user/strata.service`
-- Does NOT stop a running service -- stop it first with `systemctl --user stop strata`
+- Does NOT stop a running service  -  stop it first with `systemctl --user stop strata`
 
 #### `strata history`
 
 Show Janitor daemon log.
 
-**Purpose:** View the daemon activity log. Useful for checking what the Janitor has been doing.
+**Purpose:** Peek at what the Janitor's been up to. Useful when you want to know if it's been busy, slacking off, or silently contemplating the impermanence of all things.
 
 **Usage:**
+
 ```bash
 strata history              # Show last 20 lines
 strata history --lines=50   # Show last 50 lines
 ```
 
 **Notes:**
+
 - Reads from `strata.log` in the base directory
 - Exit code 0 even if no log exists (prints a message)
 
@@ -488,31 +532,35 @@ strata history --lines=50   # Show last 50 lines
 
 Start MCP protocol server.
 
-**Purpose:** Start the Model Context Protocol (MCP) server over stdio. This lets MCP-compatible agents (Claude Desktop, etc.) interact with Strata directly.
+**Purpose:** Starts the Model Context Protocol (MCP) server over stdio. This lets MCP-compatible agents  -  Claude Desktop, and friends  -  talk to Strata directly without going through the CLI.
 
 **Usage:**
+
 ```bash
 strata mcp
 ```
 
 **Notes:**
+
 - Runs over stdio (for MCP transport)
-- Blocking -- runs until stdin closes or interrupted
+- Blocking  -  runs until stdin closes or interrupted
 - See [MCP specification](https://modelcontextprotocol.io) for protocol details
 
 #### `strata skill install`
 
 Install Strata skill for AI coding assistants.
 
-**Purpose:** Install the Strata agent skill, which teaches AI coding assistants about Strata's commands and architecture. Supports OpenCode, Claude Code, PI, Cursor, Codex, Windsurf, and 55+ agent formats via the [Vercel Skills](https://github.com/vercel-labs/skills) protocol.
+**Purpose:** Installs the Strata agent skill, which teaches AI coding assistants about Strata's commands and architecture. Supports OpenCode, Claude Code, PI, Cursor, Codex, Windsurf, and 55+ agent formats via the [Vercel Skills](https://github.com/vercel-labs/skills) protocol. That's a lot of agents.
 
 **Usage:**
+
 ```bash
 strata skill install                 # Interactive -- choose scope + agents
 strata skill install --global        # Non-interactive global install
 ```
 
 **Notes:**
+
 - Requires Node.js (`npx`)
 - Interactive mode launches `npx skills add` with prompts
 - Global mode passes `--all --global --yes` flags for unattended install
@@ -522,15 +570,17 @@ strata skill install --global        # Non-interactive global install
 
 Install Strata Pi extension.
 
-**Purpose:** Install the Strata extension for the Pi coding agent. Copies `strata.ts` to `~/.pi/agent/extensions/`.
+**Purpose:** Installs the Strata extension for the Pi coding agent. Copies `strata.ts` to `~/.pi/agent/extensions/` so Pi can talk to your memory tiers like it owns the place.
 
 **Usage:**
+
 ```bash
 strata pi-install          # Interactive (prompts before overwrite)
 strata pi-install --force  # Overwrite existing extension without prompt
 ```
 
 **Notes:**
+
 - Requires Pi CLI (`pi`) to be installed
 - Installs to `~/.pi/agent/extensions/strata.ts`
 - After install, run `/reload` in Pi to activate
@@ -540,14 +590,15 @@ strata pi-install --force  # Overwrite existing extension without prompt
 
 Print agent usage guide.
 
-**Purpose:** Display the inline agent help text that describes Strata architecture and commands from an AI agent's perspective.
+**Purpose:** Spits out inline agent help text that describes Strata architecture and commands from an AI agent's perspective. Handy when you need a refresher without leaving your terminal.
 
 **Usage:**
+
 ```bash
 strata --agent-help
 ```
 
-**Output:** Markdown-formatted guide covering architecture, commands, best practices -- designed to be injected into an agent's context.
+**Output:** Markdown-formatted guide covering architecture, commands, best practices  -  designed to be injected into an agent's context so it knows what it's working with.
 
 ### QMD (Optional Hybrid Search)
 
@@ -555,14 +606,16 @@ strata --agent-help
 
 Configure QMD collections for all Strata directories.
 
-**Purpose:** Add `active/` and `cooled/` directories as QMD collections for hybrid search.
+**Purpose:** Adds `active/` and `cooled/` directories as QMD collections for hybrid search. If you've got QMD installed, this wires it up.
 
 **Usage:**
+
 ```bash
 strata qmd-setup
 ```
 
 **Notes:**
+
 - Collection names: `strata_active`, `strata_cooled`
 - Requires `@tobilu/qmd` to be installed
 - Exit code 0 even if QMD is not installed (prints a message)
@@ -571,14 +624,16 @@ strata qmd-setup
 
 Generate vector embeddings.
 
-**Purpose:** Generate vector embeddings for all QMD collections. This enables vector semantic search.
+**Purpose:** Generates vector embeddings for all QMD collections. This is what enables vector semantic search  -  think of it as teaching Strata to understand meaning, not just match keywords.
 
 **Usage:**
+
 ```bash
 strata qmd-embed
 ```
 
 **Notes:**
+
 - May take a while on first run (especially for large collections)
 - Requires QMD to be installed
 - Exit code 0 even if QMD is not installed (prints a message)
@@ -587,14 +642,16 @@ strata qmd-embed
 
 Show QMD index status.
 
-**Purpose:** Display the current status of QMD collections and indexes.
+**Purpose:** Displays the health of your QMD collections and indexes. Because every good search setup deserves a checkup now and then.
 
 **Usage:**
+
 ```bash
 strata qmd-status
 ```
 
 **Notes:**
+
 - Shows collection health, embedding status, index size
 - Requires QMD to be installed
 
@@ -605,13 +662,13 @@ strata qmd-status
 | `0` | Success. |
 | `1` | General error (invalid args, missing data directory, file not found, daemon not running, etc.). |
 
-In JSON mode (`--json` / `--agent`), errors produce a JSON object with `status: "error"` and exit code 1.
+In JSON mode (`--json` / `--agent`), errors produce a JSON object with `status: "error"` and exit code 1. Consistent, parseable, and predictable  -  just how scripting likes it.
 
 ## Cross-Reference
 
-- [Installation](installation.md) -- setting up the CLI
-- [Configuration](configuration.md) -- fields that influence command behaviour
-- [Architecture](architecture.md) -- lifecycle commands and the Janitor
-- [Search](search.md) -- search and query commands
-- [Tracking](tracking.md) -- cost command methodology
-- [Pi Integration](pi-integration.md) -- pi-install and skill install
+- [Installation](installation.md)  -  setting up the CLI
+- [Configuration](configuration.md)  -  fields that influence command behaviour
+- [Architecture](architecture.md)  -  lifecycle commands and the Janitor
+- [Search](search.md)  -  search and query commands
+- [Tracking](tracking.md)  -  cost command methodology
+- [Pi Integration](pi-integration.md)  -  pi-install and skill install

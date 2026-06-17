@@ -1,10 +1,10 @@
 # Cost Tracking
 
-Strata tracks storage and operational costs across the three-tier system. This page documents the methodology, the `strata cost` command, and the cost data format.
+Strata keeps tabs on storage and operational costs across its three-tier system. This page explains the methodology, the `strata cost` command, and the data format behind it all.
 
 ## CostTracker
 
-The `CostTracker` class in `strata/tracking.py` estimates cost savings from Janitor automation. It reads the daemon log to extract lifecycle metrics and applies a simple token-estimation model.
+The `CostTracker` class in `strata/tracking.py` estimates how much  -  well, tokens  -  the Janitor is saving you. It reads the daemon log, extracts lifecycle metrics, and applies a simple token-estimation model. Nothing fancy, but it gets the job done.
 
 ### Metrics Tracked
 
@@ -18,7 +18,7 @@ The `CostTracker` class in `strata/tracking.py` estimates cost savings from Jani
 
 ### Token Estimation Methodology
 
-The estimate compares against a hypothetical system that stores all files in the active tier indefinitely, requiring full re-processing on every lifecycle cycle.
+The estimate compares against a hypothetical (and frankly wasteful) system that keeps every file in the active tier forever, requiring full re-processing on every cycle. Strata's smarter than that.
 
 **Formula:**
 
@@ -32,17 +32,17 @@ tokens_saved = (migrated_files * 2000) + (evicted_files * 500)
 | Cooled file contribution | ~500 tokens | Archived files are accessed less; they contribute ~1/3 of the tokens of an active file |
 | Estimation range | +-20% | Accounts for file size variation |
 
-**Range output:** `lower = tokens * 80%`, `upper = tokens * 120%`.
+**Range output:** `lower = tokens * 80%`, `upper = tokens * 120%`. Think of it as a polite way of saying "give or take twenty percent."
 
 ### Methodology Text
 
-- **Daemon cycles:** Counted unique `[Cycle N]` entries in daemon log.
-- **Files migrated:** Summed `Migrated:` values from daemon log lines.
-- **Files evicted:** Summed `Evicted:` values from daemon log lines.
-- **LRU decisions:** Each eviction represents an LRU decision (evicted count = LRU decisions).
-- **Tokens saved:** Compared against hypothetical system that stores all files in active tier indefinitely, requiring full re-processing on each lifecycle cycle.
+- **Daemon cycles:** Counted from unique `[Cycle N]` entries in the daemon log. One cycle, one entry.
+- **Files migrated:** Summed from the `Migrated:` values in daemon log lines.
+- **Files evicted:** Summed from the `Evicted:` values in daemon log lines.
+- **LRU decisions:** Every eviction is an LRU decision. Same number, just dressed up differently.
+- **Tokens saved:** Compared against the hypothetical "keep everything forever" model. You're saving tokens by not reprocessing what you've already moved out of the way.
 
-**Disclaimer:** These are approximate ranges. Actual savings depend on file sizes and access patterns.
+**Disclaimer:** These are ranges, not guarantees. Actual savings depend on file sizes and how often you access stuff. Your mileage may vary.
 
 ## The `strata cost` Command
 
@@ -50,7 +50,7 @@ tokens_saved = (migrated_files * 2000) + (evicted_files * 500)
 strata cost
 ```
 
-Display formatted cost savings summary:
+Running this prints a formatted savings summary. It looks something like this:
 
 ```
 Strata Cost Savings (Estimated)
@@ -66,13 +66,13 @@ Strata Cost Savings (Estimated)
   Disclaimer: These are approximate ranges...
 ```
 
-In JSON mode (`--json` or `--agent`):
+Need machine-readable output? Use `--json` or `--agent`:
 
 ```bash
 strata cost --json
 ```
 
-Output:
+Which gives you:
 
 ```json
 {
@@ -95,18 +95,20 @@ Output:
 }
 ```
 
-If no daemon activity exists, `strata cost` prints: "No daemon activity yet. Run 'strata serve' first."
+If there's no daemon activity yet  -  say you just installed and haven't run `strata serve`  -  it gently tells you: "No daemon activity yet. Run 'strata serve' first."
 
 ## Cost Data Log
 
-The daemon writes a cost tracking line to `strata_cost.log` after every live (non-dry-run) cycle:
+Every live (non-dry-run) daemon cycle writes a tracking line to `strata_cost.log`. Think of it as a paper trail for your savings.
 
 **Format:**
+
 ```
 CYCLE:<cycle_number>:<migrated_count>:<evicted_count>:<timestamp>
 ```
 
 **Example:**
+
 ```
 CYCLE:1:3:0:2026-06-08T02:00:00Z
 CYCLE:2:0:1:2026-06-08T02:15:00Z
@@ -121,7 +123,7 @@ CYCLE:3:1:2:2026-06-08T02:30:00Z
 | evicted_count | int | Files evicted from cooled to archive in this cycle. |
 | timestamp | ISO 8601 | Time of cycle completion (UTC). |
 
-The log is appended to  -  never truncated. The `CostTracker` parses this file to compute aggregate metrics.
+The log is append-only and never truncated. The `CostTracker` parses it to compute your aggregate metrics. Yes, it'll grow forever, but these lines are tiny  -  don't lose sleep over it.
 
 ## Storage Costs by Tier
 
@@ -151,12 +153,12 @@ The log is appended to  -  never truncated. The `CostTracker` parses this file t
 
 ## Why No LLM Calls
 
-Strata's Janitor uses deterministic rules (file age, access count) rather than LLM invocations. This means:
+Strata's Janitor doesn't use LLMs. It's all deterministic rules  -  file age, access count, that sort of thing. That decision comes with some nice perks:
 
-- Maintenance costs are bounded and predictable
-- No per-operation API fees
-- Zero-effort maintenance -- no API keys, no budgets, no surprises
-- The `strata cost` command only tracks savings, not expenditures, because the Janitor itself costs nothing to run
+- Maintenance costs are bounded and predictable. No mystery bills.
+- No per-operation API fees. Every migration and eviction is free.
+- Zero-effort setup: no API keys, no budgets, no ugly surprises.
+- The `strata cost` command tracks only savings, not expenditures. Why? Because the Janitor itself costs absolutely nothing to run.
 
 ## Cross-Reference
 

@@ -1,6 +1,6 @@
 # Configuration
 
-Strata is configured via the `StrataConfig` dataclass in `strata/config.py`. This page documents every configuration field, its default value, and how to change it at runtime.
+Configuration lives in the `StrataConfig` dataclass inside `strata/config.py`. This page walks through every field, its default value, and how to tweak it at runtime. Think of it as the settings menu you never knew you needed.
 
 ## StrataConfig Fields
 
@@ -14,9 +14,11 @@ Strata is configured via the `StrataConfig` dataclass in `strata/config.py`. Thi
 | `stratum_3_archive` | `str` | `"archive"` | Directory name for the 3rd Stratum (cold JSON storage). Relative to `base_dir`. |
 | `stratum_3_shadow_db` | `str` | `"stratum_3_shadow.db"` | Filename for the SQLite FTS5 shadow index. Relative to `base_dir`. |
 
+Directory names  -  they're exactly what you'd expect. You can change them if you really want to, but the defaults are fine for almost everyone. The shadow DB filename lives here too, because it's another path under the base directory.
+
 ### Decay Thresholds (Migration: 1st -> 2nd Stratum)
 
-Controls how many days a file can sit untouched in the active stratum before the Janitor moves it to cooled.
+These control how long a file can sit untouched in the active stratum before the Janitor nudges it over to cooled. Think of it as the "hey, are you still using this?" timer.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -33,27 +35,31 @@ Default thresholds by directory:
 | `pi/` (facts, memos) | 30 days | Distilled facts and memos under `pi/`. One month without access. |
 | Everything else | 30 days | Default. One month without access. |
 
+The matching uses the longest prefix key, so a file in `pi/conversations/something.md` matches the 7-day `pi/conversations` rule instead of the 30-day `pi` rule. That's the kind of detail that sounds obvious once you read it, but made someone debug for an hour. You're welcome.
+
 ### Promotion (2nd -> 1st Stratum)
 
-Controls how frequently a cooled file must be accessed before it gets promoted back to active.
+Sometimes a cooled file turns out to be more relevant than you thought. These fields control how often it needs to be accessed before it gets promoted back to active.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `promotion_threshold` | `int` | `3` | Number of accesses to a cooled file before the Janitor promotes it back to active. Once a file crosses this threshold, it is moved from `cooled/` to `active/` and access tracking is reset. |
 
-When a file in `cooled/` is read (via `strata read`), the access count increments. If it reaches `promotion_threshold`, the file is automatically promoted back to `active/` during the read operation. The batch `strata promote` and `strata maintenance` commands also check thresholds. This prevents frequently-referenced content from being buried by age-based decay.
+Here's how it works: when you read a file in `cooled/` (via `strata read`), its access count ticks up. Hit the threshold, and it gets promoted right then and there  -  no waiting for the next maintenance cycle. The batch commands (`strata promote` and `strata maintenance`) check thresholds too. This keeps frequently-referenced files from getting buried just because they're old.
 
 ### Rehydration (3rd -> 1st / 3rd -> 2nd)
 
-Controls the default target tier when rehydrating archived files.
+Archived files don't have to stay archived forever. This field tells the system where they should land when they come back.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `rehydration_target` | `str` | `"active"` | Default target stratum for rehydration. `"active"` restores to the 1st Stratum (editable). `"cooled"` restores to the 2nd Stratum (query-only). Can be overridden per-call with `--target=active|cooled`. |
+| `rehydration_target` | `str` | `"active"` | Default target stratum for rehydration. `"active"` restores to the 1st Stratum (editable). `"cooled"` restores to the 2nd Stratum (query-only). Can be overridden per-call with `--target=active\|cooled`. |
+
+You might want "cooled" as the default if you're the cautious type  -  bring it back but don't let anyone edit it until they've proved they need to. Or just blast everything back to active and live on the edge. Your call.
 
 ### LRU Eviction (2nd -> 3rd Stratum)
 
-Controls how long a file can sit untouched in the cooled stratum before the Janitor evicts it to the archive.
+This is the "you haven't touched this in a while" trigger for the cooled stratum. Files that nobody reads eventually get shipped off to the archive.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -61,7 +67,7 @@ Controls how long a file can sit untouched in the cooled stratum before the Jani
 | `lru_min_access_count` | `int` | `1` | Maximum number of accesses a file may have to avoid eviction. Files accessed more often than this are retained. |
 | `lru_decay_thresholds` | `dict[str, int]` | `{"*": 90}` | Per-directory LRU thresholds. Same pattern as `decay_thresholds`. Falls back to `lru_days` when no match. |
 
-A file is evicted when: (now - last_accessed) > `lru_days` AND access_count <= `lru_min_access_count`.
+A file gets evicted when both conditions are true: it's been more than `lru_days` since anyone last looked at it, and it's been accessed fewer times than `lru_min_access_count`. In other words, if nobody's opened it in 90 days and it's only been read once (probably by accident), off it goes.
 
 ### Search Backend
 
@@ -73,11 +79,15 @@ A file is evicted when: (now - last_accessed) > `lru_days` AND access_count <= `
 | `qmd_reranker_warning_shown` | `bool` | `False` | Internal flag to prevent repeated cost warnings. |
 | `qmd_collection_prefix` | `str` | `"strata_"` | Prefix for QMD collection names (e.g., `"strata_active"`, `"strata_cooled"`). |
 
+`qmd_enabled` is derived from `search_backend`  -  you don't set it directly. If you switch to `fts5`, it's `False`. Switch back to `qmd`, it's `True`. Simple. The `qmd_reranker_warning_shown` flag is an internal detail you'll probably never touch. Consider it the "I told you this API call costs money" checkbox that gets ticked once and stays ticked.
+
 ### File Patterns
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `active_file_patterns` | `list[str]` | `["*.md", "*.txt", "*.json", "*.yaml", "*.yml"]` | Glob patterns for files the Janitor considers when scanning the active stratum. Files not matching any pattern are ignored during migration. |
+
+Got some weird file extension from that one experiment you ran in 2022? Add it here, or watch the Janitor pretend it doesn't exist.
 
 ## Environment Variable Overrides
 
@@ -87,13 +97,15 @@ A file is evicted when: (now - last_accessed) > `lru_days` AND access_count <= `
 
 Resolution order for `base_dir`:
 
-1. `$STRATA_HOME` environment variable (always wins)
+1. `$STRATA_HOME` environment variable (always wins  -  it's the nuclear option)
 2. `./strata_data/` in the current directory (project-local)
 3. `~/.strata/` (global fallback)
 
+Most folks never set `$STRATA_HOME`. The auto-detection works well enough. But if you have Opinions about where your data lives, this is your escape hatch.
+
 ## Persisted Configuration
 
-Configuration is persisted to `strata.json` in the base directory after `strata init` or `strata config set`. This file stores runtime-overridable settings:
+After `strata init` or `strata config set`, configuration gets written to `strata.json` in the base directory. It looks like this:
 
 ```json
 {
@@ -111,11 +123,11 @@ Configuration is persisted to `strata.json` in the base directory after `strata 
 }
 ```
 
-Fields not in this file use `StrataConfig` defaults. The persisted config merges with defaults at load time -- you only need to store values that differ from defaults.
+Fields you don't include here fall back to `StrataConfig` defaults. The persisted file gets merged with defaults at load time, so you only need to store the things you're changing. It's the "don't repeat yourself" principle, applied to config storage. You're welcome.
 
 ## Runtime Configuration (CLI)
 
-View and modify configuration at runtime:
+You can view and change config from the command line without ever opening a JSON file. Here's how:
 
 ```bash
 # Show all configuration
@@ -137,7 +149,7 @@ strata config set search_backend fts5
 strata config --json
 ```
 
-The `strata config set` value parser understands:
+The value parser in `strata config set` is smarter than you'd expect:
 
 - Integers: `14`, `0`, `-1`
 - Floats: `3.14`, `0.5`
@@ -145,11 +157,11 @@ The `strata config set` value parser understands:
 - JSON arrays/objects: `'["*.md", "*.txt"]'`, `'{"projects": 21}'`
 - Everything else: treated as a string
 
-Changes persist immediately to `strata.json`.
+Changes hit the disk immediately  -  no `--save` flag, no `Are you sure?` prompt. If you typo a value, that's on you. (Okay, that's a little harsh. It'll probably be fine.)
 
 ## Pi Extension Configuration
 
-The Pi extension (`skills/pi/strata.ts`) reads its own configuration from `<strataBaseDir>/pi-config.json`. This file is separate from `strata.json` because the Pi extension runs in TypeScript (not Python) and its config is consumed solely by the extension.
+The Pi extension (`skills/pi/strata.ts`) uses its own config file: `<strataBaseDir>/pi-config.json`. It's separate from `strata.json` because the Pi extension is written in TypeScript, not Python, and its settings are meaningless to the CLI anyway.
 
 ### File Location
 
@@ -176,7 +188,7 @@ The Pi extension (`skills/pi/strata.ts`) reads its own configuration from `<stra
 ### Fields
 
 | Field | Default | Description |
-|-------|---------|-------------|
+|---|---|---|
 | `llm.enabled` | `false` | Enable LLM-powered memory classification. **Off by default.** When disabled, the extension uses the heuristic regex fallback. |
 | `llm.provider` | `"openai"` | LLM provider: `"openai"`, `"anthropic"`, or `"openrouter"`. |
 | `llm.model` | Provider default | Model identifier. Defaults: `gpt-4o-mini` (OpenAI), `claude-3-5-haiku-latest` (Anthropic), `openai/gpt-4o-mini` (OpenRouter). |
@@ -184,14 +196,18 @@ The Pi extension (`skills/pi/strata.ts`) reads its own configuration from `<stra
 | `llm.temperature` | `0.0` | LLM temperature (0.0 = deterministic classification). |
 | `llm.maxTokens` | `500` | Maximum tokens for the classification response. |
 
+LLM classification is off by default. There's a reason for that  -  it costs money, it's slower, and the heuristic regex fallback actually works pretty well for most people. Turn it on if you want better classification. Leave it off if you like free.
+
 ### API Key Resolution
 
-The extension resolves the API key in this order:
+The extension hunts for an API key in this order:
 
 1. Direct string in `llm.apiKey`
 2. Env var reference in `llm.apiKey` (e.g., `"${STRATA_OPENAI_API_KEY}"`)
 3. Well-known env vars per provider: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`
 4. Empty → LLM classification disabled, falls back to heuristic
+
+Step 4 is the "we give up" case. If you don't set a key anywhere, the extension quietly shrugs and uses the heuristic instead. No errors, no drama.
 
 ### Example
 
@@ -205,7 +221,7 @@ The extension resolves the API key in this order:
 }
 ```
 
-This file is consumed only by the Pi extension (TypeScript), not by the Python CLI. Changes require a `/reload` in Pi to take effect.
+This file is only consumed by the Pi extension (the TypeScript one), not the Python CLI. If you change it, you'll need a `/reload` in Pi before the new settings kick in.
 
 ## Cross-Reference
 

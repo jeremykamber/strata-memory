@@ -1,10 +1,10 @@
 # Search
 
-Strata supports multiple search backends. Without any extras, it uses built-in filesystem grep for active and cooled strata, plus SQLite FTS5 for the archive shadow index. With the optional QMD package, it can use BM25 full-text search combined with vector embeddings for hybrid retrieval.
+So you want to find something. Strata's got a few ways to help, depending on how elaborate you want to get. Out of the box  -  no extras, no fuss  -  it uses plain old filesystem grep for active and cooled files, plus SQLite FTS5 for the archive shadow index. Bring along the optional QMD package, and suddenly you've got BM25 full-text search and vector embeddings doing a hybrid dance. Fancy.
 
 ## Search Flow
 
-When you run `strata search <query>` or `strata query <query>`, the `QueryEngine` follows a cascade:
+When you run `strata search <query>` or `strata query <query>`, the `QueryEngine` follows a cascade  -  a funnel that starts with the fanciest tool available and works its way down:
 
 ```
                      ┌──────────────────┐
@@ -46,38 +46,43 @@ When you run `strata search <query>` or `strata query <query>`, the `QueryEngine
 
 ### Phase 1: QMD Hybrid Search (When Available)
 
-If QMD is installed, Strata runs a hybrid search across both active and cooled strata collections:
+If you've got QMD installed, Strata starts by running a hybrid search across both active and cooled collections. Here's the breakdown:
 
-1. **BM25 Full-Text Search** (`strata search` via `qmd search`): Keyword matching with term frequency weighting.
-2. **Vector Semantic Search** (`strata vsearch` via `qmd vsearch`): Embedding-based similarity search.
-3. **Reciprocal Rank Fusion (RRF)**: Combines both result sets using `RRF` scoring (`score += 1 / (k + position)` where `k=60`). This gives a ranked, deduplicated list.
-4. **Optional LLM Reranking**: If a reranker provider is configured (e.g., `openai://gpt-4o-mini`), QMD can re-rank results using an LLM. This uses API credits.
+1. **BM25 Full-Text Search** (`strata search` via `qmd search`): Good old keyword matching, weighted by term frequency. If your query words appear in the file, this finds them.
 
-QMD hybrid search provides semantic understanding without an LLM. The BM25 + vector fusion catches both exact keyword matches and conceptually similar content.
+2. **Vector Semantic Search** (`strata vsearch` via `qmd vsearch`): Embedding-based similarity. This is where it gets clever  -  it finds stuff that's conceptually related, not just keyword-matched.
+
+3. **Reciprocal Rank Fusion (RRF)**: Combines both result sets using `RRF` scoring (`score += 1 / (k + position)` where `k=60`). The result: a ranked, deduplicated list that's better than either method alone.
+
+4. **Optional LLM Reranking**: Configured a reranker provider (say `openai://gpt-4o-mini`)? QMD can re-rank results using an actual LLM. This costs API credits, so save it for when you really need that extra polish.
+
+The neat thing about QMD hybrid search is that it gives you semantic understanding without needing an LLM at all. The BM25 + vector fusion catches both exact keyword matches and conceptually similar content. Best of both worlds.
 
 ### Phase 1: Filesystem Search (Fallback)
 
-When QMD is not available, Strata falls back to a simple filesystem grep-like search:
+No QMD? No problem. Strata falls back to a straightforward directory-walking grep:
 
 1. Walk `active/` and `cooled/` recursively
-2. For each file, split the query into lowercase terms
-3. Score each file by term matches in path (1.0 per term) and content (0.5 per term)
-4. Return top results per stratum
+2. Split the query into lowercase terms
+3. Score each file: 1.0 per term matched in the path, 0.5 per term in the content
+4. Return the top scorers from each stratum
 
-The fallback is zero-dependency and works everywhere, but does not provide semantic matching. Search quality depends on keyword overlap.
+It's zero-dependency and runs anywhere Python does. Semantic matching? Not so much  -  your results are only as good as your keyword game.
 
 ### Phase 2: Shadow Index (Always Runs)
 
-After gathering results from active and cooled strata (via either QMD or filesystem search), the engine always searches the 3rd Stratum Shadow Index:
+Whatever happened in phase 1, the engine always checks the 3rd Stratum Shadow Index. It's a safety net for archived content:
 
 1. Connect to the SQLite FTS5 database (`stratum_3_shadow.db`)
 2. Run the FTS5 `MATCH` query against `keywords` and `summary_preview` columns
 3. Score results by FTS5 rank (descending)
-4. If provided, also search by tags via `keywords LIKE '%"tagname"%'`
+4. If you passed tags, it filters by `keywords LIKE '%"tagname"%'`
+
+Archived files aren't gone  -  they're just in a different room. The shadow index makes sure you can still find them.
 
 ### Phase 3: Fusion and Ranking
 
-Results from all three phases are merged, sorted by score (descending), and the top `top_k` (default: 10) are returned:
+Results from all three phases get thrown into one pot, sorted by score (descending), and the top `top_k` (default: 10) come back to you:
 
 ```json
 [
@@ -104,30 +109,32 @@ Results from all three phases are merged, sorted by score (descending), and the 
 
 ## Search Backends
 
+Here's a closer look at each option.
+
 ### Filesystem Grep (Fallback)
 
-The built-in fallback. Searches active and cooled strata by walking directories and matching terms.
+The built-in fallback. It walks directories and matches terms. No frills.
 
 - **Dependencies:** Zero (stdlib only)
-- **Latency:** Proportional to number of files (walks all files)
-- **Quality:** Keyword-based, no semantic matching
-- **Best for:** Small to moderate stores (< 1000 files)
+- **Latency:** Proportional to file count (walks everything)
+- **Quality:** Keyword only, no semantic matching
+- **Best for:** Small to moderate stores  -  under 1000 files, you're fine
 
 ### Shadow Index (SQLite FTS5)
 
-Always used for the archive stratum. Lightweight keyword index.
+Always used for the archive stratum. A lightweight keyword index that punches above its weight.
 
 - **Dependencies:** Zero (stdlib `sqlite3`)
-- **Latency:** ~5ms per query regardless of index size
-- **Quality:** Keyword-based FTS5 matching with ranking
+- **Latency:** ~5ms per query, scale doesn't matter
+- **Quality:** Keyword-based FTS5 with ranking
 - **Storage:** ~200 bytes per entry (keywords + 200-char preview + path)
 
 ### QMD (BM25 + Vector Fusion)
 
-Optional hybrid search engine. Runs locally, no LLM required for base hybrid search.
+The optional hybrid engine. Runs locally, no LLM required for the base search.
 
 - **Dependencies:** Node.js + `@tobilu/qmd`
-- **Latency:** ~100-500ms per query (embedding computation)
+- **Latency:** ~100-500ms per query (embeddings take a moment)
 - **Quality:** Semantic matching via embeddings + BM25 keyword fusion
 - **Storage:** Vector index size depends on collection size
 
@@ -139,11 +146,11 @@ strata qmd-setup    # Add active/ + cooled/ as QMD collections
 strata qmd-embed    # Generate vector embeddings
 ```
 
-Collections are named `strata_active` and `strata_cooled`. The prefix is configurable via `qmd_collection_prefix`.
+Collections are named `strata_active` and `strata_cooled`. The prefix is configurable via `qmd_collection_prefix`, if you're the type who likes custom labels.
 
 #### Reranker Providers
 
-QMD supports optional LLM rerankers for improved result quality:
+QMD supports optional LLM rerankers for when you really need top-tier results:
 
 | Provider | Example URL | Cost |
 |---|---|---|
@@ -153,6 +160,7 @@ QMD supports optional LLM rerankers for improved result quality:
 | Local GGUF | `local://path/to/model.gguf` | Local compute |
 
 Configure via:
+
 ```bash
 strata config set qmd_reranker "openai://gpt-4o-mini"
 ```
@@ -212,11 +220,11 @@ result = strata.tools.execute("strata_query", {"query": "koda"})
 
 ## Best Practices
 
-1. **Use specific queries.** "koda oauth2 stripe" beats "project info" for precision.
-2. **Start with `strata list` or `strata read index.md`** for known paths. Search is for discovery.
-3. **Check tier labels.** Archived results have lower scores and may need rehydration.
-4. **Install QMD for larger stores.** The filesystem fallback degrades with file count; QMD stays fast.
-5. **Use `strata query` for scripting.** The JSON output is stable and parseable.
+1. **Be specific.** "koda oauth2 stripe" beats "project info" every time. Precision is power.
+2. **Start with `strata list` or `strata read index.md`** when you know where things live. Search is for discovery, not navigation.
+3. **Check the tier labels.** Archived results score lower and might need rehydration before you can do much with them.
+4. **Install QMD once you've got more than a handful of files.** The filesystem fallback gets sluggish as your store grows; QMD stays snappy.
+5. **Use `strata query` for scripting.** The JSON output is stable, parseable, and won't surprise you.
 
 ## Cross-Reference
 
