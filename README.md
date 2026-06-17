@@ -178,6 +178,40 @@ strata serve &
 
 ```
 
+### Agent Memory (Pi Extension)
+
+Strata ships with a zero-dependency Pi extension that auto-captures every
+conversation and optionally extracts knowledge via a small LLM.
+
+```bash
+# 1. Install the extension
+strata pi-install
+# Then run /reload in Pi
+
+# 2. Enable LLM fact extraction (secure key prompt)
+strata config set llm.apiKey        # Prompts securely — won't echo
+strata config set llm.provider openrouter
+strata config set llm.model openrouter/free
+strata config set llm.enabled true
+
+# 3. Background daemon handles lifecyle + distillation
+strata serve
+```
+
+Every Pi prompt is automatically saved as a transcript. The daemon periodically
+sends new transcripts to the LLM and writes extracted facts to
+`pi/facts/` — searchable with `strata search`.
+
+```bash
+# Check distillation state
+strata distiller status
+
+# Manually trigger extraction
+strata distiller run
+```
+
+See [`docs/pi-integration.md`](docs/pi-integration.md) for full documentation.
+
 ## Python API
 
 ```python

@@ -44,24 +44,38 @@ Then run `/reload` in Pi.
 
 Once the extension is installed and Pi is capturing conversations, enable LLM-powered fact extraction in two steps.
 
-### 1. Set your API key
+### 1. Configure your LLM provider and API key
 
 ```bash
 # Using OpenRouter (free tier available):
-export STRATA_OPENROUTER_API_KEY="sk-or-..."
+strata config set llm.apiKey        # Prompts securely — key won't echo on screen
 strata config set llm.provider openrouter
 strata config set llm.model openrouter/free
 strata config set llm.enabled true
 
 # Or using OpenAI:
-# export STRATA_OPENAI_API_KEY="sk-..."
+# strata config set llm.apiKey      # Prompts securely
 # strata config set llm.provider openai
 # strata config set llm.model gpt-4o-mini
 # strata config set llm.enabled true
 ```
 
-Add the `export STRATA_OPENROUTER_API_KEY=...` line to your `~/.zshrc` or `~/.bashrc`
-so it persists across terminal sessions.
+The API key is stored directly in `pi-config.json` in your strata data directory.
+No environment variable export needed — it persists across terminal sessions.
+
+Alternatively, you can pass the key as an argument (visible in shell history):
+
+```bash
+strata config set llm.apiKey "sk-or-..."
+```
+
+Or use an environment variable reference for extra security:
+
+```bash
+strata config set llm.apiKey '${STRATA_OPENROUTER_API_KEY}'
+export STRATA_OPENROUTER_API_KEY="sk-or-..."
+# Add the export to ~/.zshrc or ~/.bashrc for persistence
+```
 
 ### 2. Check it's working
 

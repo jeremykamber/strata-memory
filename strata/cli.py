@@ -259,7 +259,10 @@ def _print_usage():
                 (_fmt_cmd("install-service"), "Install systemd service"),
                 (_fmt_cmd("uninstall-service"), "Uninstall systemd service"),
                 (_fmt_cmd("history [--lines=N]"), "Show Janitor daemon log"),
-                (_fmt_cmd("distiller status"), "Show distillation state and pending conversations"),
+                (
+                    _fmt_cmd("distiller status"),
+                    "Show distillation state and pending conversations",
+                ),
                 (_fmt_cmd("distiller run"), "Manually trigger LLM distillation"),
             ],
         ),
@@ -1136,7 +1139,9 @@ def _cmd_status():
     if llm_cfg:
         if distiller_ready:
             flag = "ENABLED" if llm_cfg.get("enabled") else "DISABLED"
-            print(f"  Distiller: {flag} ({llm_cfg.get('provider', '?')} / {llm_cfg.get('model', '?')})")
+            print(
+                f"  Distiller: {flag} ({llm_cfg.get('provider', '?')} / {llm_cfg.get('model', '?')})"
+            )
         else:
             print("  Distiller: CONFIGURED (unavailable)")
     else:
@@ -1233,9 +1238,25 @@ def _cmd_config(rest: list[str]):
         return
 
     # config set <key> <value>
-    if rest[0] == "set" and len(rest) >= 3:
+    if rest[0] == "set" and len(rest) >= 2:
         key = rest[1]
-        raw_value = " ".join(rest[2:])
+        # If setting llm.apiKey with no value, prompt securely
+        if len(rest) == 2 and key.endswith("apiKey"):
+            import getpass
+
+            raw_value = getpass.getpass("Enter API key: ")
+            if not raw_value:
+                print("No key provided, aborting.", file=sys.stderr)
+                sys.exit(1)
+        elif len(rest) < 3:
+            if _JSON_MODE:
+                _json_error("config", "Usage: strata config set <key> <value>")
+            print(
+                "Usage: strata config set <key> <value>", file=sys.stderr
+            )
+            sys.exit(1)
+        else:
+            raw_value = " ".join(rest[2:])
         value = _parse_config_value(raw_value)
         # Route llm.* keys to pi-config.json
         if key == "llm" or key.startswith("llm."):
@@ -1253,7 +1274,11 @@ def _cmd_config(rest: list[str]):
             if _JSON_MODE:
                 _json_print("config", {"key": key, "value": value, "set": True})
                 return
-            print(f"Set llm.{key.split('.', 1)[1] if '.' in key else ''} = {value!r}" if '.' in key else "Set llm config")
+            print(
+                f"Set llm.{key.split('.', 1)[1] if '.' in key else ''} = {value!r}"
+                if "." in key
+                else "Set llm config"
+            )
             return
         # Validate top-level key
         top = key.split(".")[0]
@@ -1376,7 +1401,9 @@ def _cmd_distiller(rest: list[str]):
             print(f"Processed {result['processed']} conversation(s)")
             print(f"Wrote {result['facts_written']} fact file(s)")
         elif status == "no_facts_extracted":
-            print(f"Processed {result['processed']} conversation(s) — no facts extracted")
+            print(
+                f"Processed {result['processed']} conversation(s) — no facts extracted"
+            )
         elif status == "skipped":
             reason = result.get("reason", "unknown")
             print(f"Skipped: {reason}")
