@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 
 
 class TestStratum1Storage:
@@ -34,8 +33,6 @@ class TestStratum1Storage:
         entries = stratum_1.list_dir()
         names = {e["name"] for e in entries}
         assert "projects" in names
-        assert "entities" in names
-        assert "gtd" in names
 
     def test_delete_file(self, stratum_1):
         stratum_1.write("projects/tmp.md", "delete me")

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from strata.config import StrataConfig
-from strata.models import MemoryBlock, ShadowEntry
+from strata.models import ShadowEntry
 
 
 # ────────────────────────────────────────────────────────────
@@ -31,13 +31,12 @@ class Stratum1Storage:
         self._root = config.active_path().resolve()
 
     def ensure_dirs(self):
-        """Create the active directory and default subdirectories (projects, entities, gtd).
+        """Create the active directory if it doesn't exist, then regenerate the index.
 
-        Also regenerates the index after ensuring the structure exists.
+        No boilerplate subdirectories are created — the AI is free to
+        organise files however it sees fit.
         """
         self._root.mkdir(parents=True, exist_ok=True)
-        for sub in ["projects", "entities", "gtd"]:
-            (self._root / sub).mkdir(parents=True, exist_ok=True)
         self.generate_index()
 
     def _resolve(self, path: str) -> Path:
@@ -191,15 +190,20 @@ class Stratum1Storage:
         return self._resolve(path).exists()
 
     def generate_index(self):
-        """Regenerate index.md — the master map."""
+        """Regenerate index.md — the master map for AI agents."""
         if not self._root.exists():
             return
-        lines = ["# Strata — 1st Stratum Index", ""]
+        lines = ["# Strata — Active Memory Index", ""]
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-        lines.append(f"_Active working memory. Last updated: {now}_")
+        lines.append(f"_Last updated: {now}_")
         lines.append("")
-        lines.append("This index is the entry point. Read this first, then navigate")
-        lines.append("to specific files by path.")
+        lines.append("This index lists every file in active memory. Read this first to find")
+        lines.append("relevant context, then navigate to specific files by path. The AI")
+        lines.append("should organise files however it sees fit — create directories as")
+        lines.append("needed. There are no pre-determined folders; the structure grows")
+        lines.append("organically with use.")
+        lines.append("")
+        lines.append("---")
         lines.append("")
 
         for subdir_name in sorted([d.name for d in self._root.iterdir() if d.is_dir()]):
@@ -212,16 +216,34 @@ class Stratum1Storage:
             for filepath in files:
                 rel = filepath.relative_to(self._root)
                 title = ""
+                summary = ""
                 try:
                     content = filepath.read_text(encoding="utf-8", errors="ignore")
-                    for line in content.split("\n"):
+                    lines_in = content.split("\n")
+                    for i, line in enumerate(lines_in):
                         s = line.strip()
                         if s.startswith("# ") and not s.startswith("# Strata"):
                             title = f" — {s.lstrip('# ').strip()}"
+                            # Grab the next non-empty line as a brief summary
+                            for j in range(i + 1, min(i + 3, len(lines_in))):
+                                nxt = lines_in[j].strip()
+                                if nxt and not nxt.startswith("#"):
+                                    summary = nxt[:80].rstrip(".")
+                                    break
                             break
+                    if not title:
+                        # No heading — use the first non-empty line
+                        for line in lines_in:
+                            s = line.strip()
+                            if s:
+                                summary = s[:80].rstrip(".")
+                                break
                 except Exception:
                     pass
-                lines.append(f"- `{rel}`{title}")
+                full = f"- `{rel}`{title}"
+                if summary:
+                    full += f"\n  {summary}"
+                lines.append(full)
             lines.append("")
 
         self._root.joinpath("index.md").write_text("\n".join(lines), encoding="utf-8")
