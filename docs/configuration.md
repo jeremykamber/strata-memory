@@ -20,7 +20,7 @@ Controls how many days a file can sit untouched in the active stratum before the
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `decay_thresholds` | `dict[str, int]` | `{"projects": 14, "entities": 60, "gtd": 7, "*": 30}` | Days before a file is considered stale and eligible for migration from active to cooled. Keys are first-level directory names; `"*"` is the fallback for unmatched paths. |
+| `decay_thresholds` | `dict[str, int]` | `{"projects": 14, "entities": 60, "gtd": 7, "pi/conversations": 7, "pi": 30, "*": 30}` | Days before a file is considered stale and eligible for migration from active to cooled. Keys can be multiple path components (e.g. `"pi/conversations"`) for deeper routing; matching uses the longest prefix. `"*"` is the fallback for unmatched paths. |
 
 Default thresholds by directory:
 
@@ -29,6 +29,8 @@ Default thresholds by directory:
 | `projects/` | 14 days | Active initiatives. Two weeks without updates means they have cooled off. |
 | `entities/` | 60 days | People, companies, tools. Context that stays relevant longer. |
 | `gtd/` | 7 days | Tasks and quick notes. One week and they are stale. |
+| `pi/conversations/` | 7 days | Raw conversation transcripts. Quick to accumulate, quick to cool. |
+| `pi/` (facts, memos) | 30 days | Distilled facts and memos under `pi/`. One month without access. |
 | Everything else | 30 days | Default. One month without access. |
 
 ### Promotion (2nd -> 1st Stratum)
@@ -84,6 +86,7 @@ A file is evicted when: (now - last_accessed) > `lru_days` AND access_count <= `
 | `$STRATA_HOME` | `base_dir` | Forces the data directory to this path. The highest-priority override. Also used in `detect_base_dir()`. |
 
 Resolution order for `base_dir`:
+
 1. `$STRATA_HOME` environment variable (always wins)
 2. `./strata_data/` in the current directory (project-local)
 3. `~/.strata/` (global fallback)
@@ -135,6 +138,7 @@ strata config --json
 ```
 
 The `strata config set` value parser understands:
+
 - Integers: `14`, `0`, `-1`
 - Floats: `3.14`, `0.5`
 - Booleans: `true`, `false`, `yes`, `no`, `1`, `0`
@@ -183,6 +187,7 @@ The Pi extension (`skills/pi/strata.ts`) reads its own configuration from `<stra
 ### API Key Resolution
 
 The extension resolves the API key in this order:
+
 1. Direct string in `llm.apiKey`
 2. Env var reference in `llm.apiKey` (e.g., `"${STRATA_OPENAI_API_KEY}"`)
 3. Well-known env vars per provider: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`

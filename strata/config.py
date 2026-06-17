@@ -51,6 +51,8 @@ class StrataConfig:
             "projects": 14,
             "entities": 60,
             "gtd": 7,
+            "pi/conversations": 7,
+            "pi": 30,
             "*": 30,
         }
     )
@@ -108,8 +110,9 @@ class StrataConfig:
     def get_decay_days(self, path: str) -> int:
         """Return the decay threshold in days for the given path.
 
-        Uses the first path component as a key into ``decay_thresholds``,
-        falling back to the ``"*"`` default.
+        Matches progressively longer path prefixes against
+        ``decay_thresholds``, so ``"pi/conversations"`` takes
+        priority over ``"pi"``. Falls back to ``"*"``.
 
         Args:
             path: Relative file or directory path.
@@ -119,8 +122,11 @@ class StrataConfig:
         """
         rel = path.strip("/")
         parts = rel.split("/")
-        if parts and parts[0] in self.decay_thresholds:
-            return self.decay_thresholds[parts[0]]
+        # Check progressively longer prefixes: "pi" -> "pi/conversations"
+        for i in range(len(parts), 0, -1):
+            key = "/".join(parts[:i])
+            if key in self.decay_thresholds:
+                return self.decay_thresholds[key]
         return self.decay_thresholds.get("*", 30)
 
     def get_lru_days(self, path: str) -> int:

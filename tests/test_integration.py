@@ -121,4 +121,4 @@ class TestStrataIntegration:
         assert "import type { ExtensionAPI }" in content
         assert "export default function" in content
         assert 'pi.on("before_agent_start"' in content
-        assert 'pi.on("turn_end"' in content
+        assert 'pi.on("agent_end"' in content

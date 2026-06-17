@@ -7,7 +7,6 @@ checking daemon status and stopping the daemon from the CLI.
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import signal
@@ -120,8 +119,17 @@ class StrataDaemon:
 
         try:
             result = self._strata.run_maintenance(dry_run=dry_run)
+            distilled = result.get("distilled", {})
             migrated = result.get("total_migrated", len(result.get("migrated", [])))
             evicted = result.get("total_evicted", len(result.get("evicted", [])))
+
+            distill_status = distilled.get("status", "skipped")
+            distill_count = distilled.get("processed", 0)
+            if distill_status == "ok":
+                facts = distilled.get("facts_written", 0)
+                self._log("info", f"[Cycle {self._cycle_count + 1}] Distilled: {distill_count} conversations ({facts} facts written)")
+            elif distill_status == "dry_run" and distilled.get("would_process", 0) > 0:
+                self._log("info", f"[Cycle {self._cycle_count + 1}] Would distill: {distilled['would_process']} conversations")
 
             self._log("info", f"[Cycle {self._cycle_count + 1}] Migrated: {migrated}, Evicted: {evicted}")
 

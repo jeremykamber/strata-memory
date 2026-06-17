@@ -11,6 +11,7 @@ Strata is a CLI-first, zero-dependency tiered memory system for AI agents. It st
 - **Optional:** openai, anthropic (for API integrations), QMD/Node.js (for hybrid search)
 - **CLI entry point:** `strata.cli:main`
 - **Package name:** `strata-memory`
+- **Project tracker:** GitHub
 
 ## Architecture: Three Strata
 

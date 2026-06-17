@@ -12,6 +12,7 @@ from __future__ import annotations
 __version__ = "0.2.0"
 
 from strata.config import StrataConfig, detect_base_dir
+from strata.distiller import Distiller
 from strata.storage import Stratum1Storage, Stratum2Storage, Stratum3Storage, QmdWrapper
 from strata.janitor import Janitor
 from strata.query import QueryEngine
@@ -37,6 +38,7 @@ class Strata:
         self.janitor = Janitor(self.s1, self.s2, self.s3, self.config)
         self.query_engine = QueryEngine(self.s1, self.s2, self.s3, self.config)
         self.qmd = QmdWrapper(self.config)
+        self.distiller = Distiller(self.config)
         self.tools = StrataTools(self)
 
     def read_active(self, path: str) -> str:
@@ -266,24 +268,30 @@ class Strata:
         return self.janitor.rehydrate(shadow_entry, target_tier=target_tier)
 
     def run_maintenance(self, dry_run: bool = False) -> dict:
-        """Run the full lifecycle cycle: promote, migrate, then evict.
+        """Run the full lifecycle cycle: distill, promote, migrate, then evict.
 
         Executes in order:
-        1. Promote: move heavily-accessed cooled files back to active
-        2. Migrate: move stale active files to cooled
-        3. Evict:  move old cooled files to archive
+        1. Distill: extract facts from new conversation transcripts (daemon only)
+        2. Promote: move heavily-accessed cooled files back to active
+        3. Migrate: move stale active files to cooled
+        4. Evict:  move old cooled files to archive
+
+        Distill runs first so conversation transcripts are processed
+        before they could be promoted or migrated to cooled/.
 
         Args:
             dry_run: If ``True``, preview changes without applying them.
 
         Returns:
-            A dict with ``promoted``, ``migrated``, ``evicted`` arrays
-            and totals.
+            A dict with ``distilled``, ``promoted``, ``migrated``,
+            ``evicted`` arrays and totals.
         """
+        distilled = self.distiller.process(dry_run=dry_run)
         promoted = self.promote(dry_run=dry_run)
         migrated = self.migrate(dry_run=dry_run)
         evicted = self.evict(dry_run=dry_run)
         return {
+            "distilled": distilled,
             "promoted": promoted,
             "migrated": migrated,
             "evicted": evicted,
