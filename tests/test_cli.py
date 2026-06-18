@@ -259,9 +259,9 @@ def _fake_npx_cmd(
         "---\nname: strata-memory\ndescription: test\n---"
     )
 
-    from strata import cli as strata_cli
+    from strata.cli.commands import skill as skill_mod
 
-    monkeypatch.setattr(strata_cli, "_find_skill_dir", lambda: skill_dir)
+    monkeypatch.setattr(skill_mod, "_find_skill_dir", lambda: skill_dir)
     monkeypatch.setattr(shutil, "which", lambda _: "/usr/bin/npx")
 
     captured_cmd: List[str] = []
@@ -310,14 +310,14 @@ def test_cli_skill_install_no_npx(tmp_base, monkeypatch, capsys):
     import shutil
 
     monkeypatch.setattr(shutil, "which", lambda _: None)
-    from strata import cli as strata_cli
+    from strata.cli.commands import skill as skill_mod
 
     skill_dir = tmp_base / "skills" / "strata"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(
         "---\nname: strata-memory\ndescription: test\n---"
     )
-    monkeypatch.setattr(strata_cli, "_find_skill_dir", lambda: skill_dir)
+    monkeypatch.setattr(skill_mod, "_find_skill_dir", lambda: skill_dir)
 
     try:
         main(["skill", "install"])
@@ -353,7 +353,7 @@ def test_pi_install_no_pi(tmp_path, monkeypatch, capsys):
 def test_pi_install_file_copy(tmp_path, monkeypatch, capsys):
     """pi-install copies the extension file to the correct destination."""
     import shutil
-    from strata import cli as strata_cli
+    from strata.cli.commands import pi_install as pi_mod
 
     src = tmp_path / "skills" / "pi" / "strata.ts"
     src.parent.mkdir(parents=True)
@@ -362,7 +362,7 @@ def test_pi_install_file_copy(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
         shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
     )
-    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(pi_mod, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     main(["pi-install", "--force"])
@@ -377,7 +377,7 @@ def test_pi_install_file_copy(tmp_path, monkeypatch, capsys):
 def test_pi_install_directory_creation(tmp_path, monkeypatch):
     """pi-install creates the extensions directory if it doesn't exist."""
     import shutil
-    from strata import cli as strata_cli
+    from strata.cli.commands import pi_install as pi_mod
 
     src = tmp_path / "skills" / "pi" / "strata.ts"
     src.parent.mkdir(parents=True)
@@ -386,7 +386,7 @@ def test_pi_install_directory_creation(tmp_path, monkeypatch):
     monkeypatch.setattr(
         shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
     )
-    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(pi_mod, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     main(["pi-install", "--force"])
@@ -398,7 +398,7 @@ def test_pi_install_directory_creation(tmp_path, monkeypatch):
 def test_pi_install_force_overwrite(tmp_path, monkeypatch, capsys):
     """pi-install --force overwrites an existing strata.ts without prompting."""
     import shutil
-    from strata import cli as strata_cli
+    from strata.cli.commands import pi_install as pi_mod
 
     src = tmp_path / "skills" / "pi" / "strata.ts"
     src.parent.mkdir(parents=True)
@@ -407,7 +407,7 @@ def test_pi_install_force_overwrite(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
         shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
     )
-    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(pi_mod, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     dst = tmp_path / ".pi" / "agent" / "extensions" / "strata.ts"
@@ -422,7 +422,7 @@ def test_pi_install_force_overwrite(tmp_path, monkeypatch, capsys):
 def test_pi_install_overwrite_abort(tmp_path, monkeypatch, capsys):
     """pi-install without --force aborts when user declines overwrite."""
     import shutil
-    from strata import cli as strata_cli
+    from strata.cli.commands import pi_install as pi_mod
 
     src = tmp_path / "skills" / "pi" / "strata.ts"
     src.parent.mkdir(parents=True)
@@ -431,7 +431,7 @@ def test_pi_install_overwrite_abort(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
         shutil, "which", lambda cmd: "/usr/bin/pi" if cmd == "pi" else None
     )
-    monkeypatch.setattr(strata_cli, "_find_pi_skill_dir", lambda: src)
+    monkeypatch.setattr(pi_mod, "_find_pi_skill_dir", lambda: src)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr("builtins.input", lambda _: "n")
 
