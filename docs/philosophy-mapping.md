@@ -106,7 +106,7 @@ The blog describes a system that mixes Strata (lifecycle management) with agent-
 | LRU eviction with access tracking | Fully implemented | janitor.py, storage.py |
 | Shadow Index (SQLite FTS5) | Fully implemented | storage.py |
 | Cascading search (S1 -> S2 -> S3) | Fully implemented | query.py |
-| CLI with grouped help, JSON mode | Fully implemented | cli.py |
+| CLI with grouped help, JSON mode | Fully implemented | cli/ (_cli_main.py + commands/) |
 | Daemon mode with configurable interval | Fully implemented | daemon.py |
 
 ### Implemented beyond the blog
@@ -114,13 +114,13 @@ The blog describes a system that mixes Strata (lifecycle management) with agent-
 | Feature | Module |
 |---|---|
 | Cost tracking estimation | tracking.py |
-| Skill install for AI coding assistants | cli.py |
-| PI extension installation | cli.py |
+| Skill install for AI coding assistants | cli/commands/skill.py |
+| PI extension installation | cli/commands/pi_install.py |
 | MCP protocol server | mcp_server.py |
-| Config persistence with get/set | cli.py |
-| QMD auto-install and onboarding | cli.py, storage.py |
-| JSON mode for script consumption | cli.py |
-| Spinner UX for lifecycle commands | cli.py |
+| Config persistence with get/set | cli/commands/config_cmd.py |
+| QMD auto-install and onboarding | cli/commands/qmd.py, storage.py |
+| JSON mode for script consumption | cli/_json.py |
+| Spinner UX for lifecycle commands | cli/_spinner.py |
 | OpenCode function-calling tools | tools.py |
 
 ### Aspirational (described in blog, not implemented)

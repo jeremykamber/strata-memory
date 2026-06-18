@@ -159,7 +159,8 @@ with Strata() as s:
 ```
 strata/
   __init__.py        Top-level Strata class, version
-  cli.py             CLI entry point and agent-help text
+  _cli_main.py       CLI entry point (thin dispatch to command modules)
+  cli/               CLI package (commands/, registry, helpers)
   config.py          StrataConfig dataclass, detect_base_dir
   daemon.py          Background Janitor daemon
   janitor.py         Migration and eviction logic
@@ -195,7 +196,7 @@ Agent-facing documentation lives in:
 - **README.md**  -  Full project documentation, CLI reference, install guide, Python API
 - **AGENTS.md** (this file)  -  Concise guide for AI agents working ON this project
 - **docs/**  -  Extended documentation (architecture, installation, CLI reference, configuration, Pi integration, search, tracking, blog posts, extension guides)
-- **strata/cli.py** docstring  -  Inline CLI reference (also printed by `strata` with no args)
+- **strata/_cli_main.py** / **strata/cli/help.py**  -  Inline CLI reference (also printed by `strata` with no args)
 
 ## Contribution Rules
 
@@ -220,4 +221,4 @@ Agent-facing documentation lives in:
 - **CLI-first.** The command line is the primary interface. The Python API exists for programmatic use but mirrors the CLI.
 - **No mock data in tests.** E2E tests execute against the real storage layer (filesystem, SQLite).
 - **Fail loud.** Surface errors, don't silently swallow them. Print to stderr and exit non-zero on failure.
-- **Keep the agent-help text in sync.** `strata --agent-help` prints inline documentation from `cli.py`. If you change behavior, update that text too.
+- **Keep the agent-help text in sync.** `strata --agent-help` prints inline documentation from `strata/cli/help.py`. If you change behavior, update that text too.

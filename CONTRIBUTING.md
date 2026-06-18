@@ -157,7 +157,7 @@ Key files:
 | `docs/search.md` | Changing search backends or query syntax |
 | `docs/tracking.md` | Changing cost tracking methodology |
 | `docs/pi-integration.md` | Changing Pi integration |
-| `strata/cli.py` docstring | Adding or changing any CLI command |
+| `strata/_cli_main.py` / `strata/cli/commands/` | Adding or changing any CLI command |
 
 ---
 
