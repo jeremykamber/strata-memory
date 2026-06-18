@@ -137,7 +137,7 @@ Features: OAuth2, Stripe, real-time dashboard
 # Pipe content in
 echo "Joe: React/Go engineer on the Kynd team" | strata add entities/joe.md
 
-# Quick note (auto-routed to gtd/)
+# Quick note (auto-routed to quick-note-<ts>.md at root)
 strata add --text "Review PR by end of day"
 
 # Read it back
@@ -534,11 +534,9 @@ No SDKs. No APIs. No database drivers. You just use the filesystem  -  which eve
 ~/.strata/                    # Or ./strata_data/ for local projects
 ├── active/                   # 1st Stratum  -  working memory
 │   ├── index.md              # Auto-generated master map
-│   ├── projects/
-│   ├── entities/
-│   └── gtd/
-├── cooled/                   # 2nd Stratum  -  aged-out files
-├── archive/                  # 3rd Stratum  -  cold JSON storage
+│   └── ...                   # No preset folders — AI organises organically
+├── cooled/                   # 2nd Stratum — aged-out files
+├── archive/                  # 3rd Stratum — cold JSON storage
 ├── shadow.db                 # Shadow Index (SQLite FTS5)
 ├── strata.log                # Daemon activity log
 ├── strata.pid                # Daemon PID file

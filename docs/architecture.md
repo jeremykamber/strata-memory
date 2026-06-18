@@ -8,9 +8,7 @@ Strata stores your memories across three tiers  -  active, cooled, and archive. 
 ~/.strata/                    # Or ./strata_data/ for project-local
 ├── active/                   # 1st Stratum -- working memory
 │   ├── index.md              # Auto-generated master map
-│   ├── projects/             # Current initiatives
-│   ├── entities/             # People, companies, tools
-│   └── gtd/                  # Tasks and quick notes
+│   └── ...                   # No preset folders -- AI organises organically
 ├── cooled/                   # 2nd Stratum -- aged-out files
 ├── archive/                  # 3rd Stratum -- cold JSON storage
 ├── shadow.db                 # Shadow Index (SQLite FTS5)
@@ -89,7 +87,7 @@ The Janitor is the only process that moves data between strata. It runs on a sch
 
 1. Scan `active/` for files matching `active_file_patterns`
 2. For each file, calculate its age in days since last modification
-3. Look up the decay threshold for the file's top-level directory (e.g., `projects/` -> 14 days)
+3. Look up the decay threshold for the file's top-level directory (e.g., a file under `projects/` matches `"projects": 14`)
 4. If age >= threshold, copy the file to `cooled/` and delete from `active/`
 5. Log the migration
 

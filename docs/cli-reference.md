@@ -21,7 +21,7 @@ When `--json` or `--agent` is active, all output becomes a single JSON object wi
 
 Create a new Strata data directory.
 
-**Purpose:** Bootstraps the directory structure for all three strata  -  no existential questions asked. Creates `active/`, `cooled/`, and `archive/` directories, sets up sensible defaults (`projects/`, `entities/`, `gtd/`), generates your first `index.md`, and gently asks which search backend you'd like.
+**Purpose:** Bootstraps the directory structure for all three strata  -  no existential questions asked. Creates `active/`, `cooled/`, and `archive/` directories, generates your first `index.md`, and asks which search backend you'd like. No preset folders  -  the AI is free to organise files however it sees fit.
 
 **Usage:**
 
@@ -104,7 +104,7 @@ Write content to the 1st Stratum.
 ```bash
 strata add projects/koda/requirements.md "# Koda Platform\nOAuth2 + payments"
 echo "# Quick note" | strata add gtd/note.md
-strata add --text "Remember to deploy the API"     # Auto-routed to gtd/
+strata add --text "Remember to deploy the API"     # Auto-routed to quick-note-<ts>.md
 strata add --file /path/to/local/file.md projects/notes.md  # Read from file
 ```
 

@@ -88,7 +88,7 @@ class TestStrataIntegration:
         main(["init", "--non-interactive"])
         captured = capsys.readouterr()
         assert "Initialized" in captured.out
-        assert (tmp_base / "strata_data" / "active" / "projects").exists()
+        assert (tmp_base / "strata_data" / "active" / "index.md").exists()
 
         main(["config", "get", "search_backend"])
         captured = capsys.readouterr()

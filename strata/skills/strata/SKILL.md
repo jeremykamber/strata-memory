@@ -32,15 +32,18 @@ strata status                         # System state
 ## Commands
 
 ### Read/Write (1st Stratum only)
+
 - `strata add <path> <content>` — Write a file (`strata add projects/koda/spec.md "# Spec..."`)
 - `strata read <path>` — Read full content (`strata read projects/koda/spec.md`)
 - `strata list [path]` — List files (`strata list projects`)
 
 ### Search (all tiers)
+
 - `strata search <query>` — Human-readable search across active/ + cooled/ + archive/
 - `strata query <query>` — Same as search, JSON output for scripting
 
 ### Lifecycle
+
 - `strata migrate` — Move stale active/ files to cooled/
 - `strata promote` — Move hot cooled/ files (accessed 3+ times) back to active/
 - `strata evict` — Move cold cooled/ files to archive/
@@ -49,6 +52,7 @@ strata status                         # System state
 - `strata forget <path>` — Archive a specific cooled file
 
 ### Daemon
+
 - `strata serve [--interval=N]` — Start automatic Janitor
 - `strata stop` — Stop daemon
 - `strata status` — Show state + daemon health
@@ -56,16 +60,19 @@ strata status                         # System state
 - `strata history` — View daemon log
 
 ### Config
+
 - `strata config` — Show thresholds, paths
 - `strata index` — Regenerate `active/index.md`
 
 ## QMD (Optional Hybrid Search)
 
 If `@tobilu/qmd` is installed:
+
 ```bash
 strata qmd-setup    # Add active/ + cooled/ as QMD collections
 strata qmd-embed    # Generate vector embeddings
 ```
+
 When active, `strata search` uses BM25 + vector search. No LLM calls.
 
 ## How Lifecycle Works
@@ -97,9 +104,7 @@ strata rehydrate <shadow_id> --target=cooled
 ```
 strata_data/
 ├── active/index.md      ← READ THIS FIRST — master map of all files
-├── active/projects/     ← Current initiatives + sprints
-├── active/entities/     ← People, companies, tools
-├── active/gtd/          ← Tasks
+├── active/...           ← No preset folders — AI organises organically
 ├── cooled/              ← Aged-out markdown files
 ├── archive/             ← Evicted JSON blobs
 └── shadow.db            ← Keyword search index for archive
