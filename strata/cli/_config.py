@@ -142,6 +142,3 @@ def write_llm_config(config: StrataConfig, llm_cfg: dict) -> None:
             existing = json.loads(path.read_text())
     existing["llm"] = llm_cfg
     path.write_text(json.dumps(existing, indent=2) + "\n")
-
-
-

@@ -7,7 +7,6 @@ Maps command names to their handler modules. Each command module exports
 from __future__ import annotations
 
 
-
 class CommandNotFound(Exception):
     """Raised when no command matches the given name."""
 
