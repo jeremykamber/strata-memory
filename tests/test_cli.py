@@ -22,7 +22,6 @@ def test_cli_init_shows_daemon_mention(tmp_base, monkeypatch, capsys):
 
 
 def test_cli_init_non_interactive(tmp_base, monkeypatch, capsys):
-    import json
 
     monkeypatch.chdir(tmp_base)
     main(["init", "--non-interactive"])
@@ -36,7 +35,6 @@ def test_cli_init_non_interactive(tmp_base, monkeypatch, capsys):
 
 
 def test_cli_init_qmd_onboarding_fts5(tmp_base, monkeypatch):
-    import json
     import sys
     from io import StringIO
 
@@ -54,7 +52,6 @@ def test_cli_init_qmd_onboarding_fts5(tmp_base, monkeypatch):
 
 
 def test_cli_init_npx_failure(tmp_base, monkeypatch, capsys):
-    import json
     import subprocess
     import sys
     from io import StringIO
@@ -71,7 +68,7 @@ def test_cli_init_npx_failure(tmp_base, monkeypatch, capsys):
     monkeypatch.chdir(tmp_base)
     main(["init"])
     captured = capsys.readouterr()
-    assert "QMD auto-install failed" in captured.out
+    assert "npx not found" in captured.out
     config_path = tmp_base / "strata_data" / "strata.json"
     assert config_path.exists()
     data = json.loads(config_path.read_text())
@@ -342,7 +339,6 @@ def test_pi_install_no_pi(tmp_path, monkeypatch, capsys):
 def test_pi_install_file_copy(tmp_path, monkeypatch, capsys):
     """pi-install copies the extension file to the correct destination."""
     import shutil
-    from pathlib import Path
     from strata import cli as strata_cli
 
     src = tmp_path / "skills" / "pi" / "strata.ts"
@@ -365,7 +361,6 @@ def test_pi_install_file_copy(tmp_path, monkeypatch, capsys):
 def test_pi_install_directory_creation(tmp_path, monkeypatch):
     """pi-install creates the extensions directory if it doesn't exist."""
     import shutil
-    from pathlib import Path
     from strata import cli as strata_cli
 
     src = tmp_path / "skills" / "pi" / "strata.ts"
@@ -385,7 +380,6 @@ def test_pi_install_directory_creation(tmp_path, monkeypatch):
 def test_pi_install_force_overwrite(tmp_path, monkeypatch, capsys):
     """pi-install --force overwrites an existing strata.ts without prompting."""
     import shutil
-    from pathlib import Path
     from strata import cli as strata_cli
 
     src = tmp_path / "skills" / "pi" / "strata.ts"
@@ -408,7 +402,6 @@ def test_pi_install_force_overwrite(tmp_path, monkeypatch, capsys):
 def test_pi_install_overwrite_abort(tmp_path, monkeypatch, capsys):
     """pi-install without --force aborts when user declines overwrite."""
     import shutil
-    from pathlib import Path
     from strata import cli as strata_cli
 
     src = tmp_path / "skills" / "pi" / "strata.ts"

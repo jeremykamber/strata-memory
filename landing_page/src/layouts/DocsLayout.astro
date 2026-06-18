@@ -74,15 +74,19 @@ const nav: { category: string; items: { slug: string; title: string }[] }[] = [
                 <ul class="docs-nav-list">
                   {group.items.map((item) => {
                     const href = item.slug === "index" ? "/docs/" : `/docs/${item.slug}/`;
+                    const isActive = slug === item.slug;
+                    if (isActive) {
+                      return (
+                        <li>
+                          <span class="docs-nav-link docs-nav-link--active">
+                            {item.title}
+                          </span>
+                        </li>
+                      );
+                    }
                     return (
                       <li>
-                        <a
-                          href={href}
-                          class:list={[
-                            "docs-nav-link",
-                            { "docs-nav-link--active": slug === item.slug },
-                          ]}
-                        >
+                        <a href={href} class="docs-nav-link">
                           {item.title}
                         </a>
                       </li>
@@ -193,6 +197,7 @@ const nav: { category: string; items: { slug: string; title: string }[] }[] = [
     color: var(--color-accent);
     background: var(--color-surface);
     font-weight: 600;
+    cursor: default;
   }
 
   .docs-nav-link:focus-visible {

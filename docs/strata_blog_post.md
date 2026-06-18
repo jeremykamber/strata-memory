@@ -97,7 +97,7 @@ When the agent can't find what it needs in Phase 1, it queries Phase 2. agent-db
 
 So when I ask Niklaus to recall how we handled a tricky React state issue last year, it searches the vector space for semantic meaning, filters on the `React` tag, and looks for links to the `Koda` project.
 
-Every time a memory gets retrieved, the system bumps `access_count` and updates `last_accessed`. This is pretty important for the next step.
+Every time a memory gets retrieved, the system bumps `access_count` and updates `last_accessed`. This is important for the next step.
 
 ---
 

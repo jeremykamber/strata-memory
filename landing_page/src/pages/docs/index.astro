@@ -51,9 +51,9 @@ const sections = [
         <div class="docs-landing-section">
           <h2 class="docs-landing-section-title">{section.name}</h2>
           <ul class="docs-landing-list">
-            {section.items.map((item) => (
+            {section.items.filter((item) => item.slug !== "index").map((item) => (
               <li>
-                <a href={item.slug === "index" ? "/docs/" : `/docs/${item.slug}/`} class="docs-landing-card">
+                <a href={`/docs/${item.slug}/`} class="docs-landing-card">
                   <span class="docs-landing-card-title">{item.title}</span>
                   <span class="docs-landing-card-desc">{item.desc}</span>
                 </a>

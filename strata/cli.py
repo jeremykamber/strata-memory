@@ -478,6 +478,7 @@ def _qmd_onboarding(config: StrataConfig) -> None:
 
 def _try_install_qmd(config: StrataConfig) -> None:
     """Attempt to install QMD via npx with 30s timeout."""
+    print("  Installing QMD (this may take a moment)...")
     try:
         result = subprocess.run(
             ["npx", "@tobilu/qmd"],
@@ -485,16 +486,22 @@ def _try_install_qmd(config: StrataConfig) -> None:
             capture_output=True,
         )
         if result.returncode == 0:
-            print("✓ QMD installed as search backend")
+            print("  ✓ QMD ready")
         else:
             print(
-                "⚠ QMD auto-install failed. Install manually: npm install -g @tobilu/qmd"
+                "  ⚠ QMD install failed. Install manually:"
             )
+            print("    npm install -g @tobilu/qmd")
             config.search_backend = "fts5"
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+    except subprocess.TimeoutExpired:
+        print("  ⚠ QMD install timed out after 30s. Install manually:")
+        print("    npm install -g @tobilu/qmd")
+        config.search_backend = "fts5"
+    except FileNotFoundError:
         print(
-            "⚠ QMD auto-install failed (npx not available). Install manually: npm install -g @tobilu/qmd"
+            "  ⚠ npx not found. Install manually:"
         )
+        print("    npm install -g @tobilu/qmd")
         config.search_backend = "fts5"
 
 
