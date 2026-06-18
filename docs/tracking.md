@@ -151,14 +151,16 @@ The log is append-only and never truncated. The `CostTracker` parses it to compu
 | QMD (BM25 + vector) | Moderate | Requires Node.js runtime, embedding computation on first run. |
 | QMD + LLM reranker | Variable | Uses API credits or local compute per query. |
 
-## Why No LLM Calls
+## Why No LLM Calls for Lifecycle
 
-Strata's Janitor doesn't use LLMs. It's all deterministic rules  -  file age, access count, that sort of thing. That decision comes with some nice perks:
+Strata's Janitor doesn't use LLMs for lifecycle decisions. It's all deterministic rules — file age, access count, that sort of thing. That decision comes with some nice perks:
 
 - Maintenance costs are bounded and predictable. No mystery bills.
 - No per-operation API fees. Every migration and eviction is free.
-- Zero-effort setup: no API keys, no budgets, no ugly surprises.
+- Zero-effort setup: no API keys, no budgets, no ugly surprises for core operation.
 - The `strata cost` command tracks only savings, not expenditures. Why? Because the Janitor itself costs absolutely nothing to run.
+
+The daemon *does* support an optional Distiller that makes LLM calls for knowledge extraction (see [Agent Memory](#agent-memory-pi-extension)). That's a separate cost — configurable, batched, and optional. A typical cycle costs less than $0.01 and runs every ~15 minutes when there's new material to process. When distillation is disabled (no API key), the daemon costs exactly zero.
 
 ## Cross-Reference
 

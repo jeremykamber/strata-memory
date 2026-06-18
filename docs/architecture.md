@@ -68,7 +68,9 @@ When a cooled file hasn't been accessed for longer than the LRU window, the Jani
 
 ## The Janitor
 
-The Janitor is the only process that moves data between strata. It runs on a schedule with deterministic rules  -  no LLM calls, no guesswork. That keeps maintenance costs bounded and predictable.
+The Janitor is the only process that moves data between strata. It runs on a schedule with deterministic rules — no LLM calls, no guesswork. That keeps maintenance costs bounded and predictable.
+
+> **Note:** The daemon also runs an optional Distiller that makes LLM calls for knowledge extraction from conversation transcripts. The Distiller is a separate concern — it doesn't make lifecycle decisions or affect what gets migrated, evicted, or promoted. They share a process, not a purpose.
 
 ```
 ┌─────────────┐    promote     ┌──────────────┐         ┌──────────────┐

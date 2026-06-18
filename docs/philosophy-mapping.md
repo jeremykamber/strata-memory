@@ -28,11 +28,11 @@ The mapping breaks into two zones:
 | Shadow Index: lightweight SQLite with keywords + archive_path | Shadow Index: SQLite FTS5 with full-text search, keywords column, 200-char preview. FTS5 is actually more capable than the blog described. | GREEN |
 | Re-hydration: archived file back to agent-db with new embedding | Re-hydration: archived file back to active/ as markdown. No embedding regeneration needed (no vector DB). | GRAY |
 | Cascading search: Phase 1 -> Phase 2 -> Shadow Index | Cascading search: S1 -> S2 -> S3. QMD hybrid search when available, filesystem grep fallback. Same cascade structure. | GREEN |
-| Janitor is algorithmic (no LLM to check file age) | Janitor uses file mtime + access count. No LLM calls at all, including migration. | GREEN |
+| Janitor is algorithmic (no LLM to check file age) | Janitor uses file mtime + access count. **Zero LLM calls for lifecycle decisions.** An optional background Distiller runs inside the same daemon for knowledge extraction — but that's a separate concern with its own config and cost, not part of the Janitor. | GREEN |
 | LLM-only compression after algorithmic trigger | No LLM compression anywhere. Files stay as markdown throughout their lifecycle. | GRAY |
 | Files in active/, relational DB in cooled/ | Files in both active/ and cooled/. Only archive/ uses structured storage (JSON). | GRAY |
 | CLI tool definitions for agents | Full CLI with grouped help, JSON mode, spinners, config get/set, cost tracking, skill install, MCP server. | GREEN+ |
-| Zero-dependency (stdlib only) | Zero-dependency indeed. No Postgres, no vector DB. Optional extras for QMD/OpenAI/Anthropic. | GREEN |
+| Zero-dependency (stdlib only) | Zero-dependency indeed. No Postgres, no vector DB. LLM calls only via optional Distiller (uses stdlib `urllib.request`, no new pip deps). Optional extras for QMD/OpenAI/Anthropic. | GREEN |
 
 ---
 
@@ -116,6 +116,7 @@ The blog describes a system that mixes Strata (lifecycle management) with agent-
 | Cost tracking estimation | tracking.py |
 | Skill install for AI coding assistants | cli/commands/skill.py |
 | PI extension installation | cli/commands/pi_install.py |
+| Background distillation (conversation → fact files) | distiller.py, cli/commands/distiller.py |
 | MCP protocol server | mcp_server.py |
 | Config persistence with get/set | cli/commands/config_cmd.py |
 | QMD auto-install and onboarding | cli/commands/qmd.py, storage.py |
@@ -145,7 +146,9 @@ Every memory in Strata is a plain file on disk. Not a blob in a database. Not a 
 
 ### The Janitor is algorithmic
 
-Lifecycle decisions use file age and access count, not LLM calls. No AI checks the clock. This is the core insight that separates Strata from the competition  -  and yes, that's worth repeating.
+Lifecycle decisions use file age and access count, not LLM calls. No AI checks the clock. This is the core insight that separates Strata from the competition — and yes, that's worth repeating.
+
+The daemon *also* runs an optional Distiller that uses an LLM for knowledge extraction from transcripts, but that's a separate concern. The Distiller doesn't make lifecycle decisions. It doesn't affect what gets migrated, evicted, or promoted. They share a process but not a purpose.
 
 ### Three distinct access tiers
 
@@ -153,12 +156,23 @@ Active (full R/W), cooled (query only), archive (re-hydration or bust). The tier
 
 ### CLI-first, always
 
-The command line is the primary interface. The Python API exists for scripting but mirrors the CLI. Every feature must work from a terminal before it can be called from Python  -  and honestly, the terminal version should be the nicer experience.
+The command line is the primary interface. The Python API exists for scripting but mirrors the CLI. Every feature must work from a terminal before it can be called from Python — and honestly, the terminal version should be the nicer experience.
+
+### Distillation is optional and separate
+
+Knowledge extraction is a value-add layer, not part of the core lifecycle. The Distiller:
+
+- Runs in batch (once per 15 minutes), not inline on every query.
+- Uses a separate cheap model (GPT-4o-mini default), not the agent's primary model.
+- Preserves raw transcripts after processing. Nothing is consumed or replaced.
+- Is disabled by default. No API key configured = no distillation, no cost, no LLM integration.
+
+This principle protects the core architecture from scope creep. The Janitor stays algorithmic. The Distiller stays optional. Neither compromises the other.
 
 ---
 
 ## Conclusion
 
-The Strata blog post and the Strata codebase share the same DNA. The three-tier architecture, the algorithmic Janitor, the Shadow Index, the cascading search  -  all of it made the trip to code intact. The big differences all trace back to one decision: replace Postgres (blog) with filesystem (code). That choice ripples through every gray-zone item in the alignment table.
+The Strata blog post and the Strata codebase share the same DNA. The three-tier architecture, the algorithmic Janitor, the Shadow Index, the cascading search — all of it made the trip to code intact. The big differences all trace back to one decision: replace Postgres (blog) with filesystem (code). That choice ripples through every gray-zone item in the alignment table.
 
-The filesystem-first approach is the right call for Strata as a standalone project. It keeps the install zero-dependency, the setup instant, and the maintenance near zero. If agent-db or something like it shows up later, Strata's architecture is clean enough to plug it into Stratum 2 without rewriting anything. For now, files work. And files are enough.
+The filesystem-first approach is the right call for Strata as a standalone project. It keeps the install zero-dependency, the setup instant, and the maintenance near zero. The optional Distiller adds background knowledge extraction without compromising the algorithmic Janitor — they're separate concerns that happen to share a daemon process. If agent-db or something like it shows up later, Strata's architecture is clean enough to plug it into Stratum 2 without rewriting anything. For now, files work. And files are enough.

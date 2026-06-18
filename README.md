@@ -11,7 +11,7 @@ strata search "oauth2 payments"
 
 ```
 
-I named it after rock layers because... well, geologists are great at naming things. 
+I named it after rock layers because... well, geologists are great at naming things.
 
 Each stratum handles a different depth of memory. Active items sit right at the surface so your agent can grab them instantly, while older notes settle into deeper layers over time.
 
@@ -90,6 +90,21 @@ Untouched files in the cooled tier eventually drop into `archive/`. The Janitor 
 A million archived entries cost less than a megabyte of disk space, which is great news if you hate buying hard drives. If a future search hits an archived entry, the Janitor reads the JSON, writes it back to the active tier, and clears the shadow entry.
 
 Packing things away in a labeled box in your basement is very different from throwing them in the trash. Strata does the former.
+
+### Knowledge Distillation (Background LLM Pass)
+
+On top of the algorithmic Janitor, the daemon also runs an optional **Distiller** — a background LLM pass that turns raw conversation transcripts into standalone fact files.
+
+When the Pi extension fires `agent_end`, it saves the full conversation transcript to `pi/conversations/`. Later, the daemon's maintenance cycle picks up new transcripts, sends them in a single batch to a small configurable model (say GPT-4o-mini or Claude Haiku), and writes the extracted facts to `pi/facts/`. The raw transcripts are preserved and enter their own cooling lifecycle. This costs pennies per day.
+
+Here's the important distinction, and why this doesn't contradict the "algorithmic Janitor" claim: the Janitor's lifecycle decisions (migration, eviction, promotion) are still purely rule-based — file age and access count, no LLM. The Distiller is a separate concern that happens to share the same daemon process. It's the difference between how the system *organises* its data (algorithmic, free) and how the system *extracts knowledge* from user conversations (LLM, optional, configured). You can run Strata without it.
+
+This works because:
+
+* **Batch, not per-query.** The LLM fires once per maintenance cycle (every ~15 minutes), not on every read, write, or search. A typical cycle batches 3-10 transcripts and costs less than a cent.
+* **Small model, not the agent's model.** The distiller uses a separate cheap model config (default: GPT-4o-mini), not whatever expensive model the agent runs on. They don't share rate limits or API keys.
+* **Optional, opt-in.** No API key = no distillation. The distiller is disabled by default. You configure `strata config set llm.enabled true` and provide a key to activate it.
+* **Preserves raw material.** Transcripts survive extraction. Nothing is lost in the distill step. The agent can always go back to the original conversation.
 
 ---
 
@@ -283,26 +298,26 @@ Every memory in Strata lives as a plain text file on your disk rather than a dat
 
 ## Comparison
 
-| System | Storage Layer | Data Migration | Lifecycle AI Calls | Search Mechanism |
-| --- | --- | --- | --- | --- |
-| **mem0** | Graph DB | Manual only | Per query + maintenance | Semantic + graph |
-| **LangMem** | Vectors | Manual only | High | Vector similarity |
-| **Strata** | Filesystem + SQLite | **Algorithmic Janitor** | **Zero** | FTS5 + optional QMD |
+| System | Storage | Migration | Lifecycle AI Calls | Knowledge Extraction | Search |
+| --- | --- | --- | --- | --- | --- |
+| **mem0** | Graph DB | Manual | Per query + maintenance | Inline per-turn | Semantic + graph |
+| **LangMem** | Vectors | Manual | High | Inline per-turn | Vector similarity |
+| **Strata** | Filesystem + SQLite | **Algorithmic Janitor** | **Janitor: zero** | **Optional background distill** (small model, batch, 15min cycle, ~$0.01/cycle) | FTS5 + optional QMD |
 
 ---
 
 ## What Strata Doesn't Do
 
-* **No LLM calls for maintenance:** The Janitor tracks timestamps instead of analyzing semantics. You pay nothing in token costs to organize files.
-* **Vector databases are optional:** Search defaults to grep and FTS5. You can bring your own vectors later with QMD if you actually want them.
-* **No graph databases:** Relationship context lives inside your directory structure instead of a heavy graph layer.
-* **No external API keys required:** Everything runs locally on your machine.
+* **The Janitor doesn't call an LLM.** Migration, eviction, and promotion decisions are purely rule-based — file age and access count, no semantics analysis, no token costs. The separate Distiller (described above) *does* use an LLM for knowledge extraction, but that's a value-add feature, not part of the core lifecycle.
+* **Vector databases are optional.** Search defaults to grep and FTS5. You can bring your own vectors later with QMD if you actually want them.
+* **No graph databases.** Relationship context lives inside your directory structure instead of a heavy graph layer.
+* **No external API keys required for core operation.** Everything runs locally. API keys are only needed if you want background distillation (optional).
 
 Forgetting things is what actually makes memory useful. Strata just focuses on storing each piece of information at the right depth for exactly as long as it matters.
 
 ---
 
-**Version:** 0.2.0 (beta)
+**Version:** 0.3.0b1 (beta)
 
 **License:** MIT
 

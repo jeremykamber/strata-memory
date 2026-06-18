@@ -32,7 +32,7 @@ Pull requests are welcome. The project runs on a few simple rules:
 - **Hand-written markdown.** No doc generation pipeline.
 - **Conventional commits.** Format: `type(scope): description`. Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`.
 - **Files are the truth.** Strata stores data as plain markdown files. No databases for active storage.
-- **The Janitor is algorithmic.** No LLM calls in lifecycle management.
+- **The Janitor is algorithmic.** Zero LLM calls for lifecycle decisions (migration, eviction, promotion). An optional Distiller runs inside the daemon for knowledge extraction — separate concern, optional, batch-based.
 
 See the [AGENTS.md](../AGENTS.md) for the full contribution treatise.
 
